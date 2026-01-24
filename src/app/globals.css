@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
+
+  /* Minimalist Neutral Palette */
+  --color-primary: #0f172a;
+  /* Slate 900 */
+  --color-primary-foreground: #f8fafc;
+  /* Slate 50 */
+  --color-secondary: #f1f5f9;
+  /* Slate 100 */
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #64748b;
+  /* Slate 500 */
+  --color-accent: #10b981;
+  /* Emerald 500 - Availability */
+  --color-border: #e2e8f0;
+  /* Slate 200 */
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --font-inter: "Inter", sans-serif;
+  --font-playfair: "Playfair Display", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --color-border: #1e293b;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-playfair);
+}
