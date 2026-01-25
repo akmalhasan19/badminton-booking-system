@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info } from "lucide-react"
+import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { MOCK_HALLS, TIME_SLOTS } from "@/constants"
 import { Hall, Court } from "@/types"
@@ -12,6 +12,11 @@ export function BookingSection() {
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
     const [selectedTime, setSelectedTime] = useState<string | null>(null)
     const [bookingStatus, setBookingStatus] = useState<'idle' | 'success'>('idle')
+    const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
+
+    const filteredHalls = MOCK_HALLS.filter(hall =>
+        filterType === 'All' ? true : hall.type === filterType
+    )
 
     const handleBook = () => {
         if (!selectedHall || !selectedCourt || !selectedTime) return
@@ -77,47 +82,63 @@ export function BookingSection() {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="grid grid-cols-1 gap-8"
                         >
-                            {MOCK_HALLS.map((hall) => (
-                                <div
-                                    key={hall.id}
-                                    onClick={() => setSelectedHall(hall)}
-                                    className="group relative bg-white rounded-[2.5rem] border-2 border-black overflow-hidden cursor-pointer hover:shadow-hard transition-all duration-300 hover:-translate-y-1"
-                                >
-                                    <div className="grid md:grid-cols-2 h-full">
-                                        <div className="h-64 md:h-full relative border-b-2 md:border-b-0 md:border-r-2 border-black">
+                            {/* Filters */}
+                            <div className="flex flex-wrap items-center gap-3 mb-8">
+                                <div className="flex items-center text-sm font-bold uppercase tracking-wider mr-2">
+                                    <Filter className="w-4 h-4 mr-1" /> Filter:
+                                </div>
+                                {['All', 'Rubber', 'Wooden', 'Synthetic'].map((type) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setFilterType(type as any)}
+                                        className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all
+                                            ${filterType === type
+                                                ? 'bg-black text-white border-black'
+                                                : 'bg-white text-gray-500 border-gray-200 hover:border-black hover:text-black'
+                                            }`}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {filteredHalls.map((hall) => (
+                                    <div
+                                        key={hall.id}
+                                        onClick={() => setSelectedHall(hall)}
+                                        className="group relative bg-white rounded-[2rem] border-2 border-black overflow-hidden cursor-pointer hover:shadow-hard transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                                    >
+                                        <div className="h-48 relative border-b-2 border-black overflow-hidden">
                                             <img src={hall.image} alt={hall.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                                             <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                                                {hall.type} Floor
+                                                {hall.type}
+                                            </div>
+                                            <div className="absolute bottom-4 right-4 bg-white border-2 border-black px-3 py-1 rounded-lg text-xs font-bold">
+                                                {hall.totalCourts} Courts
                                             </div>
                                         </div>
-                                        <div className="p-8 flex flex-col justify-between relative bg-white group-hover:bg-gray-50 transition-colors">
-                                            <div>
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="text-3xl font-display font-black text-black uppercase leading-none">{hall.name}</h3>
-                                                </div>
-                                                <p className="text-gray-600 font-medium leading-relaxed mb-6">{hall.description}</p>
 
-                                                <div className="flex flex-wrap gap-2 mb-6">
-                                                    <span className="px-3 py-1 bg-pastel-acid border-2 border-black rounded-lg text-xs font-bold">Fast Pace</span>
-                                                    <span className="px-3 py-1 bg-pastel-lilac border-2 border-black rounded-lg text-xs font-bold">{hall.totalCourts} Courts</span>
-                                                </div>
+                                        <div className="p-6 flex flex-col justify-between flex-grow bg-white group-hover:bg-gray-50 transition-colors">
+                                            <div>
+                                                <h3 className="text-2xl font-display font-black text-black uppercase leading-none mb-3">{hall.name}</h3>
+                                                <p className="text-gray-600 text-sm font-medium leading-relaxed mb-4 line-clamp-2">{hall.description}</p>
                                             </div>
 
-                                            <div className="flex justify-between items-end border-t-2 border-gray-100 pt-6">
-                                                <div className="text-left">
-                                                    <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">Starting at</span>
-                                                    <p className="text-3xl font-black text-black">${hall.pricePerHour}<span className="text-sm font-medium text-gray-500">/hr</span></p>
+                                            <div className="flex justify-between items-end border-t-2 border-gray-100 pt-4 mt-auto">
+                                                <div>
+                                                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Rate</span>
+                                                    <p className="text-xl font-black text-black">${hall.pricePerHour}<span className="text-xs font-medium text-gray-500">/hr</span></p>
                                                 </div>
-                                                <div className="bg-black text-white w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-pastel-pink group-hover:text-black group-hover:border-2 group-hover:border-black transition-all">
-                                                    <ChevronLeft className="w-6 h-6 rotate-180" />
+                                                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pastel-acid group-hover:text-black group-hover:border-2 group-hover:border-black transition-all">
+                                                    <ChevronLeft className="w-4 h-4 rotate-180" />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div

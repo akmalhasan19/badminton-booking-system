@@ -31,6 +31,56 @@ export const MOCK_HALLS: Hall[] = [
         totalCourts: 8,
         description: 'Next-gen synthetic surface with futuristic lighting.'
     },
+    {
+        id: 'h4',
+        name: 'Quartz Complex',
+        type: 'Wooden',
+        pricePerHour: 22,
+        image: 'https://picsum.photos/800/600?random=8',
+        color: 'bg-gray-100',
+        totalCourts: 12,
+        description: 'Elite wooden flooring favored by professional championships.'
+    },
+    {
+        id: 'h5',
+        name: 'Emerald City',
+        type: 'Rubber',
+        pricePerHour: 16,
+        image: 'https://picsum.photos/800/600?random=9',
+        color: 'bg-pastel-mint',
+        totalCourts: 6,
+        description: 'Eco-friendly sustainable rubber mats with perfect bounce.'
+    },
+    {
+        id: 'h6',
+        name: 'Titanium Towers',
+        type: 'Synthetic',
+        pricePerHour: 25,
+        image: 'https://picsum.photos/800/600?random=10',
+        color: 'bg-pastel-lilac',
+        totalCourts: 10,
+        description: 'Premium synthetic courts with advanced shock absorption technology.'
+    },
+    {
+        id: 'h7',
+        name: 'Ruby Ridge',
+        type: 'Wooden',
+        pricePerHour: 19,
+        image: 'https://picsum.photos/800/600?random=11',
+        color: 'bg-pastel-pink',
+        totalCourts: 5,
+        description: 'Cozy, warm wooden courts perfect for casual groups.'
+    },
+    {
+        id: 'h8',
+        name: 'Carbon Core',
+        type: 'Rubber',
+        pricePerHour: 14,
+        image: 'https://picsum.photos/800/600?random=12',
+        color: 'bg-gray-900',
+        totalCourts: 20,
+        description: 'High-capacity industrial style arena for tournaments.'
+    },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
