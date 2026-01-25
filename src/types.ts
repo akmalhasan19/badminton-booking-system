@@ -7,6 +7,12 @@ export interface Hall {
     color: string;
     totalCourts: number;
     description: string;
+    location: {
+        city: string;
+        district: string;
+        subDistrict: string;
+        address: string;
+    };
 }
 
 export interface Court {

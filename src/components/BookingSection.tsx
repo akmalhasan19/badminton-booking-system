@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter } from "lucide-react"
+import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { MOCK_HALLS, TIME_SLOTS } from "@/constants"
 import { Hall, Court } from "@/types"
@@ -14,9 +14,31 @@ export function BookingSection() {
     const [bookingStatus, setBookingStatus] = useState<'idle' | 'success'>('idle')
     const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
 
-    const filteredHalls = MOCK_HALLS.filter(hall =>
-        filterType === 'All' ? true : hall.type === filterType
-    )
+    // Location Filter State - Simulating user input for "Rawamangun"
+    const [locationFilter, setLocationFilter] = useState<{
+        city: string | null;
+        district: string | null;
+        subDistrict: string | null;
+    }>({
+        city: 'Jakarta Timur',
+        district: 'Pulo Gadung',
+        subDistrict: 'Rawamangun'
+    });
+
+    const filteredHalls = MOCK_HALLS.filter(hall => {
+        const typeMatch = filterType === 'All' ? true : hall.type === filterType;
+
+        let locMatch = true;
+        if (locationFilter.subDistrict) {
+            locMatch = hall.location.subDistrict === locationFilter.subDistrict;
+        } else if (locationFilter.district) {
+            locMatch = hall.location.district === locationFilter.district;
+        } else if (locationFilter.city) {
+            locMatch = hall.location.city === locationFilter.city;
+        }
+
+        return typeMatch && locMatch;
+    })
 
     const handleBook = () => {
         if (!selectedHall || !selectedCourt || !selectedTime) return
@@ -83,6 +105,41 @@ export function BookingSection() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                         >
+                            {/* Location Bar */}
+                            <div className="bg-white border-2 border-black rounded-xl p-4 mb-6 shadow-hard-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div>
+                                    <div className="flex items-center text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">
+                                        <MapPin className="w-3 h-3 mr-1" /> Current Location Scope
+                                    </div>
+                                    <div className="font-display font-bold text-lg text-black flex flex-wrap items-center gap-2">
+                                        <span>{locationFilter.city || 'All Cities'}</span>
+                                        {locationFilter.district && <span className="text-gray-400">/</span>}
+                                        <span>{locationFilter.district}</span>
+                                        {locationFilter.subDistrict && <span className="text-gray-400">/</span>}
+                                        <span className="bg-pastel-acid px-2 rounded-md border border-black">{locationFilter.subDistrict}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    {locationFilter.subDistrict && (
+                                        <button
+                                            onClick={() => setLocationFilter(prev => ({ ...prev, subDistrict: null }))}
+                                            className="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-black hover:text-white border border-transparent hover:border-black rounded-lg transition-all"
+                                        >
+                                            View {locationFilter.district}
+                                        </button>
+                                    )}
+                                    {locationFilter.district && !locationFilter.subDistrict && (
+                                        <button
+                                            onClick={() => setLocationFilter(prev => ({ ...prev, district: null }))}
+                                            className="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-black hover:text-white border border-transparent hover:border-black rounded-lg transition-all"
+                                        >
+                                            View {locationFilter.city}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Filters */}
                             <div className="flex flex-wrap items-center gap-3 mb-8">
                                 <div className="flex items-center text-sm font-bold uppercase tracking-wider mr-2">
@@ -104,40 +161,60 @@ export function BookingSection() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {filteredHalls.map((hall) => (
-                                    <div
-                                        key={hall.id}
-                                        onClick={() => setSelectedHall(hall)}
-                                        className="group relative bg-white rounded-[2rem] border-2 border-black overflow-hidden cursor-pointer hover:shadow-hard transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
-                                    >
-                                        <div className="h-48 relative border-b-2 border-black overflow-hidden">
-                                            <img src={hall.image} alt={hall.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-                                            <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                                                {hall.type}
-                                            </div>
-                                            <div className="absolute bottom-4 right-4 bg-white border-2 border-black px-3 py-1 rounded-lg text-xs font-bold">
-                                                {hall.totalCourts} Courts
-                                            </div>
-                                        </div>
-
-                                        <div className="p-6 flex flex-col justify-between flex-grow bg-white group-hover:bg-gray-50 transition-colors">
-                                            <div>
-                                                <h3 className="text-2xl font-display font-black text-black uppercase leading-none mb-3">{hall.name}</h3>
-                                                <p className="text-gray-600 text-sm font-medium leading-relaxed mb-4 line-clamp-2">{hall.description}</p>
+                                {filteredHalls.length > 0 ? (
+                                    filteredHalls.map((hall) => (
+                                        <div
+                                            key={hall.id}
+                                            onClick={() => setSelectedHall(hall)}
+                                            className="group relative bg-white rounded-[2rem] border-2 border-black overflow-hidden cursor-pointer hover:shadow-hard transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                                        >
+                                            <div className="h-48 relative border-b-2 border-black overflow-hidden">
+                                                <img src={hall.image} alt={hall.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                                                <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                                    {hall.type}
+                                                </div>
+                                                <div className="absolute bottom-4 right-4 bg-white border-2 border-black px-3 py-1 rounded-lg text-xs font-bold">
+                                                    {hall.totalCourts} Courts
+                                                </div>
                                             </div>
 
-                                            <div className="flex justify-between items-end border-t-2 border-gray-100 pt-4 mt-auto">
+                                            <div className="p-6 flex flex-col justify-between flex-grow bg-white group-hover:bg-gray-50 transition-colors">
                                                 <div>
-                                                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Rate</span>
-                                                    <p className="text-xl font-black text-black">${hall.pricePerHour}<span className="text-xs font-medium text-gray-500">/hr</span></p>
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <h3 className="text-2xl font-display font-black text-black uppercase leading-none">{hall.name}</h3>
+                                                    </div>
+                                                    <div className="flex items-center text-xs font-bold text-gray-500 mb-3 bg-gray-100 px-2 py-1 rounded w-fit">
+                                                        <MapPin className="w-3 h-3 mr-1" />
+                                                        {hall.location.subDistrict}, {hall.location.district}
+                                                    </div>
+                                                    <p className="text-gray-600 text-sm font-medium leading-relaxed mb-4 line-clamp-2">{hall.description}</p>
                                                 </div>
-                                                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pastel-acid group-hover:text-black group-hover:border-2 group-hover:border-black transition-all">
-                                                    <ChevronLeft className="w-4 h-4 rotate-180" />
+
+                                                <div className="flex justify-between items-end border-t-2 border-gray-100 pt-4 mt-auto">
+                                                    <div>
+                                                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Rate</span>
+                                                        <p className="text-xl font-black text-black">${hall.pricePerHour}<span className="text-xs font-medium text-gray-500">/hr</span></p>
+                                                    </div>
+                                                    <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pastel-acid group-hover:text-black group-hover:border-2 group-hover:border-black transition-all">
+                                                        <ChevronLeft className="w-4 h-4 rotate-180" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-1 md:col-span-2 py-12 text-center border-2 border-dashed border-gray-300 rounded-[2rem]">
+                                        <Map className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-xl font-display font-black text-gray-400 uppercase">No venues found nearby</h3>
+                                        <p className="text-gray-500 font-medium mt-2">Try expanding your search scope.</p>
+                                        <button
+                                            onClick={() => setLocationFilter(prev => ({ ...prev, subDistrict: null }))}
+                                            className="mt-4 text-black font-bold underline"
+                                        >
+                                            View all {locationFilter.district}
+                                        </button>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </motion.div>
                     ) : (
@@ -160,6 +237,20 @@ export function BookingSection() {
                                 <div className="text-right">
                                     <h3 className="text-2xl font-display font-black text-black uppercase">{selectedHall.name}</h3>
                                     <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{selectedHall.type} Floor</span>
+                                </div>
+                            </div>
+
+                            {/* Details Venue */}
+                            <div className="mb-8 grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                    <span className="text-xs font-bold text-gray-400 uppercase">Location</span>
+                                    <p className="font-bold text-black">{selectedHall.location.address}</p>
+                                    <p className="text-xs text-gray-500">{selectedHall.location.subDistrict}, {selectedHall.location.city}</p>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                    <span className="text-xs font-bold text-gray-400 uppercase">Facilities</span>
+                                    <p className="font-bold text-black">{selectedHall.totalCourts} Courts</p>
+                                    <p className="text-xs text-gray-500">Shower, Parking, Cafe</p>
                                 </div>
                             </div>
 
@@ -233,6 +324,10 @@ export function BookingSection() {
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-500 text-xs uppercase">Court</span>
                                     <span className="font-black text-black">{selectedCourt ? `#${selectedCourt}` : '—'}</span>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <span className="block font-bold text-gray-500 text-xs uppercase mb-1">Address</span>
+                                    <p className="text-xs text-gray-700">{selectedHall.location.address}</p>
                                 </div>
                             </div>
                         )}

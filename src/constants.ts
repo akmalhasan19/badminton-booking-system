@@ -9,7 +9,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=1',
         color: 'bg-pastel-mint',
         totalCourts: 6,
-        description: 'Pro-grade rubber mats for ultimate grip and shock absorption.'
+        description: 'Pro-grade rubber mats for ultimate grip and shock absorption.',
+        location: {
+            city: 'Jakarta Timur',
+            district: 'Pulo Gadung',
+            subDistrict: 'Rawamangun',
+            address: 'Jl. Pemuda No. 10'
+        }
     },
     {
         id: 'h2',
@@ -19,7 +25,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=2',
         color: 'bg-pastel-lilac',
         totalCourts: 4,
-        description: 'Classic hardwood floors for that traditional crisp sound.'
+        description: 'Classic hardwood floors for that traditional crisp sound.',
+        location: {
+            city: 'Jakarta Timur',
+            district: 'Pulo Gadung',
+            subDistrict: 'Kayu Putih',
+            address: 'Jl. Kayu Putih Raya No. 5'
+        }
     },
     {
         id: 'h3',
@@ -29,7 +41,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=3',
         color: 'bg-pastel-blue',
         totalCourts: 8,
-        description: 'Next-gen synthetic surface with futuristic lighting.'
+        description: 'Next-gen synthetic surface with futuristic lighting.',
+        location: {
+            city: 'Jakarta Utara',
+            district: 'Kelapa Gading',
+            subDistrict: 'Kelapa Gading Timur',
+            address: 'Jl. Boulevard Raya'
+        }
     },
     {
         id: 'h4',
@@ -39,7 +57,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=8',
         color: 'bg-gray-100',
         totalCourts: 12,
-        description: 'Elite wooden flooring favored by professional championships.'
+        description: 'Elite wooden flooring favored by professional championships.',
+        location: {
+            city: 'Jakarta Timur',
+            district: 'Duren Sawit',
+            subDistrict: 'Duren Sawit',
+            address: 'Jl. Raden Inten II'
+        }
     },
     {
         id: 'h5',
@@ -49,7 +73,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=9',
         color: 'bg-pastel-mint',
         totalCourts: 6,
-        description: 'Eco-friendly sustainable rubber mats with perfect bounce.'
+        description: 'Eco-friendly sustainable rubber mats with perfect bounce.',
+        location: {
+            city: 'Jakarta Timur',
+            district: 'Pulo Gadung',
+            subDistrict: 'Jati',
+            address: 'Jl. Jati Raya'
+        }
     },
     {
         id: 'h6',
@@ -59,7 +89,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=10',
         color: 'bg-pastel-lilac',
         totalCourts: 10,
-        description: 'Premium synthetic courts with advanced shock absorption technology.'
+        description: 'Premium synthetic courts with advanced shock absorption technology.',
+        location: {
+            city: 'Jakarta Selatan',
+            district: 'Tebet',
+            subDistrict: 'Tebet Timur',
+            address: 'Jl. Tebet Raya'
+        }
     },
     {
         id: 'h7',
@@ -69,7 +105,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=11',
         color: 'bg-pastel-pink',
         totalCourts: 5,
-        description: 'Cozy, warm wooden courts perfect for casual groups.'
+        description: 'Cozy, warm wooden courts perfect for casual groups.',
+        location: {
+            city: 'Jakarta Timur',
+            district: 'Pulo Gadung',
+            subDistrict: 'Rawamangun',
+            address: 'Jl. Balai Pustaka'
+        }
     },
     {
         id: 'h8',
@@ -79,7 +121,13 @@ export const MOCK_HALLS: Hall[] = [
         image: 'https://picsum.photos/800/600?random=12',
         color: 'bg-gray-900',
         totalCourts: 20,
-        description: 'High-capacity industrial style arena for tournaments.'
+        description: 'High-capacity industrial style arena for tournaments.',
+        location: {
+            city: 'Jakarta Pusat',
+            district: 'Kemayoran',
+            subDistrict: 'Gunung Sahari Selatan',
+            address: 'Jl. Angkasa'
+        }
     },
 ];
 
