@@ -7,13 +7,14 @@
     font-family: 'Outfit', sans-serif;
     background-color: #FAFAFA;
     overflow-x: hidden;
-    cursor: url('/shuttlecock-cursor.svg') 16 16, auto;
+    cursor: url('/shuttlecock-cursor.svg?v=64') 0 0, auto;
   }
 
   a,
   button,
-  [role="button"] {
-    cursor: url('/shuttlecock-cursor.svg') 16 16, pointer;
+  [role="button"],
+  .cursor-pointer {
+    cursor: url('/shuttlecock-cursor.svg?v=64') 0 0, pointer;
   }
 
   .font-display {
