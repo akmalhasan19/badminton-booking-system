@@ -53,7 +53,7 @@ export function BookingSection() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-20">
+        <div className="max-w-7xl mx-auto px-4 pt-32 pb-20">
             <div className="mb-16">
                 <h2 className="text-5xl md:text-7xl font-display font-black text-black mb-4 uppercase tracking-tighter">
                     Pick Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-pink text-stroke-2" style={{ WebkitTextStroke: '2px black' }}>Battlefield</span>

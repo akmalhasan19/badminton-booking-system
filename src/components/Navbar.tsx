@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Tab } from "@/types"
@@ -10,22 +10,16 @@ interface NavbarProps {
     setActiveTab: (tab: Tab) => void;
 }
 
-// Animation variants as per ANIMATION_GUIDE.md
+// Animation variants
 const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
-        transition: {
-            delayChildren: 0.2,   // Wait for container to morph
-            staggerChildren: 0.1  // Cascade effect
-        }
+        transition: { delayChildren: 0.2, staggerChildren: 0.1 }
     },
     exit: {
         opacity: 0,
-        transition: {
-            staggerChildren: 0.05,
-            staggerDirection: -1
-        }
+        transition: { staggerChildren: 0.05, staggerDirection: -1 }
     }
 };
 
@@ -38,6 +32,8 @@ const itemVariants = {
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const [highlightStyle, setHighlightStyle] = useState({ left: 0, width: 0, opacity: 0 })
+    const tabsRef = useRef<(HTMLButtonElement | null)[]>([])
 
     useEffect(() => {
         const handleScroll = () => {
@@ -52,6 +48,28 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint" },
         { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink" }
     ];
+
+    useEffect(() => {
+        const activeIndex = menuItems.findIndex(item => item.tab === activeTab)
+        const element = tabsRef.current[activeIndex]
+
+        if (element) {
+            setHighlightStyle({
+                left: element.offsetLeft,
+                width: element.offsetWidth,
+                opacity: 1
+            })
+        }
+    }, [activeTab, menuItems])
+
+    const getBackgroundColor = (tab: Tab) => {
+        switch (tab) {
+            case Tab.HOME: return 'bg-pastel-acid';
+            case Tab.BOOK: return 'bg-pastel-mint';
+            case Tab.SHOP: return 'bg-pastel-pink';
+            default: return 'bg-transparent';
+        }
+    }
 
     return (
         <>
@@ -68,21 +86,27 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                     </div>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-2 bg-white p-1 rounded-xl border-2 border-black shadow-hard-sm">
-                        {menuItems.map((item) => (
+                    <div className="hidden md:flex items-center space-x-2 bg-white p-1 rounded-xl border-2 border-black shadow-hard-sm relative">
+                        {/* Sliding Highlight */}
+                        <motion.div
+                            className={`absolute top-1 bottom-1 rounded-lg border-2 border-black z-0 ${getBackgroundColor(activeTab)}`}
+                            initial={false}
+                            animate={{
+                                left: highlightStyle.left,
+                                width: highlightStyle.width,
+                                opacity: highlightStyle.opacity
+                            }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        />
+
+                        {menuItems.map((item, index) => (
                             <button
                                 key={item.tab}
+                                ref={el => { tabsRef.current[index] = el }}
                                 onClick={() => setActiveTab(item.tab)}
-                                className={`relative px-6 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
+                                className={`relative px-6 py-2 rounded-lg font-bold text-sm transition-colors z-10 ${activeTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
                             >
-                                {activeTab === item.tab && (
-                                    <motion.div
-                                        layoutId="desktop-active-tab"
-                                        className={`absolute inset-0 rounded-lg border-2 border-black bg-${item.color} z-0`}
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    />
-                                )}
-                                <span className="relative z-10">{item.label}</span>
+                                {item.label}
                             </button>
                         ))}
                     </div>
@@ -103,7 +127,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 </div>
             </nav>
 
-            {/* Mobile Menu Overlay - Framer Motion Implementation */}
+            {/* Mobile Menu Overlay */}
             <AnimatePresence>
                 {mobileMenuOpen && (
                     <motion.div

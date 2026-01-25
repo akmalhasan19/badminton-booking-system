@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navbar } from "@/components/Navbar"
 import { Hero } from "@/components/Hero"
@@ -14,6 +14,11 @@ import { Tab } from "@/types"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME)
+
+  // Scroll to top when tab changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
