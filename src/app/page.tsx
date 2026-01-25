@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Navbar } from "@/components/Navbar"
 import { Hero } from "@/components/Hero"
 import { Marquee } from "@/components/Marquee"
@@ -37,7 +38,17 @@ export default function Home() {
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className="min-h-screen">
-        {renderContent()}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <Footer />

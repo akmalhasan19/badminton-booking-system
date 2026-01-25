@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Tab } from "@/types"
 
@@ -8,6 +9,31 @@ interface NavbarProps {
     activeTab: Tab;
     setActiveTab: (tab: Tab) => void;
 }
+
+// Animation variants as per ANIMATION_GUIDE.md
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            delayChildren: 0.2,   // Wait for container to morph
+            staggerChildren: 0.1  // Cascade effect
+        }
+    },
+    exit: {
+        opacity: 0,
+        transition: {
+            staggerChildren: 0.05,
+            staggerDirection: -1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0, filter: "blur(5px)" },
+    visible: { y: 0, opacity: 1, filter: "blur(0px)" },
+    exit: { y: -20, opacity: 0, filter: "blur(5px)" }
+};
 
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const [scrolled, setScrolled] = useState(false)
@@ -20,6 +46,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         window.addEventListener("scroll", handleScroll)
         return () => window.removeEventListener("scroll", handleScroll)
     }, [])
+
+    const menuItems = [
+        { tab: Tab.HOME, label: "HOME", color: "pastel-acid" },
+        { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint" },
+        { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink" }
+    ];
 
     return (
         <>
@@ -37,24 +69,22 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center space-x-2 bg-white p-1 rounded-xl border-2 border-black shadow-hard-sm">
-                        <button
-                            onClick={() => setActiveTab(Tab.HOME)}
-                            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === Tab.HOME ? 'bg-pastel-acid text-black border-2 border-black' : 'text-gray-500 hover:text-black'}`}
-                        >
-                            HOME
-                        </button>
-                        <button
-                            onClick={() => setActiveTab(Tab.BOOK)}
-                            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === Tab.BOOK ? 'bg-pastel-mint text-black border-2 border-black' : 'text-gray-500 hover:text-black'}`}
-                        >
-                            BOOK
-                        </button>
-                        <button
-                            onClick={() => setActiveTab(Tab.SHOP)}
-                            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === Tab.SHOP ? 'bg-pastel-pink text-black border-2 border-black' : 'text-gray-500 hover:text-black'}`}
-                        >
-                            SHOP
-                        </button>
+                        {menuItems.map((item) => (
+                            <button
+                                key={item.tab}
+                                onClick={() => setActiveTab(item.tab)}
+                                className={`relative px-6 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
+                            >
+                                {activeTab === item.tab && (
+                                    <motion.div
+                                        layoutId="desktop-active-tab"
+                                        className={`absolute inset-0 rounded-lg border-2 border-black bg-${item.color} z-0`}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                <span className="relative z-10">{item.label}</span>
+                            </button>
+                        ))}
                     </div>
 
                     <div className="hidden md:block">
@@ -73,29 +103,40 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 </div>
             </nav>
 
-            {/* Mobile Menu Overlay */}
-            {mobileMenuOpen && (
-                <div className="fixed inset-0 z-40 bg-white flex flex-col items-center justify-center space-y-6 animate-slide-down font-display origin-top">
-                    <button
-                        onClick={() => { setActiveTab(Tab.HOME); setMobileMenuOpen(false); }}
-                        className="text-4xl font-bold text-black hover:text-pastel-acid transition-colors"
+            {/* Mobile Menu Overlay - Framer Motion Implementation */}
+            <AnimatePresence>
+                {mobileMenuOpen && (
+                    <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                        className="fixed inset-0 z-40 bg-white flex flex-col items-center justify-center font-display"
                     >
-                        HOME
-                    </button>
-                    <button
-                        onClick={() => { setActiveTab(Tab.BOOK); setMobileMenuOpen(false); }}
-                        className="text-4xl font-bold text-black hover:text-pastel-mint transition-colors"
-                    >
-                        BOOK
-                    </button>
-                    <button
-                        onClick={() => { setActiveTab(Tab.SHOP); setMobileMenuOpen(false); }}
-                        className="text-4xl font-bold text-black hover:text-pastel-pink transition-colors"
-                    >
-                        SHOP
-                    </button>
-                </div>
-            )}
+                        <motion.div
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className="flex flex-col items-center space-y-6"
+                        >
+                            {menuItems.map((item) => (
+                                <motion.button
+                                    key={item.tab}
+                                    variants={itemVariants}
+                                    onClick={() => { setActiveTab(item.tab); setMobileMenuOpen(false); }}
+                                    className={`text-4xl font-bold text-black hover:text-${item.color} transition-colors`}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    {item.label}
+                                </motion.button>
+                            ))}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     )
 }
