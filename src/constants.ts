@@ -1,29 +1,35 @@
-import { Court, Product, TimeSlot } from './types';
+import { Hall, Court, Product, TimeSlot } from './types';
 
-export const MOCK_COURTS: Court[] = [
+export const MOCK_HALLS: Hall[] = [
     {
-        id: 'c1',
+        id: 'h1',
         name: 'Mint Arena',
         type: 'Rubber',
         pricePerHour: 15,
         image: 'https://picsum.photos/800/600?random=1',
         color: 'bg-pastel-mint',
+        totalCourts: 6,
+        description: 'Pro-grade rubber mats for ultimate grip and shock absorption.'
     },
     {
-        id: 'c2',
+        id: 'h2',
         name: 'Lilac Lane',
         type: 'Wooden',
         pricePerHour: 20,
         image: 'https://picsum.photos/800/600?random=2',
         color: 'bg-pastel-lilac',
+        totalCourts: 4,
+        description: 'Classic hardwood floors for that traditional crisp sound.'
     },
     {
-        id: 'c3',
+        id: 'h3',
         name: 'Sky Court',
         type: 'Synthetic',
         pricePerHour: 18,
         image: 'https://picsum.photos/800/600?random=3',
         color: 'bg-pastel-blue',
+        totalCourts: 8,
+        description: 'Next-gen synthetic surface with futuristic lighting.'
     },
 ];
 

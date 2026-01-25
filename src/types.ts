@@ -1,10 +1,19 @@
-export interface Court {
+export interface Hall {
     id: string;
     name: string;
     type: 'Rubber' | 'Wooden' | 'Synthetic';
     pricePerHour: number;
     image: string;
     color: string;
+    totalCourts: number;
+    description: string;
+}
+
+export interface Court {
+    id: string;
+    number: number;
+    hallId: string;
+    status: 'available' | 'booked' | 'maintenance';
 }
 
 export interface TimeSlot {
