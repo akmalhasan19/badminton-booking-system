@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Tab } from "@/types"
+import { SmashLogo } from "@/components/SmashLogo"
 
 interface NavbarProps {
     activeTab: Tab;
@@ -80,8 +81,8 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                         className="flex items-center space-x-2 cursor-pointer group"
                         onClick={() => setActiveTab(Tab.HOME)}
                     >
-                        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center shadow-hard-sm group-hover:bg-pastel-acid group-hover:text-black transition-colors">
-                            <span className="text-white font-display font-bold text-xl group-hover:text-black">S</span>
+                        <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-110">
+                            <SmashLogo className="w-full h-full bg-black" />
                         </div>
                         <span className="text-2xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
                     </div>

@@ -1,4 +1,5 @@
 import { Users, Trophy } from "lucide-react"
+import { SmashLogo } from "@/components/SmashLogo"
 
 export function Footer() {
     return (
@@ -12,8 +13,8 @@ export function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                     <div className="col-span-1 md:col-span-2 space-y-6">
                         <div className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                                <span className="text-black font-display font-bold text-xl">S</span>
+                            <div className="w-10 h-10 flex items-center justify-center">
+                                <SmashLogo className="w-full h-full bg-pastel-acid" />
                             </div>
                             <span className="text-2xl font-display font-bold tracking-tight">Smash & Serve</span>
                         </div>
