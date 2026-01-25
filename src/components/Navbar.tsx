@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X } from "lucide-react"
+import { Menu, X, User, LogOut, ChevronDown } from "lucide-react"
 import { Tab } from "@/types"
 import { SmashLogo } from "@/components/SmashLogo"
+import { getCurrentUser, signOut } from "@/lib/auth/actions"
+import { useRouter } from "next/navigation"
 
 interface NavbarProps {
     activeTab: Tab;
@@ -36,11 +38,32 @@ const menuItems = [
     { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink" }
 ];
 
+import { AuthModal } from "@/components/AuthModal"
+
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
+    const router = useRouter()
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const [showAuthModal, setShowAuthModal] = useState(false)
     const [highlightStyle, setHighlightStyle] = useState({ left: 0, width: 0, opacity: 0 })
     const tabsRef = useRef<(HTMLButtonElement | null)[]>([])
+
+    // User state
+    const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [showUserDropdown, setShowUserDropdown] = useState(false)
+
+    // Check auth on mount
+    useEffect(() => {
+        async function checkAuth() {
+            const currentUser = await getCurrentUser();
+            if (currentUser) {
+                setIsLoggedIn(true);
+                setUser({ name: currentUser.name, email: currentUser.email });
+            }
+        }
+        checkAuth();
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -71,6 +94,19 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             case Tab.SHOP: return 'bg-pastel-pink';
             default: return 'bg-transparent';
         }
+    }
+
+    const handleLogout = async () => {
+        // Update local state immediately
+        setIsLoggedIn(false);
+        setUser(null);
+        setShowUserDropdown(false);
+
+        // Sign out from Supabase
+        await signOut();
+
+        // Refresh the page to update all components
+        router.refresh();
     }
 
     return (
@@ -113,10 +149,56 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                         ))}
                     </div>
 
-                    <div className="hidden md:block">
-                        <button className="bg-black text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm">
-                            Login
-                        </button>
+                    {/* User Account / Login Button */}
+                    <div className="hidden md:block relative">
+                        {isLoggedIn && user ? (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                                    className="bg-white text-black px-4 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
+                                >
+                                    <div className="w-8 h-8 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center">
+                                        <User className="w-4 h-4" />
+                                    </div>
+                                    <span>{user.name}</span>
+                                    <ChevronDown className="w-4 h-4" />
+                                </button>
+
+                                {/* Dropdown */}
+                                {showUserDropdown && (
+                                    <>
+                                        {/* Click outside to close */}
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setShowUserDropdown(false)}
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-black rounded-xl shadow-hard-lg overflow-hidden z-50"
+                                        >
+                                            <div className="p-4 border-b-2 border-gray-100">
+                                                <p className="font-bold text-sm text-black">{user.name}</p>
+                                                <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                                            </div>
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                Logout
+                                            </button>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowAuthModal(true)}
+                                className="bg-black text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm">
+                                Login
+                            </button>
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -159,10 +241,28 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                     {item.label}
                                 </motion.button>
                             ))}
+                            <motion.button
+                                variants={itemVariants}
+                                onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
+                                className="text-4xl font-bold text-gray-500 hover:text-black transition-colors"
+                            >
+                                Login
+                            </motion.button>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                onLoginSuccess={(userData) => {
+                    console.log("Logged in:", userData);
+                    setIsLoggedIn(true);
+                    setUser(userData);
+                    setShowAuthModal(false);
+                }}
+            />
         </>
     )
 }

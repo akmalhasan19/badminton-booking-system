@@ -9,12 +9,37 @@ interface BentoGridProps {
 
 export function BentoGrid({ setActiveTab }: BentoGridProps) {
     return (
-        <section className="py-20 px-4 max-w-7xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-center mb-16">
+        <section className="relative py-20 px-4 max-w-7xl mx-auto overflow-hidden">
+            {/* 3D Grid Background */}
+            <div
+                className="absolute -top-40 -left-[20%] -right-[20%] -bottom-20 z-0 pointer-events-none"
+                style={{
+                    backgroundImage: `
+                        repeating-linear-gradient(
+                            115deg,
+                            transparent,
+                            transparent 100px,
+                            rgba(160, 82, 45, 0.15) 100px,
+                            rgba(160, 82, 45, 0.15) 101px
+                        ),
+                        repeating-linear-gradient(
+                            to bottom,
+                            transparent,
+                            transparent 100px,
+                            rgba(160, 82, 45, 0.15) 100px,
+                            rgba(160, 82, 45, 0.15) 101px
+                        )
+                    `,
+                    backgroundSize: '100% 100%',
+                    transform: 'none'
+                }}
+            />
+
+            <h2 className="relative z-10 text-4xl md:text-5xl font-display font-bold text-center mb-16">
                 MORE THAN JUST <span className="bg-pastel-acid px-2 border-2 border-black shadow-hard-sm transform -rotate-2 inline-block">BADMINTON</span>
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 grid-rows-2 h-auto md:h-[600px]">
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 grid-rows-2 h-auto md:h-[600px]">
 
                 {/* Card 1: Instant Booking - Large */}
                 <div className="md:col-span-2 row-span-2 bg-pastel-mint rounded-3xl border-2 border-black shadow-hard p-6 md:p-8 relative overflow-hidden group hover:-translate-y-1 transition-transform">
