@@ -29,6 +29,12 @@ const itemVariants = {
     exit: { y: -20, opacity: 0, filter: "blur(5px)" }
 };
 
+const menuItems = [
+    { tab: Tab.HOME, label: "HOME", color: "pastel-acid" },
+    { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint" },
+    { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink" }
+];
+
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -43,12 +49,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         return () => window.removeEventListener("scroll", handleScroll)
     }, [])
 
-    const menuItems = [
-        { tab: Tab.HOME, label: "HOME", color: "pastel-acid" },
-        { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint" },
-        { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink" }
-    ];
-
     useEffect(() => {
         const activeIndex = menuItems.findIndex(item => item.tab === activeTab)
         const element = tabsRef.current[activeIndex]
@@ -60,7 +60,8 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 opacity: 1
             })
         }
-    }, [activeTab, menuItems])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab])
 
     const getBackgroundColor = (tab: Tab) => {
         switch (tab) {
