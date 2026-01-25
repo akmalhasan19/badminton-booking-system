@@ -178,6 +178,18 @@ export const TIME_SLOTS: TimeSlot[] = [
     { time: '20:00', available: true },
 ];
 
+// Court-specific bookings: Key format is 'hallId-courtNumber'
+// This simulates which specific courts are already booked at specific times
+export const MOCK_BOOKINGS: Record<string, string[]> = {
+    'h1-1': ['10:00', '14:00', '15:00'], // Mint Arena, Court 1
+    'h1-2': ['16:00'],
+    'h1-3': ['11:00', '12:00', '13:00'],
+    'h2-1': ['09:00', '10:00'],
+    'h2-2': ['19:00', '20:00'],
+    'h3-1': ['14:00', '15:00', '16:00', '17:00'],
+    'h7-1': ['10:00'], // Ruby Ridge, Court 1 (minimal bookings for testing)
+};
+
 export const SYSTEM_INSTRUCTION = `You are Smashy, a fun, energetic, and helpful AI concierge for a trendy badminton court facility called "Smash & Serve".
 Your target audience is Gen Z and Millennials, so keep the tone casual, friendly, emoji-friendly, and helpful.
 You can help users pick the right racket, explain court types (Rubber vs Wooden), and give tips on improving their smash.
