@@ -1,4 +1,5 @@
 import { Users, Trophy } from "lucide-react"
+import Link from "next/link"
 import { SmashLogo } from "@/components/SmashLogo"
 
 export function Footer() {
@@ -35,19 +36,19 @@ export function Footer() {
                     <div>
                         <h4 className="font-bold font-display text-xl mb-6 text-pastel-acid">Platform</h4>
                         <ul className="space-y-4 text-gray-400">
-                            <li className="hover:text-white cursor-pointer transition-colors">Find a Court</li>
-                            <li className="hover:text-white cursor-pointer transition-colors">Tournaments</li>
-                            <li className="hover:text-white cursor-pointer transition-colors">Coaching</li>
-                            <li className="hover:text-white cursor-pointer transition-colors">Pro Shop</li>
+                            <li><Link href="/" className="hover:text-white cursor-pointer transition-colors">Find a Court</Link></li>
+                            <li><Link href="/tournaments" className="hover:text-white cursor-pointer transition-colors">Tournaments</Link></li>
+                            <li><Link href="/coaching" className="hover:text-white cursor-pointer transition-colors">Coaching</Link></li>
+                            <li><Link href="/" className="hover:text-white cursor-pointer transition-colors">Pro Shop</Link></li>
                         </ul>
                     </div>
 
                     <div>
                         <h4 className="font-bold font-display text-xl mb-6 text-pastel-mint">Legal</h4>
                         <ul className="space-y-4 text-gray-400">
-                            <li className="hover:text-white cursor-pointer transition-colors">Privacy</li>
-                            <li className="hover:text-white cursor-pointer transition-colors">Terms</li>
-                            <li className="hover:text-white cursor-pointer transition-colors">Cookies</li>
+                            <li><Link href="/privacy" className="hover:text-white cursor-pointer transition-colors">Privacy</Link></li>
+                            <li><Link href="/terms" className="hover:text-white cursor-pointer transition-colors">Terms</Link></li>
+                            <li><Link href="/cookies" className="hover:text-white cursor-pointer transition-colors">Cookies</Link></li>
                         </ul>
                     </div>
                 </div>
