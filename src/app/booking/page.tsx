@@ -32,7 +32,7 @@ export default function BookingPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 selection:bg-primary selection:text-white">
+        <main className="min-h-screen bg-background selection:bg-primary selection:text-primary-foreground">
             <Navbar />
 
             <div className="pt-24 pb-12 px-6 md:px-12 max-w-7xl mx-auto">
@@ -40,7 +40,7 @@ export default function BookingPage() {
                     <h1 className="text-3xl md:text-5xl font-serif font-bold text-primary mb-4">
                         Reservasi Jadwal
                     </h1>
-                    <p className="text-gray-500 max-w-2xl">
+                    <p className="text-muted-foreground max-w-2xl">
                         Pilih tanggal, lapangan favorit, dan waktu bermain Anda. Kami siapkan sisanya.
                     </p>
                 </header>
@@ -51,9 +51,9 @@ export default function BookingPage() {
                     <div className="lg:col-span-2 space-y-8">
 
                         {/* Step 1: Date */}
-                        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <section className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200">
                             <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-sm">1</span>
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-sm font-bold text-white">1</span>
                                 Pilih Tanggal Main
                             </h2>
                             <div className="flex justify-center md:justify-start w-full">
@@ -66,9 +66,9 @@ export default function BookingPage() {
                         </section>
 
                         {/* Step 2: Court */}
-                        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <section className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200">
                             <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-sm">2</span>
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-sm font-bold text-white">2</span>
                                 Pilih Lapangan
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -79,8 +79,8 @@ export default function BookingPage() {
                                         className={cn(
                                             "cursor-pointer group relative overflow-hidden rounded-xl border-2 p-6 transition-all duration-300",
                                             selectedCourt === court.id
-                                                ? "border-primary bg-slate-50 shadow-md"
-                                                : "border-slate-100 hover:border-slate-300 hover:shadow-sm"
+                                                ? "border-primary bg-primary/5 shadow-md shadow-primary/10"
+                                                : "border-zinc-200 hover:border-zinc-300 hover:shadow-sm"
                                         )}
                                     >
                                         <div className={cn("absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity", court.color)}>
@@ -88,8 +88,8 @@ export default function BookingPage() {
                                         </div>
 
                                         <h3 className="font-bold text-primary mb-1">{court.name}</h3>
-                                        <p className="text-xs text-gray-500 mb-4">{court.type}</p>
-                                        <p className="font-medium text-emerald-600">Rp {court.price.toLocaleString("id-ID")}/jam</p>
+                                        <p className="text-xs text-muted-foreground mb-4">{court.type}</p>
+                                        <p className="font-medium text-emerald-400">Rp {court.price.toLocaleString("id-ID")}/jam</p>
                                     </div>
                                 ))}
                             </div>
@@ -97,9 +97,9 @@ export default function BookingPage() {
 
                         {/* Step 3: Time */}
                         {date && selectedCourt && (
-                            <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <section className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-sm">3</span>
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-sm font-bold text-white">3</span>
                                     Pilih Jam
                                 </h2>
                                 <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
@@ -110,8 +110,8 @@ export default function BookingPage() {
                                             className={cn(
                                                 "py-2 px-1 text-sm rounded-lg border transition-all duration-200",
                                                 selectedTime === time
-                                                    ? "bg-primary text-white border-primary shadow-md transform scale-105"
-                                                    : "bg-white text-gray-600 border-slate-200 hover:border-primary hover:text-primary"
+                                                    ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-105"
+                                                    : "bg-white text-zinc-600 border-zinc-200 hover:border-primary hover:text-primary"
                                             )}
                                         >
                                             {time}
@@ -126,27 +126,27 @@ export default function BookingPage() {
                     {/* Right Column: Summary */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-24">
-                            <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
+                            <div className="bg-white p-6 rounded-2xl shadow-lg border border-zinc-200">
                                 <h2 className="text-lg font-bold text-primary mb-6">Ringkasan Pemesanan</h2>
 
                                 <div className="space-y-4 mb-6 text-sm">
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Tanggal</span>
+                                        <span className="text-muted-foreground">Tanggal</span>
                                         <span className="font-medium text-right">
                                             {date ? format(date, "EEEE, dd MMMM yyyy", { locale: id }) : "-"}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Lapangan</span>
+                                        <span className="text-muted-foreground">Lapangan</span>
                                         <span className="font-medium text-right">
                                             {selectedCourt ? COURTS.find(c => c.id === selectedCourt)?.name : "-"}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Jam Mulai</span>
+                                        <span className="text-muted-foreground">Jam Mulai</span>
                                         <span className="font-medium text-right">{selectedTime || "-"}</span>
                                     </div>
-                                    <div className="flex justify-between pt-4 border-t border-dashed border-slate-200 text-base font-bold text-primary">
+                                    <div className="flex justify-between pt-4 border-t border-dashed border-zinc-700 text-base font-bold text-primary">
                                         <span>Total</span>
                                         <span>
                                             {selectedCourt && selectedTime
@@ -164,7 +164,7 @@ export default function BookingPage() {
                                     Konfirmasi Booking
                                 </Button>
 
-                                <p className="text-xs text-center text-gray-400 mt-4">
+                                <p className="text-xs text-center text-muted-foreground mt-4">
                                     Pembayaran dilakukan setelah konfirmasi.
                                 </p>
                             </div>

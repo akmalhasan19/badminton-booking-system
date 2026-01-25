@@ -122,8 +122,8 @@ export function SchedulingCalendar({
                                 </div>
                             </div>
 
-                            {/* Mock Events (Randomly show for demo) */}
-                            {isCurrentMonth && Math.random() > 0.85 && (
+                            {/* Mock Events (Deterministic for demo) */}
+                            {isCurrentMonth && (day.getDate() % 5 === 0) && (
                                 <div className="mt-3 space-y-1 pointe-events-none relative z-10">
                                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-100/80 px-2 py-1 rounded-md border border-emerald-200 font-bold truncate shadow-sm">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -132,7 +132,7 @@ export function SchedulingCalendar({
                                 </div>
                             )}
 
-                            {isCurrentMonth && Math.random() > 0.9 && (
+                            {isCurrentMonth && (day.getDate() % 7 === 0) && (
                                 <div className="mt-1 space-y-1 pointe-events-none relative z-10">
                                     <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-100/80 px-2 py-1 rounded-md border border-amber-200 font-bold truncate shadow-sm">
                                         <Clock className="w-3 h-3 text-amber-600" />
