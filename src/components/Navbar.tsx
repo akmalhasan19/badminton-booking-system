@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, User, LogOut, ChevronDown } from "lucide-react"
+import { Menu, X, User, LogOut, ChevronDown, Calendar, CreditCard, Bell, HelpCircle, Settings, Star, Gift } from "lucide-react"
 import { Tab } from "@/types"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser, signOut } from "@/lib/auth/actions"
@@ -191,33 +191,129 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                         <ChevronDown className="w-4 h-4" />
                                     </button>
 
-                                    {/* Dropdown */}
-                                    {showUserDropdown && (
-                                        <>
-                                            {/* Click outside to close */}
-                                            <div
-                                                className="fixed inset-0 z-40"
-                                                onClick={() => setShowUserDropdown(false)}
-                                            />
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-black rounded-xl shadow-hard-lg overflow-hidden z-50"
-                                            >
-                                                <div className="p-4 border-b-2 border-gray-100">
-                                                    <p className="font-bold text-sm text-black">{user.name}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">{user.email}</p>
-                                                </div>
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                    {/* Traveloka-style Dropdown */}
+                                    <AnimatePresence>
+                                        {showUserDropdown && (
+                                            <>
+                                                {/* Click outside to close */}
+                                                <div
+                                                    className="fixed inset-0 z-40"
+                                                    onClick={() => setShowUserDropdown(false)}
+                                                />
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                                    className="absolute right-0 top-full mt-2 w-80 bg-white border-2 border-black rounded-2xl shadow-hard-lg overflow-hidden z-50"
                                                 >
-                                                    <LogOut className="w-4 h-4" />
-                                                    Logout
-                                                </button>
-                                            </motion.div>
-                                        </>
-                                    )}
+                                                    {/* Header with gradient */}
+                                                    <div className="bg-gradient-to-r from-black via-gray-800 to-black p-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-14 h-14 bg-pastel-acid rounded-full border-3 border-white flex items-center justify-center shadow-lg">
+                                                                <User className="w-7 h-7 text-black" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-white text-lg">{user.name}</p>
+                                                                <div className="flex items-center gap-1 mt-1">
+                                                                    <Star className="w-3.5 h-3.5 text-pastel-yellow fill-pastel-yellow" />
+                                                                    <span className="text-xs text-gray-300">Smash Member</span>
+                                                                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {/* Points badge */}
+                                                        <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                                                            <div className="w-6 h-6 bg-pastel-yellow rounded-full flex items-center justify-center">
+                                                                <Gift className="w-3.5 h-3.5 text-black" />
+                                                            </div>
+                                                            <span className="text-white font-bold text-sm">0 Points</span>
+                                                            <span className="text-gray-400 text-xs ml-auto">Earn more →</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Menu Items */}
+                                                    <div className="py-2">
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/bookings'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-mint/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-mint/50 transition-colors">
+                                                                <Calendar className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Booking Saya</span>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/profile'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-lilac/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-lilac/50 transition-colors">
+                                                                <User className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Ubah Profil</span>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/payment-methods'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-pink/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-pink/50 transition-colors">
+                                                                <CreditCard className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Metode Pembayaran</span>
+                                                        </button>
+
+                                                        <div className="border-t border-gray-100 my-2" />
+
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/notifications'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-yellow/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-yellow/50 transition-colors">
+                                                                <Bell className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Notifikasi</span>
+                                                            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">3</span>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/settings'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                                                                <Settings className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Pengaturan</span>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/help'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-acid/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-acid/50 transition-colors">
+                                                                <HelpCircle className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Pusat Bantuan</span>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Logout */}
+                                                    <div className="border-t-2 border-gray-100">
+                                                        <button
+                                                            onClick={handleLogout}
+                                                            className="w-full px-5 py-4 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
+                                                        >
+                                                            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+                                                                <LogOut className="w-4.5 h-4.5 text-red-600" />
+                                                            </div>
+                                                            <span>Logout</span>
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            </>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             ) : (
                                 <button
