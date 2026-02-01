@@ -53,6 +53,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const [user, setUser] = useState<{ name: string; email: string } | null>(null)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [showUserDropdown, setShowUserDropdown] = useState(false)
+    const [showMemberDetails, setShowMemberDetails] = useState(false)
 
     // Determine current active tab
     const currentTab = activeTab || (() => {
@@ -205,7 +206,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                                                    className="absolute right-0 top-full mt-2 w-80 bg-white border-2 border-black rounded-2xl shadow-hard-lg overflow-hidden z-50"
+                                                    className="absolute right-0 top-full mt-2 w-80 bg-white border-2 border-black rounded-2xl shadow-hard-lg overflow-y-auto max-h-[80vh] overscroll-contain z-50"
                                                 >
                                                     {/* Header with gradient */}
                                                     <div className="bg-gradient-to-r from-black via-gray-800 to-black p-5">
@@ -215,15 +216,67 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             </div>
                                                             <div className="flex-1">
                                                                 <p className="font-bold text-white text-lg">{user.name}</p>
-                                                                <div className="flex items-center gap-1 mt-1">
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); setShowMemberDetails(!showMemberDetails); }}
+                                                                    className="flex items-center gap-1 mt-1 hover:bg-white/10 px-2 py-0.5 rounded transition-colors -ml-2 cursor-pointer"
+                                                                >
                                                                     <Star className="w-3.5 h-3.5 text-pastel-yellow fill-pastel-yellow" />
                                                                     <span className="text-xs text-gray-300">Smash Member</span>
-                                                                    <ChevronDown className="w-3 h-3 text-gray-400" />
-                                                                </div>
+                                                                    <motion.div
+                                                                        animate={{ rotate: showMemberDetails ? 180 : 0 }}
+                                                                        transition={{ duration: 0.2 }}
+                                                                    >
+                                                                        <ChevronDown className="w-3 h-3 text-gray-400" />
+                                                                    </motion.div>
+                                                                </button>
                                                             </div>
                                                         </div>
+
+                                                        {/* Member Details Expandable Section */}
+                                                        <AnimatePresence>
+                                                            {showMemberDetails && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="mt-4 pt-4 border-t border-gray-700">
+                                                                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                                                            <span>Bronze</span>
+                                                                            <span>Silver</span>
+                                                                        </div>
+                                                                        <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                                                                            <motion.div
+                                                                                initial={{ width: 0 }}
+                                                                                animate={{ width: "20%" }}
+                                                                                transition={{ delay: 0.2, duration: 0.5 }}
+                                                                                className="h-full bg-pastel-yellow"
+                                                                            />
+                                                                        </div>
+                                                                        <p className="text-[10px] text-gray-400 mt-1 text-right">200 / 1000 XP to upgrade</p>
+
+                                                                        <div className="mt-3 space-y-2">
+                                                                            <p className="text-xs font-bold text-white">Your Benefits:</p>
+                                                                            <ul className="text-[10px] text-gray-300 space-y-1">
+                                                                                <li className="flex items-center gap-1.5">
+                                                                                    <div className="w-1 h-1 rounded-full bg-pastel-mint" />
+                                                                                    Priority Booking
+                                                                                </li>
+                                                                                <li className="flex items-center gap-1.5">
+                                                                                    <div className="w-1 h-1 rounded-full bg-pastel-mint" />
+                                                                                    Earn 1x Points
+                                                                                </li>
+                                                                            </ul>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+
                                                         {/* Points badge */}
-                                                        <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                                                        <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 cursor-pointer hover:bg-white/20 transition-colors">
                                                             <div className="w-6 h-6 bg-pastel-yellow rounded-full flex items-center justify-center">
                                                                 <Gift className="w-3.5 h-3.5 text-black" />
                                                             </div>
