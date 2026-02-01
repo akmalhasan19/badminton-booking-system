@@ -6,11 +6,11 @@ import { Menu, X, User, LogOut, ChevronDown } from "lucide-react"
 import { Tab } from "@/types"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser, signOut } from "@/lib/auth/actions"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 interface NavbarProps {
-    activeTab: Tab;
-    setActiveTab: (tab: Tab) => void;
+    activeTab?: Tab;
+    setActiveTab?: (tab: Tab) => void;
 }
 
 // Animation variants
@@ -33,15 +33,16 @@ const itemVariants = {
 };
 
 const menuItems = [
-    { tab: Tab.HOME, label: "HOME", color: "pastel-acid" },
-    { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint" },
-    { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink" }
+    { tab: Tab.HOME, label: "HOME", color: "pastel-acid", path: "/" },
+    { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint", path: "/booking" },
+    { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink", path: "/shop" }
 ];
 
 import { AuthModal } from "@/components/AuthModal"
 
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const router = useRouter()
+    const pathname = usePathname()
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [showAuthModal, setShowAuthModal] = useState(false)
@@ -52,6 +53,24 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const [user, setUser] = useState<{ name: string; email: string } | null>(null)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [showUserDropdown, setShowUserDropdown] = useState(false)
+
+    // Determine current active tab
+    const currentTab = activeTab || (() => {
+        if (pathname === "/") return Tab.HOME
+        if (pathname.startsWith("/booking")) return Tab.BOOK
+        if (pathname.startsWith("/shop")) return Tab.SHOP
+        return Tab.HOME
+    })()
+
+    // Handle tab click
+    const handleTabClick = (tab: Tab, path: string) => {
+        if (setActiveTab) {
+            setActiveTab(tab)
+        } else {
+            router.push(path)
+        }
+        setMobileMenuOpen(false)
+    }
 
     // Check auth on mount
     useEffect(() => {
@@ -74,7 +93,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     }, [])
 
     useEffect(() => {
-        const activeIndex = menuItems.findIndex(item => item.tab === activeTab)
+        const activeIndex = menuItems.findIndex(item => item.tab === currentTab)
         const element = tabsRef.current[activeIndex]
 
         if (element) {
@@ -85,7 +104,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             })
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab])
+    }, [currentTab])
 
     const getBackgroundColor = (tab: Tab) => {
         switch (tab) {
@@ -115,7 +134,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
                     <div
                         className="flex items-center space-x-2 cursor-pointer group"
-                        onClick={() => setActiveTab(Tab.HOME)}
+                        onClick={() => handleTabClick(Tab.HOME, "/")}
                     >
                         <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-110">
                             <SmashLogo className="w-full h-full bg-black" />
@@ -127,7 +146,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                     <div className="hidden md:flex items-center space-x-2 bg-white p-1 rounded-xl border-2 border-black shadow-hard-sm relative">
                         {/* Sliding Highlight */}
                         <motion.div
-                            className={`absolute top-1 bottom-1 rounded-lg border-2 border-black z-0 ${getBackgroundColor(activeTab)}`}
+                            className={`absolute top-1 bottom-1 rounded-lg border-2 border-black z-0 ${getBackgroundColor(currentTab)}`}
                             initial={false}
                             animate={{
                                 left: highlightStyle.left,
@@ -141,8 +160,8 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             <button
                                 key={item.tab}
                                 ref={el => { tabsRef.current[index] = el }}
-                                onClick={() => setActiveTab(item.tab)}
-                                className={`relative px-6 py-2 rounded-lg font-bold text-sm transition-colors z-10 ${activeTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
+                                onClick={() => handleTabClick(item.tab, item.path)}
+                                className={`relative px-6 py-2 rounded-lg font-bold text-sm transition-colors z-10 ${currentTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
                             >
                                 {item.label}
                             </button>
@@ -151,54 +170,63 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
                     {/* User Account / Login Button */}
                     <div className="hidden md:block relative">
-                        {isLoggedIn && user ? (
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowUserDropdown(!showUserDropdown)}
-                                    className="bg-white text-black px-4 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
-                                >
-                                    <div className="w-8 h-8 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center">
-                                        <User className="w-4 h-4" />
-                                    </div>
-                                    <span>{user.name}</span>
-                                    <ChevronDown className="w-4 h-4" />
-                                </button>
-
-                                {/* Dropdown */}
-                                {showUserDropdown && (
-                                    <>
-                                        {/* Click outside to close */}
-                                        <div
-                                            className="fixed inset-0 z-40"
-                                            onClick={() => setShowUserDropdown(false)}
-                                        />
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-black rounded-xl shadow-hard-lg overflow-hidden z-50"
-                                        >
-                                            <div className="p-4 border-b-2 border-gray-100">
-                                                <p className="font-bold text-sm text-black">{user.name}</p>
-                                                <p className="text-xs text-gray-500 mt-1">{user.email}</p>
-                                            </div>
-                                            <button
-                                                onClick={handleLogout}
-                                                className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                                            >
-                                                <LogOut className="w-4 h-4" />
-                                                Logout
-                                            </button>
-                                        </motion.div>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
+                        <div className="flex items-center gap-4">
                             <button
-                                onClick={() => setShowAuthModal(true)}
-                                className="bg-black text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm">
-                                Login
+                                onClick={() => router.push('/partner/register')}
+                                className="bg-pastel-yellow text-black px-6 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                            >
+                                Join Us
                             </button>
-                        )}
+
+                            {isLoggedIn && user ? (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowUserDropdown(!showUserDropdown)}
+                                        className="bg-white text-black px-4 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
+                                    >
+                                        <div className="w-8 h-8 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center">
+                                            <User className="w-4 h-4" />
+                                        </div>
+                                        <span>{user.name}</span>
+                                        <ChevronDown className="w-4 h-4" />
+                                    </button>
+
+                                    {/* Dropdown */}
+                                    {showUserDropdown && (
+                                        <>
+                                            {/* Click outside to close */}
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setShowUserDropdown(false)}
+                                            />
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-black rounded-xl shadow-hard-lg overflow-hidden z-50"
+                                            >
+                                                <div className="p-4 border-b-2 border-gray-100">
+                                                    <p className="font-bold text-sm text-black">{user.name}</p>
+                                                    <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                                                </div>
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                    Logout
+                                                </button>
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowAuthModal(true)}
+                                    className="bg-black text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm">
+                                    Login
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -233,7 +261,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 <motion.button
                                     key={item.tab}
                                     variants={itemVariants}
-                                    onClick={() => { setActiveTab(item.tab); setMobileMenuOpen(false); }}
+                                    onClick={() => handleTabClick(item.tab, item.path)}
                                     className={`text-4xl font-bold text-black hover:text-${item.color} transition-colors`}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -241,6 +269,13 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                     {item.label}
                                 </motion.button>
                             ))}
+                            <motion.button
+                                variants={itemVariants}
+                                onClick={() => { setMobileMenuOpen(false); router.push('/partner/register'); }}
+                                className="text-4xl font-bold text-pastel-yellow hover:text-yellow-600 transition-colors"
+                            >
+                                Join Us
+                            </motion.button>
                             <motion.button
                                 variants={itemVariants}
                                 onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
