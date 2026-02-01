@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { ArrowRight, Building2, User, Mail, Phone, Hash, CheckCircle, Globe, Layout, Users } from "lucide-react"
 
 import Image from "next/image"
+import { PartnerOnboarding } from "@/components/PartnerOnboarding"
 
 const AnimatedBackground = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-gray-50">
@@ -128,6 +129,7 @@ const AnimatedBackground = () => (
 )
 
 export default function PartnerRegisterPage() {
+    const [showOnboarding, setShowOnboarding] = useState(true)
     const [formData, setFormData] = useState({
         ownerName: "",
         email: "",
@@ -156,6 +158,10 @@ export default function PartnerRegisterPage() {
         console.log("Partner Registration Data:", formData)
         setIsSubmitted(true)
         setIsSubmitting(false)
+    }
+
+    if (showOnboarding) {
+        return <PartnerOnboarding onComplete={() => setShowOnboarding(false)} />
     }
 
     if (isSubmitted) {
@@ -204,7 +210,7 @@ export default function PartnerRegisterPage() {
                         transition={{ delay: 0.1 }}
                         className="text-4xl md:text-6xl font-display font-bold mb-4"
                     >
-                        Grow Your Sports Venue <br className="hidden md:block" /> Business with <span className="text-[#7E4EAC]">Smash.</span>
+                        Grow Your Sports Venue <br className="hidden md:block" /> Business with <span className="text-pastel-lilac" style={{ WebkitTextStroke: '2px black', paintOrder: 'stroke fill' }}>Smash.</span>
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
