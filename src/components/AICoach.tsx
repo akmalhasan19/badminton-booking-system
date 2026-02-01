@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { X, Send, Loader2, Bot } from "lucide-react"
 import { Message } from "@/types"
 import { SYSTEM_INSTRUCTION } from "@/constants"
+import { chatWithAI } from "@/lib/ai/actions"
 
 export function AICoach() {
     const [isOpen, setIsOpen] = useState(false)
@@ -29,18 +30,20 @@ export function AICoach() {
         setIsLoading(true)
 
         try {
-            // Placeholder for AI integration
-            // In production, this would call Google AI API
-            setTimeout(() => {
+            const result = await chatWithAI(userMessage)
+
+            if (result.success && result.response) {
                 setMessages(prev => [...prev, {
                     role: 'model',
-                    text: "Oops! My brain isn't connected yet (Missing AI API configuration). But I'd love to help! Try the BOOK tab for court reservations or SHOP for gear! 🎾"
+                    text: result.response
                 }])
-                setIsLoading(false)
-            }, 1000)
+            } else {
+                setMessages(prev => [...prev, { role: 'model', text: "Yikes, something went wrong. Let's try again later! 🙈" }])
+            }
         } catch (error) {
             console.error("AI Error:", error)
             setMessages(prev => [...prev, { role: 'model', text: "Yikes, something went wrong. Let's try again later! 🙈" }])
+        } finally {
             setIsLoading(false)
         }
     }

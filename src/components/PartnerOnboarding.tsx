@@ -6,7 +6,7 @@ import { ArrowRight, Check, Sparkles, TrendingUp, Calendar, CreditCard, Users, T
 import Image from "next/image"
 
 interface PartnerOnboardingProps {
-    onComplete: () => void
+    onComplete: (goals: string[]) => void
 }
 
 const GOALS = [
@@ -35,7 +35,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
         if (step < 2) {
             setStep(step + 1)
         } else {
-            onComplete()
+            onComplete(selectedGoals)
         }
     }
 
@@ -175,7 +175,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                         <div className="flex items-center gap-4">
                             {step < 2 && (
                                 <button
-                                    onClick={onComplete}
+                                    onClick={() => onComplete([])}
                                     className="text-gray-500 font-medium text-sm hover:text-black transition-colors"
                                 >
                                     Skip

@@ -138,11 +138,17 @@ export default function PartnerRegisterPage() {
         socialMedia: "",
         website: "",
         flooringMaterial: "",
-        routineClubs: ""
+        routineClubs: "",
+        goals: [] as string[]
     })
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
+
+    const handleOnboardingComplete = (selectedGoals: string[]) => {
+        setFormData(prev => ({ ...prev, goals: selectedGoals }))
+        setShowOnboarding(false)
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
@@ -170,7 +176,7 @@ export default function PartnerRegisterPage() {
     }
 
     if (showOnboarding) {
-        return <PartnerOnboarding onComplete={() => setShowOnboarding(false)} />
+        return <PartnerOnboarding onComplete={handleOnboardingComplete} />
     }
 
     if (isSubmitted) {

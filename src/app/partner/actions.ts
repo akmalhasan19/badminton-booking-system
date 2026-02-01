@@ -14,6 +14,7 @@ export type PartnerApplicationData = {
     website?: string
     flooringMaterial: string
     routineClubs: string
+    goals: string[]
 }
 
 export async function submitPartnerApplication(data: PartnerApplicationData) {
@@ -26,6 +27,7 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
             website: data.website || null,
             flooring_material: data.flooringMaterial,
             routine_clubs: data.routineClubs,
+            goals: data.goals,
             status: 'pending'
         })
 
