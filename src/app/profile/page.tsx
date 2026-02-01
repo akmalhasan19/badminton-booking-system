@@ -105,7 +105,7 @@ export default function ProfilePage() {
     ]
 
     return (
-        <main className="min-h-screen bg-white pt-24 pb-12 relative overflow-hidden">
+        <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 w-full h-full pointer-events-none"
