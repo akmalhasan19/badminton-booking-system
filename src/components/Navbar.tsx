@@ -50,7 +50,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const tabsRef = useRef<(HTMLButtonElement | null)[]>([])
 
     // User state
-    const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+    const [user, setUser] = useState<{ name: string; email: string; avatar_url?: string } | null>(null)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [showUserDropdown, setShowUserDropdown] = useState(false)
     const [showMemberDetails, setShowMemberDetails] = useState(false)
@@ -79,10 +79,22 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             const currentUser = await getCurrentUser();
             if (currentUser) {
                 setIsLoggedIn(true);
-                setUser({ name: currentUser.name, email: currentUser.email });
+                setUser({
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    avatar_url: currentUser.avatar_url
+                });
             }
         }
         checkAuth();
+
+        // Listen for user updates (e.g. avatar upload)
+        const handleUserUpdate = () => {
+            checkAuth();
+        };
+
+        window.addEventListener('user_updated', handleUserUpdate);
+        return () => window.removeEventListener('user_updated', handleUserUpdate);
     }, []);
 
     useEffect(() => {
@@ -185,8 +197,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                         onClick={() => setShowUserDropdown(!showUserDropdown)}
                                         className="bg-white text-black px-4 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
                                     >
-                                        <div className="w-8 h-8 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center">
-                                            <User className="w-4 h-4" />
+                                        <div className="w-8 h-8 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
+                                            {user.avatar_url ? (
+                                                <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User className="w-4 h-4" />
+                                            )}
                                         </div>
                                         <span>{user.name}</span>
                                         <ChevronDown className="w-4 h-4" />
@@ -211,8 +227,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                     {/* Header with gradient */}
                                                     <div className="bg-gradient-to-r from-black via-gray-800 to-black p-5">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-14 h-14 bg-pastel-acid rounded-full border-3 border-white flex items-center justify-center shadow-lg">
-                                                                <User className="w-7 h-7 text-black" />
+                                                            <div className="w-14 h-14 bg-pastel-acid rounded-full border-3 border-white flex items-center justify-center shadow-lg overflow-hidden">
+                                                                {user.avatar_url ? (
+                                                                    <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <User className="w-7 h-7 text-black" />
+                                                                )}
                                                             </div>
                                                             <div className="flex-1">
                                                                 <p className="font-bold text-white text-lg">{user.name}</p>
@@ -433,8 +453,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                         variants={itemVariants}
                                         className="flex flex-col items-center gap-2 py-4 px-6 bg-gray-50 rounded-xl border-2 border-black"
                                     >
-                                        <div className="w-16 h-16 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center">
-                                            <User className="w-8 h-8" />
+                                        <div className="w-16 h-16 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
+                                            {user.avatar_url ? (
+                                                <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User className="w-8 h-8" />
+                                            )}
                                         </div>
                                         <span className="text-lg font-bold text-black">{user.name}</span>
                                         <span className="text-sm text-gray-500">{user.email}</span>
@@ -470,7 +494,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 onLoginSuccess={(userData) => {
                     console.log("Logged in:", userData);
                     setIsLoggedIn(true);
-                    setUser(userData);
+                    setIsLoggedIn(true);
+                    setUser({
+                        name: userData.name,
+                        email: userData.email,
+                        avatar_url: userData.avatar_url
+                    });
                     setShowAuthModal(false);
                 }}
             />

@@ -5,8 +5,8 @@ import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { SmashLogo } from "@/components/SmashLogo"
 import { ImageCropper } from "@/components/ImageCropper"
-import { uploadAvatar } from "@/lib/auth/actions"
-import { useState, useRef } from "react"
+import { uploadAvatar, getCurrentUser } from "@/lib/auth/actions"
+import { useState, useRef, useEffect } from "react"
 import { Toast, ToastType } from "@/components/ui/Toast"
 
 export default function ProfilePage() {
@@ -28,6 +28,17 @@ export default function ProfilePage() {
     const showToast = (message: string, type: ToastType = 'success') => {
         setToast({ message, type, isVisible: true })
     }
+
+    // Fetch user data on mount
+    useEffect(() => {
+        const fetchUser = async () => {
+            const user = await getCurrentUser()
+            if (user?.avatar_url) {
+                setAvatarUrl(user.avatar_url)
+            }
+        }
+        fetchUser()
+    }, [])
 
     const handleAvatarClick = () => {
         fileInputRef.current?.click()
@@ -70,6 +81,8 @@ export default function ProfilePage() {
                 // Success - backend updated
                 console.log("Avatar updated:", result.avatarUrl)
                 showToast("Foto profil berhasil diperbarui", 'success')
+                // Dispatch event to update Navbar
+                window.dispatchEvent(new Event('user_updated'))
                 // setAvatarUrl(result.avatarUrl) // Server action revalidates path, so this might be redundant but safe
             }
         } catch (error) {

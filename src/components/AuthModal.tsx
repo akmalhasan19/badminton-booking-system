@@ -8,7 +8,7 @@ import { signIn, signUp, getGoogleAuthUrl, getCurrentUser } from "@/lib/auth/act
 interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onLoginSuccess: (user: { name: string; email: string }) => void;
+    onLoginSuccess: (user: { name: string; email: string; avatar_url?: string }) => void;
 }
 
 export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
@@ -99,7 +99,8 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
             if (currentUser) {
                 onLoginSuccess({
                     name: currentUser.name,
-                    email: currentUser.email
+                    email: currentUser.email,
+                    avatar_url: currentUser.avatar_url
                 });
             }
             onClose();
