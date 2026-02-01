@@ -141,7 +141,37 @@ export async function getGoogleAuthUrl() {
 /**
  * Upload user avatar
  */
+/**
+ * Upload user avatar
+ */
 import sharp from 'sharp'
+
+// Security: Magic Bytes Constants
+const MAGIC_BYTES = {
+    jpg: ['ffd8ff'],
+    png: ['89504e47'],
+    gif: ['47494638'],
+    webp: ['52494646', '57454250'], // RIFF ... WEBP (Partial check logic needed often, but specific header usually works)
+}
+
+async function validateFileSignature(buffer: Buffer, claimedType: string): Promise<boolean> {
+    const hex = buffer.toString('hex', 0, 12).toLowerCase()
+
+    // Normalize claimed type
+    const ext = claimedType.toLowerCase().replace('image/', '').replace('jpeg', 'jpg')
+
+    if (ext === 'jpg' && hex.startsWith('ffd8ff')) return true
+    if (ext === 'png' && hex.startsWith('89504e47')) return true
+    if (ext === 'gif' && hex.startsWith('47494638')) return true
+    if (ext === 'webp') {
+        // WebP is RIFF....WEBP. 
+        // Hex: 52 49 46 46 (4 bytes) ... (4 bytes size) ... 57 45 42 50 (4 bytes id)
+        // Check RIFF and WEBP
+        return hex.startsWith('52494646') && hex.includes('57454250')
+    }
+
+    return false
+}
 
 export async function uploadAvatar(formData: FormData) {
     const supabase = await createClient()
@@ -151,13 +181,21 @@ export async function uploadAvatar(formData: FormData) {
         return { error: 'No file provided' }
     }
 
-    // 1. Security: Validate File Size (Max 2MB)
+    // 1. Security: Validate Extension (Whitelist)
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || ''
+
+    if (!allowedExtensions.includes(fileExt)) {
+        return { error: 'Invalid file extension. Allowed: .jpg, .jpeg, .png, .gif, .webp' }
+    }
+
+    // 2. Security: Validate File Size (Max 2MB)
     const MAX_SIZE = 2 * 1024 * 1024 // 2MB
     if (file.size > MAX_SIZE) {
         return { error: 'File size too large. Max 2MB allowed.' }
     }
 
-    // 2. Security: Validate MIME Type
+    // 3. Security: Validate MIME Type
     if (!file.type.startsWith('image/')) {
         return { error: 'Invalid file type. Only images are allowed.' }
     }
@@ -170,17 +208,24 @@ export async function uploadAvatar(formData: FormData) {
 
         const buffer = Buffer.from(await file.arrayBuffer())
 
-        // 3. Conversion: Convert to WebP using Sharp
+        // 4. Security: Magic Bytes / File Signature Validation
+        const isValidSignature = await validateFileSignature(buffer, file.type)
+        if (!isValidSignature) {
+            console.error(`Invalid magic bytes for user ${user.id}. Type: ${file.type}`)
+            return { error: 'File content does not match its extension. Possible malicious file.' }
+        }
+
+        // 5. Conversion: Convert to WebP using Sharp (Also acts as sanity check)
         const optimizedBuffer = await sharp(buffer)
             .resize({ width: 500, height: 500, fit: 'cover' }) // Resize to reasonable avatar size
             .webp({ quality: 80 })
             .toBuffer()
 
-        // Generate a random "secure" filename
+        // 6. Security: Rename File (Generate random secure filename)
         const fileName = `${crypto.randomUUID()}.webp`
         const filePath = `${user.id}/${fileName}`
 
-        // 4. Upload to Supabase Storage
+        // 7. Upload to Supabase Storage (Stored Outside Web Root by design)
         const { error: uploadError } = await supabase.storage
             .from('user-profile-picture')
             .upload(filePath, optimizedBuffer, {
@@ -193,7 +238,7 @@ export async function uploadAvatar(formData: FormData) {
             return { error: `Failed to upload image: ${uploadError.message}` }
         }
 
-        // 5. Cleanup: Remove old files in the user's folder
+        // 8. Cleanup: Remove old files in the user's folder
         const { data: listData } = await supabase.storage
             .from('user-profile-picture')
             .list(user.id)
@@ -210,8 +255,7 @@ export async function uploadAvatar(formData: FormData) {
             }
         }
 
-        // 6. Update User Profile
-        // Add timestamp to force cache busting (though filename change handles this mostly, sometimes convenient)
+        // 9. Update User Profile
         const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/user-profile-picture/${filePath}`
 
         const { error: updateError } = await supabase
@@ -229,6 +273,7 @@ export async function uploadAvatar(formData: FormData) {
 
     } catch (error) {
         console.error('Avatar Upload Error:', error)
+        // Generic error to prevent information leakage
         return { error: 'Internal server error during upload' }
     }
 }

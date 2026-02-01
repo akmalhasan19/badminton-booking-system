@@ -369,12 +369,18 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
 
-                                    <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-xl flex gap-3 items-start">
-                                        <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                                    <div className="bg-yellow-300 border-2 border-black p-5 rounded-xl flex gap-4 items-start shadow-hard relative overflow-hidden">
+                                        {/* Decorative background element */}
+                                        <div className="absolute -right-4 -top-4 w-12 h-12 bg-white/30 rounded-full blur-xl pointer-events-none"></div>
+
+                                        <div className="bg-black/5 p-2 rounded-lg border-2 border-black/10 shrink-0">
+                                            <AlertTriangle className="w-5 h-5 text-black" />
+                                        </div>
                                         <div>
-                                            <h4 className="font-bold text-yellow-800 text-sm">Tips Keamanan</h4>
-                                            <p className="text-xs text-yellow-700 mt-1">
-                                                Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk password yang lebih kuat. Jangan gunakan tanggal lahir atau informasi pribadi yang mudah ditebak.
+                                            <h4 className="font-display font-bold text-black text-base">Tips Keamanan</h4>
+                                            <p className="text-sm text-black/80 font-medium mt-1 leading-relaxed">
+                                                Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk password yang lebih kuat.
+                                                Jangan gunakan tanggal lahir atau informasi pribadi yang mudah ditebak.
                                             </p>
                                         </div>
                                     </div>
