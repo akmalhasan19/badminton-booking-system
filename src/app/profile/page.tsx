@@ -1,11 +1,14 @@
 "use client"
 
-import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift } from "lucide-react"
+import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift, Lock, Shield, AlertTriangle } from "lucide-react"
 import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
+import { SmashLogo } from "@/components/SmashLogo"
+import { useState } from "react"
 
 export default function ProfilePage() {
     const router = useRouter()
+    const [activeTab, setActiveTab] = useState<'info' | 'security'>('info')
 
     // Sidebar menu items
     const menuItems = [
@@ -17,8 +20,28 @@ export default function ProfilePage() {
     ]
 
     return (
-        <main className="min-h-screen bg-white pt-24 pb-12">
-            <div className="max-w-7xl mx-auto px-4">
+        <main className="min-h-screen bg-white pt-24 pb-12 relative overflow-hidden">
+            {/* Grid Background */}
+            <div
+                className="absolute inset-0 z-0 w-full h-full pointer-events-none"
+                style={{
+                    backgroundImage: 'linear-gradient(to right, rgba(160, 82, 45, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(160, 82, 45, 0.15) 1px, transparent 1px)',
+                    backgroundSize: '100px 100px'
+                }}
+            />
+
+            {/* Logo Link - Absolute Top Right */}
+            <div
+                onClick={() => router.push('/')}
+                className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+            >
+                <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
+                    <SmashLogo className="w-full h-full bg-black" />
+                </div>
+                <span className="text-xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
 
                     {/* Left Sidebar */}
@@ -72,7 +95,6 @@ export default function ProfilePage() {
                                     {item.label}
                                 </button>
                             ))}
-                            {/* Active Indicator for specific page could go here if this was a layout */}
                         </div>
 
                         <button className="w-full flex items-center justify-center gap-2 text-red-600 font-bold py-3 hover:bg-red-50 rounded-xl transition-colors">
@@ -87,118 +109,208 @@ export default function ProfilePage() {
 
                         {/* Tabs */}
                         <div className="flex gap-8 border-b-2 border-gray-100">
-                            <button className="pb-4 border-b-4 border-pastel-acid font-bold text-black transition-colors">
+                            <button
+                                onClick={() => setActiveTab('info')}
+                                className={`pb-4 border-b-4 font-bold transition-colors ${activeTab === 'info' ? 'border-pastel-acid text-black' : 'border-transparent text-gray-400 hover:text-black'}`}
+                            >
                                 Informasi Akun
                             </button>
-                            <button className="pb-4 border-b-4 border-transparent text-gray-400 hover:text-black font-bold transition-colors">
+                            <button
+                                onClick={() => setActiveTab('security')}
+                                className={`pb-4 border-b-4 font-bold transition-colors ${activeTab === 'security' ? 'border-pastel-acid text-black' : 'border-transparent text-gray-400 hover:text-black'}`}
+                            >
                                 Password & Keamanan
                             </button>
                         </div>
 
-                        {/* Main Form Section */}
-                        <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
-                            <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Data Pribadi</h2>
+                        {/* Main Content Area */}
+                        {activeTab === 'info' ? (
+                            <>
+                                <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
+                                    <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Data Pribadi</h2>
 
-                            <form className="space-y-6">
-                                {/* Full Name */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-500">Nama Lengkap</label>
-                                    <input
-                                        type="text"
-                                        defaultValue="Akmal Hasan"
-                                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
-                                    />
-                                    <p className="text-xs text-gray-400">Nama lengkap Anda akan disingkat untuk nama profil.</p>
+                                    <form className="space-y-6">
+                                        {/* Full Name */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-500">Nama Lengkap</label>
+                                            <input
+                                                type="text"
+                                                defaultValue="Akmal Hasan"
+                                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                            />
+                                            <p className="text-xs text-gray-400">Nama lengkap Anda akan disingkat untuk nama profil.</p>
+                                        </div>
+
+                                        {/* Gender & Birth Date Row */}
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-500">Kelamin</label>
+                                                <div className="relative">
+                                                    <select defaultValue="Laki-laki" className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer">
+                                                        <option>Laki-laki</option>
+                                                        <option>Perempuan</option>
+                                                    </select>
+                                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 w-4 h-4 text-gray-400 pointer-events-none" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-500">Tanggal Lahir</label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="relative">
+                                                        <select defaultValue="19" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
+                                                            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                                                                <option key={d} value={d}>{d}</option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
+                                                    </div>
+                                                    <div className="relative col-span-1">
+                                                        <select defaultValue="Mar" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
+                                                            {["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"].map((m) => (
+                                                                <option key={m} value={m}>{m}</option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
+                                                    </div>
+                                                    <div className="relative">
+                                                        <select defaultValue="2003" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
+                                                            {Array.from({ length: 50 }, (_, i) => 2010 - i).map(y => (
+                                                                <option key={y} value={y}>{y}</option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* City */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-500">Kota Tempat Tinggal</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Kota Tempat Tinggal"
+                                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                            />
+                                        </div>
+
+                                        {/* Submit Buttons */}
+                                        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                                            <button type="button" className="px-6 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                                                Batal
+                                            </button>
+                                            <button type="submit" className="px-8 py-2.5 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                                                Simpan
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
 
-                                {/* Gender & Birth Date Row */}
-                                <div className="grid md:grid-cols-2 gap-6">
+                                {/* Contact Info Section */}
+                                <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
+                                    <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Kontak</h2>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-500">Email</label>
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
+                                                <Mail className="w-5 h-5 text-gray-400" />
+                                                <span className="font-medium">akmal@example.com</span>
+                                                <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Verified</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-500">Nomor Ponsel</label>
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
+                                                <Phone className="w-5 h-5 text-gray-400" />
+                                                <span className="font-medium">+62 812 3456 7890</span>
+                                                <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Verified</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
+                                <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Ubah Password</h2>
+
+                                <form className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-500">Kelamin</label>
+                                        <label className="text-sm font-bold text-gray-500">Password Saat Ini</label>
                                         <div className="relative">
-                                            <select defaultValue="Laki-laki" className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer">
-                                                <option>Laki-laki</option>
-                                                <option>Perempuan</option>
-                                            </select>
-                                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 w-4 h-4 text-gray-400 pointer-events-none" />
+                                            <input
+                                                type="password"
+                                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                placeholder="Masukkan password lama"
+                                            />
+                                            <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-500">Tanggal Lahir</label>
-                                        <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-500">Password Baru</label>
                                             <div className="relative">
-                                                <select defaultValue="19" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
-                                                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                                                        <option key={d} value={d}>{d}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
+                                                <input
+                                                    type="password"
+                                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                    placeholder="Minimal 8 karakter"
+                                                />
+                                                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             </div>
-                                            <div className="relative col-span-1">
-                                                <select defaultValue="Mar" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
-                                                    {["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"].map((m) => (
-                                                        <option key={m} value={m}>{m}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
-                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-500">Konfirmasi Password</label>
                                             <div className="relative">
-                                                <select defaultValue="2003" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
-                                                    {Array.from({ length: 50 }, (_, i) => 2010 - i).map(y => (
-                                                        <option key={y} value={y}>{y}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
+                                                <input
+                                                    type="password"
+                                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                    placeholder="Ulangi password baru"
+                                                />
+                                                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* City */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-500">Kota Tempat Tinggal</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Kota Tempat Tinggal"
-                                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
-                                    />
-                                </div>
-
-                                {/* Submit Buttons */}
-                                <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                                    <button type="button" className="px-6 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-                                        Batal
-                                    </button>
-                                    <button type="submit" className="px-8 py-2.5 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                                        Simpan
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        {/* Contact Info Section */}
-                        <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
-                            <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Kontak</h2>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-500">Email</label>
-                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                                        <Mail className="w-5 h-5 text-gray-400" />
-                                        <span className="font-medium">akmal@example.com</span>
-                                        <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Verified</span>
+                                    <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-xl flex gap-3 items-start">
+                                        <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <h4 className="font-bold text-yellow-800 text-sm">Tips Keamanan</h4>
+                                            <p className="text-xs text-yellow-700 mt-1">
+                                                Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk password yang lebih kuat. Jangan gunakan tanggal lahir atau informasi pribadi yang mudah ditebak.
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-500">Nomor Ponsel</label>
-                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                                        <Phone className="w-5 h-5 text-gray-400" />
-                                        <span className="font-medium">+62 812 3456 7890</span>
-                                        <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Verified</span>
+
+                                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                                        <button type="button" className="px-6 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                                            Batal
+                                        </button>
+                                        <button type="submit" className="px-8 py-2.5 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                                            Ubah Password
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div className="mt-12 pt-8 border-t-2 border-gray-100">
+                                    <h2 className="font-bold text-lg mb-6">Device Management</h2>
+                                    <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 flex justify-between items-center group hover:border-black transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-white rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                                                <Shield className="w-5 h-5 text-green-500" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold">Chrome on Windows 11</h4>
+                                                <p className="text-xs text-gray-500">Device ini • Jakarta, Indonesia</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full border border-green-200">
+                                            Aktif Sekarang
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
