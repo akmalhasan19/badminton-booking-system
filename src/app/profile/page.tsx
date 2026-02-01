@@ -4,11 +4,70 @@ import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings
 import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { SmashLogo } from "@/components/SmashLogo"
-import { useState } from "react"
+import { ImageCropper } from "@/components/ImageCropper"
+import { uploadAvatar } from "@/lib/auth/actions"
+import { useState, useRef } from "react"
 
 export default function ProfilePage() {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'info' | 'security'>('info')
+
+    // Avatar state
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+    const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = () => {
+                setImageToCrop(reader.result as string)
+            }
+            reader.readAsDataURL(file)
+        }
+        // Reset file input so same file can be selected again
+        e.target.value = ''
+    }
+
+    const handleCropComplete = async (croppedImageUrl: string) => {
+        // Optimistic update
+        setAvatarUrl(croppedImageUrl)
+        setImageToCrop(null)
+
+        try {
+            // Convert Data URL to Blob
+            const response = await fetch(croppedImageUrl)
+            const blob = await response.blob()
+            const file = new File([blob], "avatar.webp", { type: "image/webp" })
+
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const result = await uploadAvatar(formData)
+
+            if (result.error) {
+                console.error("Upload failed:", result.error)
+                alert(`Upload failed: ${result.error}`)
+                // Revert optimistic update if needed or just leave it for session
+            } else if (result.avatarUrl) {
+                // Success - backend updated
+                console.log("Avatar updated:", result.avatarUrl)
+                // setAvatarUrl(result.avatarUrl) // Server action revalidates path, so this might be redundant but safe
+            }
+        } catch (error) {
+            console.error("Error uploading avatar:", error)
+            alert("An error occurred while uploading. Please try again.")
+        }
+    }
+
+    const handleCropCancel = () => {
+        setImageToCrop(null)
+    }
 
     // Sidebar menu items
     const menuItems = [
@@ -48,9 +107,21 @@ export default function ProfilePage() {
                     <div className="space-y-6">
                         {/* Profile Summary Card */}
                         <div className="bg-white border-2 border-black rounded-xl p-6 shadow-hard text-center flex flex-col items-center">
-                            <div className="relative mb-4 group cursor-pointer">
+                            {/* Hidden file input */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+                            <div onClick={handleAvatarClick} className="relative mb-4 group cursor-pointer">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
-                                    <span className="font-display font-bold text-2xl text-gray-400">AH</span>
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="font-display font-bold text-2xl text-gray-400">AH</span>
+                                    )}
                                 </div>
                                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Camera className="w-6 h-6 text-white" />
@@ -314,6 +385,15 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Image Cropper Modal */}
+            {imageToCrop && (
+                <ImageCropper
+                    imageSrc={imageToCrop}
+                    onCropComplete={handleCropComplete}
+                    onCancel={handleCropCancel}
+                />
+            )}
         </main>
     )
 }

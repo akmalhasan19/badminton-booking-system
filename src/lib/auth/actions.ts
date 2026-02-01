@@ -137,3 +137,79 @@ export async function getGoogleAuthUrl() {
 
     return { url: data.url }
 }
+
+/**
+ * Upload user avatar
+ */
+import sharp from 'sharp'
+
+export async function uploadAvatar(formData: FormData) {
+    const supabase = await createClient()
+    const file = formData.get('file') as File
+
+    if (!file) {
+        return { error: 'No file provided' }
+    }
+
+    // 1. Security: Validate File Size (Max 2MB)
+    const MAX_SIZE = 2 * 1024 * 1024 // 2MB
+    if (file.size > MAX_SIZE) {
+        return { error: 'File size too large. Max 2MB allowed.' }
+    }
+
+    // 2. Security: Validate MIME Type
+    if (!file.type.startsWith('image/')) {
+        return { error: 'Invalid file type. Only images are allowed.' }
+    }
+
+    try {
+        const user = await getCurrentUser()
+        if (!user) {
+            return { error: 'Unauthorized' }
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer())
+
+        // 3. Conversion: Convert to WebP using Sharp
+        const optimizedBuffer = await sharp(buffer)
+            .resize({ width: 500, height: 500, fit: 'cover' }) // Resize to reasonable avatar size
+            .webp({ quality: 80 })
+            .toBuffer()
+
+        const filePath = `${user.id}/avatar.webp`
+
+        // 4. Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+            .from('user-profile-picture')
+            .upload(filePath, optimizedBuffer, {
+                contentType: 'image/webp',
+                upsert: true
+            })
+
+        if (uploadError) {
+            console.error('Supabase Storage Error:', uploadError)
+            return { error: 'Failed to upload image' }
+        }
+
+        // 5. Update User Profile
+        // Add timestamp to force cache busting
+        const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/user-profile-picture/${filePath}?t=${Date.now()}`
+
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ avatar_url: publicUrl })
+            .eq('id', user.id)
+
+        if (updateError) {
+            console.error('Supabase DB Error:', updateError)
+            return { error: 'Failed to update profile' }
+        }
+
+        revalidatePath('/profile')
+        return { success: true, avatarUrl: publicUrl }
+
+    } catch (error) {
+        console.error('Avatar Upload Error:', error)
+        return { error: 'Internal server error during upload' }
+    }
+}
