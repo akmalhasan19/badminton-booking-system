@@ -9,7 +9,6 @@ interface SignUpData {
     password: string
     fullName: string
     phone?: string
-    role?: 'admin' | 'customer'
 }
 
 interface SignInData {
@@ -30,7 +29,7 @@ export async function signUp(data: SignUpData) {
             data: {
                 full_name: data.fullName,
                 phone: data.phone,
-                role: data.role || 'customer',
+                role: 'customer',
             },
         },
     })

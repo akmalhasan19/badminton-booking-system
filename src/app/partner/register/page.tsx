@@ -6,6 +6,7 @@ import { ArrowRight, Building2, User, Mail, Phone, Hash, CheckCircle, Globe, Lay
 
 import Image from "next/image"
 import { PartnerOnboarding } from "@/components/PartnerOnboarding"
+import { submitPartnerApplication } from "../actions"
 
 const AnimatedBackground = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-gray-50">
@@ -152,12 +153,20 @@ export default function PartnerRegisterPage() {
         e.preventDefault()
         setIsSubmitting(true)
 
-        // Mock submission delay
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        try {
+            const result = await submitPartnerApplication(formData)
 
-        console.log("Partner Registration Data:", formData)
-        setIsSubmitted(true)
-        setIsSubmitting(false)
+            if (result.success) {
+                setIsSubmitted(true)
+            } else {
+                alert("Failed to submit application: " + result.error)
+            }
+        } catch (error) {
+            console.error(error)
+            alert("An error occurred during submission.")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     if (showOnboarding) {
@@ -176,9 +185,10 @@ export default function PartnerRegisterPage() {
                     <div className="w-16 h-16 bg-pastel-mint rounded-full border-2 border-black flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="w-8 h-8 text-black" />
                     </div>
-                    <h2 className="text-3xl font-display font-bold mb-4">Registration Received!</h2>
-                    <p className="text-gray-600 mb-8">
-                        Thank you for your interest in becoming a partner. Our team will review your credentials and contact you via WhatsApp shortly.
+                    <h2 className="text-3xl font-display font-bold mb-4">Registrasi Berhasil!</h2>
+                    <p className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
+                        Terima kasih telah bergabung. Mohon tunggu maksimal <span className="font-bold text-black">1x24 jam</span> untuk proses verifikasi.
+                        Tim kami akan segera menghubungi Anda melalui <span className="font-bold text-black">email</span> untuk langkah selanjutnya.
                     </p>
                     <button
                         onClick={() => window.location.href = "/"}

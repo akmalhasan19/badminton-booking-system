@@ -12,7 +12,7 @@ import { getCurrentUser } from "@/lib/auth/actions"
 export function BookingSection() {
     const [selectedHall, setSelectedHall] = useState<any | null>(null) // Using 'any' for now since Court type from DB differs
     const [selectedCourt, setSelectedCourt] = useState<number | null>(null)
-    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'))
     const [selectedTimes, setSelectedTimes] = useState<string[]>([])
     const [bookingStatus, setBookingStatus] = useState<'idle' | 'success' | 'loading'>('idle')
     const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
@@ -137,7 +137,6 @@ export function BookingSection() {
             startTime: selectedTimes[0],
             endTime: endTime,
             durationHours: durationHours,
-            totalPrice: totalPrice,
         });
 
         if (result.error) {

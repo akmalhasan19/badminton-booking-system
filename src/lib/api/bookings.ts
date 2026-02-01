@@ -14,7 +14,6 @@ export interface CreateBookingData {
     startTime: string
     endTime: string
     durationHours: number
-    totalPrice: number
     notes?: string
 }
 
@@ -107,7 +106,7 @@ export async function createBooking(bookingData: CreateBookingData) {
         return { error: 'Not authenticated' }
     }
 
-    // Check if slot is available
+    // 1. Check availability FIRST
     const isAvailable = await checkAvailability(
         bookingData.courtId,
         bookingData.bookingDate,
@@ -116,6 +115,33 @@ export async function createBooking(bookingData: CreateBookingData) {
 
     if (!isAvailable) {
         return { error: 'Time slot is not available' }
+    }
+
+    // 2. Fetch court details for price calculation (Security Fix)
+    const { data: court, error: courtError } = await supabase
+        .from('courts')
+        .select('price_per_hour')
+        .eq('id', bookingData.courtId)
+        .single()
+
+    if (courtError || !court) {
+        return { error: 'Court not found' }
+    }
+
+    // Calculate total price server-side
+    // TODO: Add dynamic pricing logic here if needed (e.g. peak hours)
+    const totalPrice = court.price_per_hour * bookingData.durationHours
+
+    // 3. Double-check availability immediately before insert (Race condition mitigation)
+    // Note: A database unique constraint on (court_id, booking_date, start_time) is the only 100% fix.
+    const isStillAvailable = await checkAvailability(
+        bookingData.courtId,
+        bookingData.bookingDate,
+        bookingData.startTime
+    )
+
+    if (!isStillAvailable) {
+        return { error: 'Time slot was just taken. Please try another time.' }
     }
 
     const { data, error } = await supabase
@@ -127,7 +153,7 @@ export async function createBooking(bookingData: CreateBookingData) {
             start_time: bookingData.startTime,
             end_time: bookingData.endTime,
             duration_hours: bookingData.durationHours,
-            total_price: bookingData.totalPrice,
+            total_price: totalPrice,
             notes: bookingData.notes,
             status: 'pending',
         })

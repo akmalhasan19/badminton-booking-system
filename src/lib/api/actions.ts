@@ -29,7 +29,6 @@ export async function createBooking(data: {
     startTime: string
     endTime: string
     durationHours: number
-    totalPrice: number
     notes?: string
 }) {
     const result = await createBookingApi(data)

@@ -50,8 +50,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                     email: formData.email,
                     password: formData.password,
                     fullName: formData.name,
-                    phone: formData.phone,
-                    role: 'customer'
+                    phone: formData.phone
                 });
 
                 if (result.error) {
