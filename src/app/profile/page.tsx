@@ -7,6 +7,7 @@ import { SmashLogo } from "@/components/SmashLogo"
 import { ImageCropper } from "@/components/ImageCropper"
 import { uploadAvatar } from "@/lib/auth/actions"
 import { useState, useRef } from "react"
+import { Toast, ToastType } from "@/components/ui/Toast"
 
 export default function ProfilePage() {
     const router = useRouter()
@@ -16,6 +17,17 @@ export default function ProfilePage() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
     const [imageToCrop, setImageToCrop] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Toast state
+    const [toast, setToast] = useState<{ message: string, type: ToastType, isVisible: boolean }>({
+        message: '',
+        type: 'success',
+        isVisible: false
+    })
+
+    const showToast = (message: string, type: ToastType = 'success') => {
+        setToast({ message, type, isVisible: true })
+    }
 
     const handleAvatarClick = () => {
         fileInputRef.current?.click()
@@ -52,16 +64,17 @@ export default function ProfilePage() {
 
             if (result.error) {
                 console.error("Upload failed:", result.error)
-                alert(`Upload failed: ${result.error}`)
+                showToast(result.error, 'error')
                 // Revert optimistic update if needed or just leave it for session
             } else if (result.avatarUrl) {
                 // Success - backend updated
                 console.log("Avatar updated:", result.avatarUrl)
+                showToast("Foto profil berhasil diperbarui", 'success')
                 // setAvatarUrl(result.avatarUrl) // Server action revalidates path, so this might be redundant but safe
             }
         } catch (error) {
             console.error("Error uploading avatar:", error)
-            alert("An error occurred while uploading. Please try again.")
+            showToast("Terjadi kesalahan saat mengupload. Silakan coba lagi.", 'error')
         }
     }
 
@@ -394,6 +407,13 @@ export default function ProfilePage() {
                     onCancel={handleCropCancel}
                 />
             )}
+
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+            />
         </main>
     )
 }

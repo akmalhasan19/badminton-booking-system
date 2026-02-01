@@ -176,7 +176,9 @@ export async function uploadAvatar(formData: FormData) {
             .webp({ quality: 80 })
             .toBuffer()
 
-        const filePath = `${user.id}/avatar.webp`
+        // Generate a random "secure" filename
+        const fileName = `${crypto.randomUUID()}.webp`
+        const filePath = `${user.id}/${fileName}`
 
         // 4. Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
@@ -188,12 +190,29 @@ export async function uploadAvatar(formData: FormData) {
 
         if (uploadError) {
             console.error('Supabase Storage Error:', uploadError)
-            return { error: 'Failed to upload image' }
+            return { error: `Failed to upload image: ${uploadError.message}` }
         }
 
-        // 5. Update User Profile
-        // Add timestamp to force cache busting
-        const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/user-profile-picture/${filePath}?t=${Date.now()}`
+        // 5. Cleanup: Remove old files in the user's folder
+        const { data: listData } = await supabase.storage
+            .from('user-profile-picture')
+            .list(user.id)
+
+        if (listData && listData.length > 0) {
+            const filesToRemove = listData
+                .filter(f => f.name !== fileName)
+                .map(f => `${user.id}/${f.name}`)
+
+            if (filesToRemove.length > 0) {
+                await supabase.storage
+                    .from('user-profile-picture')
+                    .remove(filesToRemove)
+            }
+        }
+
+        // 6. Update User Profile
+        // Add timestamp to force cache busting (though filename change handles this mostly, sometimes convenient)
+        const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/user-profile-picture/${filePath}`
 
         const { error: updateError } = await supabase
             .from('users')
