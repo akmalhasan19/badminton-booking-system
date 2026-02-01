@@ -22,7 +22,7 @@ interface SignInData {
 export async function signUp(data: SignUpData) {
     const supabase = await createClient()
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -35,11 +35,12 @@ export async function signUp(data: SignUpData) {
     })
 
     if (error) {
-        return { error: error.message }
+        console.log('Supabase SignUp Error:', error) // Debug logging
+        return { error: error.message || JSON.stringify(error) }
     }
 
     revalidatePath('/', 'layout')
-    return { success: true }
+    return { success: true, isSessionCreated: !!signUpData.session }
 }
 
 /**

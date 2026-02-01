@@ -15,6 +15,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [mode, setMode] = useState<'login' | 'register'>('login')
     const [error, setError] = useState<string | null>(null)
+    const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -27,6 +28,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     const handleGoogleAuth = async () => {
         setIsLoading(true);
         setError(null);
+        setSuccessMessage(null);
 
         const result = await getGoogleAuthUrl();
 
@@ -43,6 +45,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
+        setSuccessMessage(null);
 
         try {
             if (mode === 'register') {
@@ -59,7 +62,15 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                     return;
                 }
 
-                // Auto sign in after registration
+                // If session was not created immediately, it means email confirmation is required
+                if (!result.isSessionCreated) {
+                    setIsLoading(false);
+                    // Show a success message
+                    setSuccessMessage('Account created! Please check your email to confirm your account before logging in.');
+                    return;
+                }
+
+                // Auto sign in after registration (only if session was created)
                 const signInResult = await signIn({
                     email: formData.email,
                     password: formData.password
@@ -93,6 +104,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
             }
             onClose();
         } catch (err) {
+            console.error("Auth error:", err); // Log error to console for debugging
             setError('An unexpected error occurred');
         } finally {
             setIsLoading(false);
@@ -141,7 +153,17 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                         {error && (
                             <div className="mt-4 p-3 bg-red-50 border-2 border-red-200 rounded-xl flex items-start gap-2">
                                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-red-600 font-medium text-left">{error}</p>
+                                <p className="text-sm text-red-600 font-medium text-left">
+                                    {typeof error === 'object' ? JSON.stringify(error) : error}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Success Display */}
+                        {successMessage && (
+                            <div className="mt-4 p-3 bg-green-50 border-2 border-green-200 rounded-xl flex items-start gap-2">
+                                <Zap className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-green-600 font-medium text-left">{successMessage}</p>
                             </div>
                         )}
                     </div>

@@ -276,13 +276,40 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             >
                                 Join Us
                             </motion.button>
-                            <motion.button
-                                variants={itemVariants}
-                                onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
-                                className="text-4xl font-bold text-gray-500 hover:text-black transition-colors"
-                            >
-                                Login
-                            </motion.button>
+
+                            {/* Show user info or login based on auth state */}
+                            {isLoggedIn && user ? (
+                                <>
+                                    <motion.div
+                                        variants={itemVariants}
+                                        className="flex flex-col items-center gap-2 py-4 px-6 bg-gray-50 rounded-xl border-2 border-black"
+                                    >
+                                        <div className="w-16 h-16 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center">
+                                            <User className="w-8 h-8" />
+                                        </div>
+                                        <span className="text-lg font-bold text-black">{user.name}</span>
+                                        <span className="text-sm text-gray-500">{user.email}</span>
+                                    </motion.div>
+                                    <motion.button
+                                        variants={itemVariants}
+                                        onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                                        className="text-3xl font-bold text-red-500 hover:text-red-700 transition-colors flex items-center gap-2"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        <LogOut className="w-8 h-8" />
+                                        Logout
+                                    </motion.button>
+                                </>
+                            ) : (
+                                <motion.button
+                                    variants={itemVariants}
+                                    onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
+                                    className="text-4xl font-bold text-gray-500 hover:text-black transition-colors"
+                                >
+                                    Login
+                                </motion.button>
+                            )}
                         </motion.div>
                     </motion.div>
                 )}
