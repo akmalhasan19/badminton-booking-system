@@ -43,17 +43,25 @@ export const smashApi = {
      */
     getVenues: async (): Promise<SmashVenue[]> => {
         try {
-            const response = await fetch(`${BASE_URL}/venues?is_active=true&limit=10`, {
+            const url = `${BASE_URL}/venues?is_active=true&limit=10`;
+            console.log(`[SmashAPI] Fetching venues from: ${url}`);
+
+            const response = await fetch(url, {
                 method: 'GET',
                 headers,
                 cache: 'no-store', // Ensure fresh data
             });
 
+            console.log(`[SmashAPI] Response status: ${response.status}`);
+
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[SmashAPI] Error body: ${errorText}`);
                 throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
             }
 
             const json = await response.json();
+            console.log(`[SmashAPI] Venues found: ${json.data?.length || 0}`);
             return json.data || [];
         } catch (error) {
             console.error("Smash API Error (getVenues):", error);
