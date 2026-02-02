@@ -74,8 +74,8 @@ export default function ProfilePage() {
 
         try {
             const result = await uploadAvatar(formData)
-            if (result.success && result.url) {
-                setAvatarUrl(result.url)
+            if (result.success && result.avatarUrl) {
+                setAvatarUrl(result.avatarUrl)
                 showToast("Foto profil berhasil diperbarui", 'success')
             } else {
                 showToast("Gagal mengupload foto", 'error')
