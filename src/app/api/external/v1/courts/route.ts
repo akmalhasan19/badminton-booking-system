@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     const { data: courts, error } = await supabase
         .from('courts')
-        .select('id, name, hourly_rate, is_active')
+        .select('id, name, hourly_rate, is_active, description, image_url')
         .eq('is_active', true)
         .order('court_number', { ascending: true })
 
@@ -20,5 +20,15 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 
-    return NextResponse.json({ data: courts })
+    // Map to API response format
+    const mappedCourts = courts.map((court: any) => ({
+        id: court.id,
+        name: court.name,
+        hourly_rate: court.hourly_rate,
+        is_active: court.is_active,
+        description: court.description || '', // Default to empty string if null
+        photo_url: court.image_url ? [court.image_url] : [] // Convert single image string to array
+    }))
+
+    return NextResponse.json({ data: mappedCourts })
 }
