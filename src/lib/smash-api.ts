@@ -14,16 +14,50 @@ const headers = {
     'Content-Type': 'application/json',
 };
 
+// ============== TYPES ==============
+
 export interface SmashVenue {
     id: string;
     name: string;
     address: string;
+    photo_url?: string;
+    courts_count?: number;
     operating_hours_start: number;
     operating_hours_end: number;
     booking_tolerance: number;
-    price_per_hour?: number; // Optional, might not be in the venue object directly based on guide
     description?: string;
-    image_url?: string;
+}
+
+export interface SmashCourt {
+    id: string;
+    name: string;
+    court_number: number;
+    hourly_rate: number;
+    is_active?: boolean;
+}
+
+export interface SmashVenueDetails extends SmashVenue {
+    courts: SmashCourt[];
+}
+
+export interface SmashAvailabilitySlot {
+    time: string;
+    available: boolean;
+    price?: number;
+    status?: string;
+}
+
+export interface SmashCourtAvailability {
+    court_id: string;
+    court_name: string;
+    slots: SmashAvailabilitySlot[];
+}
+
+export interface SmashAvailabilityResponse {
+    venue_id: string;
+    date: string;
+    operating_hours: { start: number; end: number };
+    courts: SmashCourtAvailability[];
 }
 
 export interface SmashBooking {
@@ -35,6 +69,8 @@ export interface SmashBooking {
     customer_name: string;
     phone: string;
 }
+
+// ============== API METHODS ==============
 
 export const smashApi = {
     /**
@@ -49,7 +85,7 @@ export const smashApi = {
             const response = await fetch(url, {
                 method: 'GET',
                 headers,
-                cache: 'no-store', // Ensure fresh data
+                cache: 'no-store',
             });
 
             console.log(`[SmashAPI] Response status: ${response.status}`);
@@ -70,63 +106,86 @@ export const smashApi = {
     },
 
     /**
-     * Get Courts
-     * Endpoint: GET /courts
+     * Get Venue Details (with Courts)
+     * Endpoint: GET /venues/:id
      */
-    getCourts: async (): Promise<any[]> => {
+    getVenueDetails: async (venueId: string): Promise<SmashVenueDetails | null> => {
         try {
-            const response = await fetch(`${BASE_URL}/courts`, {
+            const url = `${BASE_URL}/venues/${venueId}`;
+            console.log(`[SmashAPI] Fetching venue details: ${url}`);
+
+            const response = await fetch(url, {
                 method: 'GET',
                 headers,
                 cache: 'no-store',
             });
 
             if (!response.ok) {
-                if (response.status === 404) {
-                    return []; // Endpoint might not exist yet
-                }
-                console.warn(`Failed to fetch courts: ${response.status}`);
+                console.error(`[SmashAPI] Failed to fetch venue details: ${response.status}`);
+                return null;
+            }
+
+            const json = await response.json();
+            return json.data || null;
+        } catch (error) {
+            console.error("Smash API Error (getVenueDetails):", error);
+            return null;
+        }
+    },
+
+    /**
+     * Get Courts for a Venue
+     * Endpoint: GET /venues/:id/courts
+     */
+    getVenueCourts: async (venueId: string): Promise<SmashCourt[]> => {
+        try {
+            const url = `${BASE_URL}/venues/${venueId}/courts`;
+            console.log(`[SmashAPI] Fetching venue courts: ${url}`);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers,
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                console.error(`[SmashAPI] Failed to fetch venue courts: ${response.status}`);
                 return [];
             }
 
             const json = await response.json();
             return json.data || [];
         } catch (error) {
-            console.error("Smash API Error (getCourts):", error);
+            console.error("Smash API Error (getVenueCourts):", error);
             return [];
         }
     },
 
     /**
-     * Check Availability (Get Bookings)
-     * Endpoint: GET /bookings
+     * Check Availability (Real-time)
+     * Endpoint: GET /venues/:id/availability?date=YYYY-MM-DD
      */
-    checkAvailability: async (venueId: string, date: string): Promise<any[]> => {
+    checkAvailability: async (venueId: string, date: string): Promise<SmashAvailabilityResponse | null> => {
         try {
-            const params = new URLSearchParams({
-                venue_id: venueId,
-                date: date,
-                // status: 'confirmed' // Optional filter mentioned in guide
-            });
+            const url = `${BASE_URL}/venues/${venueId}/availability?date=${date}`;
+            console.log(`[SmashAPI] Checking availability: ${url}`);
 
-            const response = await fetch(`${BASE_URL}/bookings?${params.toString()}`, {
+            const response = await fetch(url, {
                 method: 'GET',
                 headers,
                 cache: 'no-store',
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to check availability: ${response.status} ${response.statusText}`);
+                console.error(`[SmashAPI] Failed to check availability: ${response.status}`);
+                return null;
             }
 
             const json = await response.json();
-            // The guide implies this returns "existing bookings" or "disabled slots"
-            // "Logic: Fetch existing bookings... Disable slots..."
-            // So we return the raw list of bookings/slots from the API
-            return json.data || [];
+            return json.data || null;
         } catch (error) {
             console.error("Smash API Error (checkAvailability):", error);
-            return [];
+            return null;
         }
     },
 
@@ -154,6 +213,36 @@ export const smashApi = {
             return { success: true, data: json.data };
         } catch (error) {
             console.error("Smash API Error (createBooking):", error);
+            return { error: "Network error or server unavailable" };
+        }
+    },
+
+    /**
+     * Update Booking Status (Payment Confirmation)
+     * Endpoint: PATCH /bookings/:id
+     */
+    updateBookingStatus: async (bookingId: string, status: string, paidAmount?: number) => {
+        try {
+            const payload: { status: string; paid_amount?: number } = { status };
+            if (paidAmount !== undefined) {
+                payload.paid_amount = paidAmount;
+            }
+
+            const response = await fetch(`${BASE_URL}/bookings/${bookingId}`, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return { error: `Update failed: ${response.status} ${errorText}` };
+            }
+
+            const json = await response.json();
+            return { success: true, data: json.data };
+        } catch (error) {
+            console.error("Smash API Error (updateBookingStatus):", error);
             return { error: "Network error or server unavailable" };
         }
     }

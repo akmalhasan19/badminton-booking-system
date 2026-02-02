@@ -3,10 +3,10 @@
 import { useState, useMemo, useEffect } from "react"
 import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown, Loader2, MapPinOff, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { TIME_SLOTS } from "@/constants"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
-import { fetchVenues, fetchSmashCourts, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
+import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
+import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
 
 export function BookingSection() {
@@ -18,10 +18,11 @@ export function BookingSection() {
     const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
 
     // Real data from API
-    const [courts, setCourts] = useState<any[]>([]) // This variable name in UI represents 'Venues' (Halls)
-    const [smashCourts, setSmashCourts] = useState<any[]>([]) // Actual courts from API
-    const [availableSlots, setAvailableSlots] = useState<{ time: string, available: boolean }[]>([])
-    const [isLoadingCourts, setIsLoadingCourts] = useState(true)
+    const [venues, setVenues] = useState<any[]>([]) // Venues (Halls) from API
+    const [venueCourts, setVenueCourts] = useState<SmashCourt[]>([]) // Courts for selected venue
+    const [availabilityData, setAvailabilityData] = useState<SmashAvailabilityResponse | null>(null)
+    const [isLoadingVenues, setIsLoadingVenues] = useState(true)
+    const [isLoadingVenueDetails, setIsLoadingVenueDetails] = useState(false)
     const [isLoadingSlots, setIsLoadingSlots] = useState(false)
     const [apiError, setApiError] = useState<string | null>(null)
 
@@ -90,72 +91,122 @@ export function BookingSection() {
         checkAuth();
     }, []);
 
-    // Fetch venues and courts on mount
+    // Fetch venues on mount
     useEffect(() => {
-        async function loadData() {
-            setIsLoadingCourts(true);
+        async function loadVenues() {
+            setIsLoadingVenues(true);
             setApiError(null);
             try {
-                const [venuesData, courtsData] = await Promise.all([
-                    fetchVenues(),
-                    fetchSmashCourts()
-                ]);
-
-                setSmashCourts(courtsData);
+                const venuesData = await fetchVenues();
 
                 if (venuesData && venuesData.length > 0) {
-                    // Map API Venues to UI 'Hall' objects
-                    const mappedVenues = venuesData.map((venue: any) => {
-                        // Filter courts for this venue if possible, otherwise use all
-                        // Assuming courtsData has venue_id, or we just count all if single venue system
-                        const venueCourts = courtsData.filter((c: any) => c.venue_id === venue.id || !c.venue_id);
-
-                        return {
-                            id: venue.id,
-                            name: venue.name,
-                            type: 'Professional', // Hardcoded for now
-                            pricePerHour: venueCourts[0]?.hourly_rate || 50000, // Use first court's price or default
-                            image_url: venue.image_url,
-                            totalCourts: venueCourts.length || 1, // Fallback to 1
-                            description: venue.description || 'Professional Badminton Hall',
-                            location: { // Parse address or use placeholders
-                                city: 'Jakarta',
-                                district: 'Jakarta Selatan',
-                                subDistrict: 'Tebet',
-                                address: venue.address
-                            },
-                        };
-                    });
-
-                    setCourts(mappedVenues);
-                    setApiError(null);
+                    // Fetch details for each venue to get court prices
+                    const venuesWithPrices = await Promise.all(
+                        venuesData.map(async (venue: any) => {
+                            try {
+                                const details = await fetchVenueDetails(venue.id);
+                                // Get minimum hourly rate from courts
+                                let minPrice = 0;
+                                if (details?.courts && details.courts.length > 0) {
+                                    minPrice = Math.min(...details.courts.map((c: any) => c.hourly_rate || 0));
+                                }
+                                return {
+                                    id: venue.id,
+                                    name: venue.name,
+                                    type: 'Professional',
+                                    pricePerHour: minPrice || 50000, // Use min price or fallback
+                                    photo_url: venue.photo_url,
+                                    totalCourts: venue.courts_count || details?.courts?.length || 0,
+                                    description: venue.description || 'Professional Badminton Hall',
+                                    location: {
+                                        city: 'Jakarta',
+                                        district: 'Jakarta Selatan',
+                                        subDistrict: 'Tebet',
+                                        address: venue.address
+                                    },
+                                    operating_hours_start: venue.operating_hours_start,
+                                    operating_hours_end: venue.operating_hours_end,
+                                };
+                            } catch (err) {
+                                // Fallback if details fetch fails
+                                return {
+                                    id: venue.id,
+                                    name: venue.name,
+                                    type: 'Professional',
+                                    pricePerHour: 50000,
+                                    photo_url: venue.photo_url,
+                                    totalCourts: venue.courts_count || 0,
+                                    description: venue.description || 'Professional Badminton Hall',
+                                    location: {
+                                        city: 'Jakarta',
+                                        district: 'Jakarta Selatan',
+                                        subDistrict: 'Tebet',
+                                        address: venue.address
+                                    },
+                                    operating_hours_start: venue.operating_hours_start,
+                                    operating_hours_end: venue.operating_hours_end,
+                                };
+                            }
+                        })
+                    );
+                    setVenues(venuesWithPrices);
                 } else {
-                    setCourts([]);
-                    setApiError('No venues available from PWA Smash');
+                    setVenues([]);
                 }
             } catch (error) {
-                console.error("Failed to load booking data:", error);
+                console.error("Failed to load venues:", error);
                 setApiError('Failed to connect to PWA Smash');
             } finally {
-                setIsLoadingCourts(false);
+                setIsLoadingVenues(false);
             }
         }
-        loadData();
-
+        loadVenues();
     }, []);
 
-    // Fetch available slots when court and date selected
+    // Fetch venue details (with courts) when venue is selected
+    useEffect(() => {
+        async function loadVenueDetails() {
+            if (!selectedHall) {
+                setVenueCourts([]);
+                return;
+            }
+
+            setIsLoadingVenueDetails(true);
+            try {
+                const details = await fetchVenueDetails(selectedHall.id);
+                if (details && details.courts) {
+                    setVenueCourts(details.courts);
+                    // Update price from first court if available
+                    if (details.courts.length > 0) {
+                        setSelectedHall((prev: any) => ({
+                            ...prev,
+                            pricePerHour: details.courts[0].hourly_rate || 50000
+                        }));
+                    }
+                } else {
+                    setVenueCourts([]);
+                }
+            } catch (error) {
+                console.error("Failed to load venue details:", error);
+            } finally {
+                setIsLoadingVenueDetails(false);
+            }
+        }
+        loadVenueDetails();
+    }, [selectedHall?.id]);
+
+    // Fetch available slots when venue and date selected
     useEffect(() => {
         async function loadSlots() {
             if (selectedHall && selectedDate) {
                 setIsLoadingSlots(true);
-                const slots = await fetchAvailableSlots(selectedHall.id, selectedDate);
-                setAvailableSlots(slots);
+                const availability = await fetchAvailableSlots(selectedHall.id, selectedDate);
+                setAvailabilityData(availability);
                 setIsLoadingSlots(false);
             }
         }
         loadSlots();
-    }, [selectedHall, selectedDate]);
+    }, [selectedHall?.id, selectedDate]);
 
     // Location filtering disabled for MVP - courts table doesn't have location data yet
     const locationOptions = useMemo(() => {
@@ -167,17 +218,31 @@ export function BookingSection() {
     }, []);
 
     const { exactMatches, nearbyMatches } = useMemo(() => {
-        // For now, just show all courts in exactMatches
-        // Type filtering disabled until we add 'type' column to courts table
-        return { exactMatches: courts, nearbyMatches: [] };
-    }, [courts]);
+        // For now, just show all venues in exactMatches
+        // Type filtering disabled until we add 'type' column to venues table
+        return { exactMatches: venues, nearbyMatches: [] };
+    }, [venues]);
 
 
 
     // Check availability for specific court from real data
-    const isSlotBooked = (time: string) => {
-        const slot = availableSlots.find(s => s.time === time);
+    const isSlotBooked = (time: string, courtId?: string) => {
+        if (!availabilityData || !selectedCourt) return false;
+        const courtAvailability = availabilityData.courts.find(
+            (c: SmashCourtAvailability) => c.court_id === (courtId || selectedCourt.id)
+        );
+        if (!courtAvailability) return false;
+        const slot = courtAvailability.slots.find((s) => s.time === time);
         return slot ? !slot.available : false;
+    };
+
+    // Get slots for selected court
+    const getCourtSlots = () => {
+        if (!availabilityData || !selectedCourt) return [];
+        const courtAvailability = availabilityData.courts.find(
+            (c: SmashCourtAvailability) => c.court_id === selectedCourt.id
+        );
+        return courtAvailability?.slots || [];
     };
 
     const toggleTime = (time: string) => {
@@ -363,8 +428,7 @@ export function BookingSection() {
                 <div className="bg-white border-2 border-black p-6 rounded-2xl shadow-hard mb-8 max-w-md transform rotate-2">
                     <p className="text-xl text-black font-medium">
                         You're smashing at <span className="font-bold bg-pastel-mint px-2 border border-black rounded-md">{selectedHall?.name}</span> <br />
-                        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest block mt-2">Court {selectedCourt}</span>
-                        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest block mt-2">Court {selectedCourt}</span>
+                        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest block mt-2">{selectedCourt?.name || `Lapangan ${selectedCourt?.court_number}`}</span>
                         on <span className="font-bold">{selectedDate}</span> at <span className="font-bold">{selectedTimes.join(', ')}</span>.
                     </p>
                 </div>
@@ -414,7 +478,7 @@ export function BookingSection() {
                 <div className="mb-16">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                         {/* API Connection Status */}
-                        {isLoadingCourts ? (
+                        {isLoadingVenues ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black bg-yellow-100 text-yellow-700">
                                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                                 Connecting...
@@ -422,12 +486,12 @@ export function BookingSection() {
                         ) : apiError ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-400 bg-red-50 text-red-600">
                                 <AlertCircle className="w-3 h-3 mr-1" />
-                                Connection Failed
+                                {apiError}
                             </span>
-                        ) : courts.length > 0 ? (
+                        ) : venues.length > 0 ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black bg-pastel-mint text-black">
                                 <Zap className="w-3 h-3 mr-1 fill-current" />
-                                Connected to PWA Smash
+                                Connected to Smash Partner
                             </span>
                         ) : (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-gray-300 bg-gray-100 text-gray-500">
@@ -532,7 +596,7 @@ export function BookingSection() {
                                                 >
                                                     <div className="h-48 relative border-b-2 border-black overflow-hidden">
                                                         <img
-                                                            src={court.image_url || '/placeholder-court.jpg'}
+                                                            src={court.photo_url || '/placeholder-court.jpg'}
                                                             alt={court.name}
                                                             className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                                                         />
@@ -555,7 +619,7 @@ export function BookingSection() {
                                                         <div className="flex justify-between items-end border-t-2 border-gray-100 pt-4 mt-auto">
                                                             <div>
                                                                 <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Rate</span>
-                                                                <p className="text-xl font-black text-black">$50<span className="text-xs font-medium text-gray-500">/hr</span></p>
+                                                                <p className="text-xl font-black text-black">RP {court.pricePerHour?.toLocaleString()}/HR</p>
                                                             </div>
                                                             <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pastel-acid group-hover:text-black group-hover:border-2 group-hover:border-black transition-all">
                                                                 <ChevronLeft className="w-4 h-4 rotate-180" />
@@ -619,45 +683,49 @@ export function BookingSection() {
                                     </h4>
 
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {smashCourts
-                                            .filter(c => c.venue_id === selectedHall.id || !c.venue_id)
-                                            .map((court, idx) => {
-                                                const isSelected = selectedCourt?.id === court.id;
-                                                // Fallback name if only ID exists
-                                                const displayName = court.name || `Court ${idx + 1}`;
+                                        {isLoadingVenueDetails ? (
+                                            <div className="col-span-full flex justify-center py-8">
+                                                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                                            </div>
+                                        ) : venueCourts.length === 0 ? (
+                                            <div className="col-span-full text-center py-8 text-gray-500">
+                                                No courts available for this venue
+                                            </div>
+                                        ) : venueCourts.map((court, idx) => {
+                                            const isSelected = selectedCourt?.id === court.id;
+                                            const displayName = court.name || `Court ${idx + 1}`;
 
-                                                return (
-                                                    <button
-                                                        key={court.id}
-                                                        onClick={() => setSelectedCourt(court)}
-                                                        className={`relative h-48 rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between p-4
+                                            return (
+                                                <button
+                                                    key={court.id}
+                                                    onClick={() => setSelectedCourt(court)}
+                                                    className={`relative h-48 rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between p-4
                                                     ${isSelected
-                                                                ? 'bg-black border-black text-white shadow-hard scale-[1.02]'
-                                                                : 'bg-gray-50 border-gray-200 hover:border-black hover:bg-white text-black hover:shadow-hard-sm'
-                                                            }`}
-                                                    >
-                                                        <div className="flex justify-between items-start">
-                                                            <span className={`text-4xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity ${isSelected ? 'text-white' : 'text-black'}`}>
-                                                                {/* Display court name or number derived from name */}
-                                                                {displayName.replace('LAPANGAN', '').trim()}
-                                                            </span>
-                                                            {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint" />}
-                                                        </div>
+                                                            ? 'bg-black border-black text-white shadow-hard scale-[1.02]'
+                                                            : 'bg-gray-50 border-gray-200 hover:border-black hover:bg-white text-black hover:shadow-hard-sm'
+                                                        }`}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <span className={`text-4xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                            {displayName.replace('LAPANGAN', '').trim() || String(court.court_number)}
+                                                        </span>
+                                                        {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint" />}
+                                                    </div>
 
-                                                        {/* Mini Court Visual */}
-                                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-16 border border-current opacity-20 rounded-sm">
-                                                            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
-                                                            <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
-                                                        </div>
+                                                    {/* Mini Court Visual */}
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-16 border border-current opacity-20 rounded-sm">
+                                                        <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
+                                                        <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
+                                                    </div>
 
-                                                        <div className="text-right">
-                                                            <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-gray-400 group-hover:text-black'}`}>
-                                                                Available
-                                                            </span>
-                                                        </div>
-                                                    </button>
-                                                )
-                                            })}
+                                                    <div className="text-right">
+                                                        <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-gray-400 group-hover:text-black'}`}>
+                                                            Rp {court.hourly_rate?.toLocaleString()}/hr
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             </motion.div>
@@ -698,7 +766,7 @@ export function BookingSection() {
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="font-bold text-gray-500 text-xs uppercase">Court</span>
-                                                <span className="font-black text-black">{selectedCourt ? `#${selectedCourt}` : '—'}</span>
+                                                <span className="font-black text-black">{selectedCourt ? (selectedCourt.name || `Lapangan ${selectedCourt.court_number}`) : '—'}</span>
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-gray-200">
                                                 <span className="block font-bold text-gray-500 text-xs uppercase mb-1">Address</span>
@@ -724,22 +792,32 @@ export function BookingSection() {
                                         <div className="mb-8">
                                             <label className="block text-sm font-bold text-black mb-3 uppercase tracking-wide">Available Slots</label>
                                             <div className="grid grid-cols-3 gap-3">
-                                                {TIME_SLOTS.map((slot, idx) => {
-                                                    const booked = !slot.available || isSlotBooked(slot.time);
+                                                {isLoadingSlots ? (
+                                                    <div className="col-span-3 flex justify-center py-4">
+                                                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                                                    </div>
+                                                ) : getCourtSlots().length === 0 ? (
+                                                    <div className="col-span-3 text-center py-4 text-gray-500 text-sm">
+                                                        Tidak ada slot tersedia
+                                                    </div>
+                                                ) : getCourtSlots().map((slot, idx) => {
+                                                    const booked = !slot.available;
                                                     const isSelected = selectedTimes.includes(slot.time);
                                                     return (
                                                         <button
                                                             key={idx}
                                                             disabled={booked}
                                                             onClick={() => toggleTime(slot.time)}
-                                                            className={`py-2 px-1 rounded-lg text-sm font-bold border-2 transition-all
-                                                                ${booked ? 'bg-gray-100 border-transparent text-gray-300 cursor-not-allowed hidden' :
+                                                            title={booked ? 'Slot ini sudah dibooking' : 'Klik untuk memilih'}
+                                                            className={`py-2 px-1 rounded-lg text-sm font-bold border-2 transition-all relative
+                                                                ${booked ? 'bg-red-50 border-red-200 text-red-400 cursor-not-allowed' :
                                                                     isSelected
                                                                         ? 'bg-pastel-acid border-black text-black shadow-hard-sm'
                                                                         : 'bg-white border-gray-200 text-gray-600 hover:border-black hover:text-black'
                                                                 }`}
                                                         >
-                                                            {slot.time}
+                                                            <span className={booked ? 'line-through' : ''}>{slot.time}</span>
+                                                            {booked && <span className="block text-[10px] font-bold uppercase">Booked</span>}
                                                         </button>
                                                     )
                                                 })}
@@ -750,15 +828,15 @@ export function BookingSection() {
                                     <div className="border-t-2 border-dashed border-gray-300 pt-6 space-y-3">
                                         <div className="flex justify-between text-sm font-medium text-gray-500">
                                             <span>Court Fee ({selectedTimes.length}hr)</span>
-                                            <span>${selectedHall ? selectedHall.pricePerHour * selectedTimes.length : 0}.00</span>
+                                            <span>Rp {selectedHall ? (selectedHall.pricePerHour * selectedTimes.length).toLocaleString('id-ID') : 0}</span>
                                         </div>
                                         <div className="flex justify-between text-sm font-medium text-gray-500">
                                             <span>Service Fee</span>
-                                            <span>$2.00</span>
+                                            <span>Rp 2.000</span>
                                         </div>
                                         <div className="flex justify-between text-2xl font-black text-black pt-2">
                                             <span>TOTAL</span>
-                                            <span>${selectedHall ? (selectedHall.pricePerHour * selectedTimes.length) + 2 : 0}.00</span>
+                                            <span>Rp {selectedHall ? ((selectedHall.pricePerHour * selectedTimes.length) + 2000).toLocaleString('id-ID') : 0}</span>
                                         </div>
 
                                         <button

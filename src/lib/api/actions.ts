@@ -3,7 +3,7 @@
 import { getCourts } from './courts'
 import { getAvailableSlots, createBooking as createBookingApi } from './bookings'
 import { revalidatePath } from 'next/cache'
-import { smashApi } from '@/lib/smash-api'
+import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 
 /**
  * Server action to fetch courts (Local DB)
@@ -23,59 +23,19 @@ export async function fetchVenues() {
 }
 
 /**
- * Server action to fetch courts from Smash API
+ * Server action to fetch venue details (with courts) from Smash API
+ * Use this when user selects a venue to get court list
  */
-export async function fetchSmashCourts() {
-    const courts = await smashApi.getCourts()
-    return courts
+export async function fetchVenueDetails(venueId: string): Promise<SmashVenueDetails | null> {
+    return await smashApi.getVenueDetails(venueId)
 }
 
 /**
- * Server action to fetch available slots for a court
- * Now uses Smash API for availability check if possible, or falls back to local
+ * Server action to fetch availability for a venue on specific date
+ * Returns complete slot availability per court
  */
-export async function fetchAvailableSlots(venueId: string, date: string) {
-    // Note: The UI currently expects a list of { time, available }.
-    // The Smash API returns a list of BOOKINGS (occupied slots).
-    // We need to convert that into the format the UI expects.
-
-    // 1. Get raw availability/bookings from Smash API
-    const occupiedSlots = await smashApi.checkAvailability(venueId, date)
-
-    // 2. Define operating hours (Hardcoded for now as per API Guide example or inferred)
-    // The venue object from getVenues has operating_hours_start/end. 
-    //Ideally we should get this from the venue details, but for now let's assume standard 8-23
-    const startHour = 8
-    const endHour = 23
-
-    const slots = []
-
-    // 3. Generate slots
-    for (let hour = startHour; hour < endHour; hour++) {
-        const timeSlot = `${hour.toString().padStart(2, '0')}:00`
-
-        // Check if this time slot matches any occupied slot in the response
-        // Smash API returns e.g. { start_time: "10:00", duration: 1 }
-        // We need to check if 'timeSlot' falls within any booking
-
-        const isBooked = occupiedSlots.some((booking: any) => {
-            // Simple exact match check for now. 
-            // TODO: Handle duration > 1 hour logic if needed (e.g. if booking is 10:00 for 2 hours, 11:00 is also booked)
-            // The API guide says "Disable slots that are already in the response".
-            // Assuming response contains specific slots or we need to calculate range.
-
-            // Simplest assumption: API returns all occupied "blocks" or we match start_time.
-            // Let's assume simplest 'start_time' match first.
-            return booking.start_time === timeSlot || booking.startTime === timeSlot
-        })
-
-        slots.push({
-            time: timeSlot,
-            available: !isBooked,
-        })
-    }
-
-    return slots
+export async function fetchAvailableSlots(venueId: string, date: string): Promise<SmashAvailabilityResponse | null> {
+    return await smashApi.checkAvailability(venueId, date)
 }
 
 /**
@@ -118,4 +78,11 @@ export async function createBooking(data: {
     }
 
     return apiResult
+}
+
+/**
+ * Server action to update booking status (payment confirmation)
+ */
+export async function updateBookingStatus(bookingId: string, status: string, paidAmount?: number) {
+    return await smashApi.updateBookingStatus(bookingId, status, paidAmount)
 }
