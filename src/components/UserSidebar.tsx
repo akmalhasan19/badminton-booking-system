@@ -20,7 +20,7 @@ export function UserSidebar({ user }: UserSidebarProps) {
     const menuItems = [
         { label: "Booking Saya", icon: Calendar, path: "/bookings" },
         { label: "Ubah Profil", icon: User, path: "/profile" },
-        { label: "Kartu Saya", icon: CreditCard, path: "/payment-methods" },
+        { label: "Metode Pembayaran", icon: CreditCard, path: "/payment-methods" },
         { label: "Notifikasi", icon: Bell, path: "/notifications" },
         { label: "Pengaturan", icon: Settings, path: "/settings" },
         { label: "Pusat Bantuan", icon: HelpCircle, path: "/help" },

@@ -1,110 +1,109 @@
 "use client"
 
-import { PageHeader } from "@/components/PageHeader"
-import { CreditCard, Plus, Trash2, Smartphone } from "lucide-react"
-import { motion } from "framer-motion"
-
-const paymentMethods = [
-    {
-        id: "pm_1",
-        type: "credit_card",
-        brand: "Visa",
-        last4: "4242",
-        expiry: "12/28",
-        holder: "AKMAL HASAN",
-        color: "bg-pastel-mint"
-    },
-    {
-        id: "pm_2",
-        type: "ewallet",
-        brand: "GoPay",
-        phone: "0812****7890",
-        color: "bg-pastel-pink"
-    }
-]
+import { UserSidebar } from "@/components/UserSidebar"
+import { SmashLogo } from "@/components/SmashLogo"
+import { getCurrentUser } from "@/lib/auth/actions"
+import { ChevronRight, CreditCard, Plus, Wallet, Link as LinkIcon, Smartphone, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function PaymentMethodsPage() {
+    const router = useRouter()
+    const [user, setUser] = useState<any>(null)
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const userData = await getCurrentUser()
+            setUser(userData)
+        }
+        fetchUser()
+    }, [])
+
     return (
-        <main className="min-h-screen bg-white pt-24 pb-12">
-            <div className="max-w-3xl mx-auto px-4">
-                <PageHeader
-                    title="Metode Pembayaran"
-                    description="Atur metode pembayaran tersimpan untuk proses booking yang lebih cepat."
-                />
+        <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
+            {/* Grid Background */}
+            <div
+                className="absolute inset-0 z-0 w-full h-full pointer-events-none"
+                style={{
+                    backgroundImage: 'linear-gradient(to right, rgba(160, 82, 45, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(160, 82, 45, 0.15) 1px, transparent 1px)',
+                    backgroundSize: '100px 100px'
+                }}
+            />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                    {/* Add New Method Card */}
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="h-48 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-black hover:text-black hover:bg-gray-50 transition-all font-bold group"
-                    >
-                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-pastel-yellow transition-colors border-2 border-transparent group-hover:border-black">
-                            <Plus className="w-6 h-6" />
-                        </div>
-                        Tambah Metode Baru
-                    </motion.button>
-
-                    {/* Existing Methods */}
-                    {paymentMethods.map((method, index) => (
-                        <motion.div
-                            key={method.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                            className={`h-48 ${method.color} border-2 border-black rounded-xl p-6 relative shadow-hard flex flex-col justify-between overflow-hidden group`}
-                        >
-                            {/* Decorative Pattern */}
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full -mr-10 -mt-10 blur-xl"></div>
-
-                            <div className="flex justify-between items-start z-10">
-                                {method.type === 'credit_card' ? (
-                                    <CreditCard className="w-8 h-8 opacity-75" />
-                                ) : (
-                                    <Smartphone className="w-8 h-8 opacity-75" />
-                                )}
-                                <span className="font-display font-black text-xl italic opacity-50">{method.brand}</span>
-                            </div>
-
-                            <div className="z-10">
-                                {method.type === 'credit_card' ? (
-                                    <>
-                                        <div className="flex gap-2 mb-4">
-                                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                                            <span className="font-mono text-lg font-bold ml-2">{method.last4}</span>
-                                        </div>
-                                        <div className="flex justify-between text-xs font-bold uppercase tracking-wider opacity-60">
-                                            <span>{method.holder}</span>
-                                            <span>{method.expiry}</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className="font-mono text-lg font-bold mb-1">{method.phone}</p>
-                                        <p className="text-xs font-bold uppercase tracking-wider opacity-60">Connected E-Wallet</p>
-                                    </>
-                                )}
-                            </div>
-
-                            <button className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-lg border-2 border-transparent hover:border-black opacity-0 group-hover:opacity-100 transition-all text-red-500 hover:text-red-700">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </motion.div>
-                    ))}
+            {/* Logo Link */}
+            <div
+                onClick={() => router.push('/')}
+                className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+            >
+                <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
+                    <SmashLogo className="w-full h-full bg-black" />
                 </div>
+                <span className="text-xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
+            </div>
 
-                <div className="mt-8 bg-blue-50 border-2 border-blue-200 rounded-xl p-4 flex gap-4 items-start">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                        <CreditCard className="w-5 h-5 text-blue-600" />
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
+                <div className="grid md:grid-cols-[300px_1fr] gap-8">
+                    {/* Left Sidebar */}
+                    <div className="space-y-6">
+                        <UserSidebar user={user} />
                     </div>
-                    <div>
-                        <h4 className="font-bold text-blue-800">Pembayaran Aman</h4>
-                        <p className="text-sm text-blue-600 leading-relaxed">
-                            Semua transaksi dienkripsi dan diproses melalui payment gateway terpercaya. Kami tidak menyimpan detail lengkap kartu kredit Anda.
-                        </p>
+
+                    {/* Right Content */}
+                    <div className="space-y-8">
+                        <h1 className="text-3xl font-display font-black">Metode Pembayaran</h1>
+
+                        {/* Section 1: Kartu Kredit & Debit */}
+                        <div className="space-y-4">
+                            <h2 className="font-bold text-lg">Kartu Kredit & Debit</h2>
+                            <div className="bg-white border-2 border-black rounded-xl p-1 shadow-hard">
+                                {/* Existing Card Example (commented out or can be added) */}
+
+                                <button className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-pastel-acid/20 border border-transparent hover:border-black rounded-lg transition-all group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-7 bg-white border-2 border-black rounded flex items-center justify-center">
+                                            <CreditCard className="w-4 h-4 text-black" />
+                                        </div>
+                                        <span className="font-bold text-sm">Tambah Kartu</span>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Plus className="w-5 h-5" />
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Section 2: Linked Account */}
+                        <div className="space-y-4">
+                            <h2 className="font-bold text-lg">Linked Account</h2>
+                            <div className="bg-white border-2 border-black rounded-xl p-6 shadow-hard text-center py-12">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full border-2 border-black flex items-center justify-center mx-auto mb-4 grayscale opacity-50">
+                                    <LinkIcon className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <p className="text-gray-500 font-medium text-sm">Belum ada akun terhubung.</p>
+                                <button className="mt-4 px-6 py-2 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition-colors">
+                                    Hubungkan Akun
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Section 3: Rekening Bank */}
+                        <div className="space-y-4">
+                            <h2 className="font-bold text-lg">Rekening Bank</h2>
+                            <div className="bg-white border-2 border-black rounded-xl p-1 shadow-hard">
+                                <button className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-pastel-blue/20 border border-transparent hover:border-black rounded-lg transition-all group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-white border-2 border-black rounded flex items-center justify-center">
+                                            <span className="font-black text-xs">BANK</span>
+                                        </div>
+                                        <span className="font-bold text-sm">Tambah Rekening</span>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Plus className="w-5 h-5" />
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
