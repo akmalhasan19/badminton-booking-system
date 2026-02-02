@@ -74,6 +74,9 @@ export const smashApi = {
             });
 
             if (!response.ok) {
+                if (response.status === 404) {
+                    return []; // Endpoint might not exist yet
+                }
                 console.warn(`Failed to fetch courts: ${response.status}`);
                 return [];
             }

@@ -372,6 +372,12 @@ export function BookingSection() {
                 </AnimatePresence>
 
                 <div className="mb-16">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black ${selectedHall || courts.length > 0 ? 'bg-pastel-mint text-black' : 'bg-gray-100 text-gray-400'}`}>
+                            <Zap className="w-3 h-3 mr-1 fill-current" />
+                            {selectedHall || courts.length > 0 ? "Connected to PWA Smash" : "Connecting..."}
+                        </span>
+                    </div>
                     <h2 className="text-5xl md:text-7xl font-display font-black text-black mb-4 uppercase tracking-tighter">
                         Pick Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-pink text-stroke-2" style={{ WebkitTextStroke: '2px black' }}>Battlefield</span>
                     </h2>
