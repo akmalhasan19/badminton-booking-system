@@ -5,82 +5,84 @@ import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { SmashLogo } from "@/components/SmashLogo"
 import { ImageCropper } from "@/components/ImageCropper"
-import { uploadAvatar, getCurrentUser } from "@/lib/auth/actions"
+import { uploadAvatar, getCurrentUser, updateProfile } from "@/lib/auth/actions"
 import { useState, useRef, useEffect } from "react"
 import { Toast, ToastType } from "@/components/ui/Toast"
 
 export default function ProfilePage() {
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<'info' | 'security'>('info')
-
-    // Avatar state
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-    const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+    const pathname = usePathname()
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Toast state
+    // Image Cropper State
+    const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null) // To display optimized Avatar
+
+    // Toast State
     const [toast, setToast] = useState<{ message: string, type: ToastType, isVisible: boolean }>({
         message: '',
         type: 'success',
         isVisible: false
     })
 
-    const showToast = (message: string, type: ToastType = 'success') => {
+    const showToast = (message: string, type: ToastType) => {
         setToast({ message, type, isVisible: true })
     }
 
-    // Fetch user data on mount
-    useEffect(() => {
-        const fetchUser = async () => {
-            const user = await getCurrentUser()
-            if (user?.avatar_url) {
-                setAvatarUrl(user.avatar_url)
-            }
-        }
-        fetchUser()
-    }, [])
+    const navItems = [
+        { label: "Overview", path: "/dashboard", active: false },
+        { label: "Bookings", path: "/bookings", active: false },
+        { label: "Schedule", path: "/schedule", active: false },
+        { label: "Profile", path: "/profile", active: true },
+    ]
+
+    const menuItems = [
+        { icon: User, label: "Informasi Akun", path: "/profile" },
+        { icon: Calendar, label: "Booking Saya", path: "/bookings" },
+        // { icon: CreditCard, label: "Metode Pembayaran", path: "/payment-methods" }, // Future
+        // { icon: Bell, label: "Notifikasi", path: "/notifications" }, // Future
+        { icon: Settings, label: "Pengaturan", path: "/settings" },
+        { icon: HelpCircle, label: "Bantuan & Support", path: "/support" }
+    ]
+
+    const [activeTab, setActiveTab] = useState<'info' | 'security' | 'billing'>('info')
 
     const handleAvatarClick = () => {
         fileInputRef.current?.click()
     }
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
             const reader = new FileReader()
             reader.onload = () => {
                 setImageToCrop(reader.result as string)
             }
-            reader.readAsDataURL(file)
+            reader.readAsDataURL(event.target.files[0])
         }
-        e.target.value = ''
+        // Reset input value to allow selecting same file again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
     }
 
-    const handleCropComplete = async (croppedImageUrl: string) => {
-        setAvatarUrl(croppedImageUrl)
-        setImageToCrop(null)
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        setImageToCrop(null) // Close cropper
+        showToast("Mengupload foto profil...", 'success')
+
+        const formData = new FormData()
+        formData.append('file', croppedBlob, 'avatar.jpg')
 
         try {
-            const response = await fetch(croppedImageUrl)
-            const blob = await response.blob()
-            const file = new File([blob], "avatar.webp", { type: "image/webp" })
-
-            const formData = new FormData()
-            formData.append('file', file)
-
             const result = await uploadAvatar(formData)
-
-            if (result.error) {
-                console.error("Upload failed:", result.error)
-                showToast(result.error, 'error')
-            } else if (result.avatarUrl) {
-                console.log("Avatar updated:", result.avatarUrl)
+            if (result.success && result.url) {
+                setAvatarUrl(result.url)
                 showToast("Foto profil berhasil diperbarui", 'success')
-                window.dispatchEvent(new Event('user_updated'))
+            } else {
+                showToast("Gagal mengupload foto", 'error')
             }
         } catch (error) {
-            console.error("Error uploading avatar:", error)
-            showToast("Terjadi kesalahan saat mengupload. Silakan coba lagi.", 'error')
+            console.error("Upload error:", error)
+            showToast("Terjadi kesalahan saat upload", 'error')
         }
     }
 
@@ -88,13 +90,81 @@ export default function ProfilePage() {
         setImageToCrop(null)
     }
 
-    const menuItems = [
-        { label: "Booking Saya", icon: Calendar, path: "/bookings" },
-        { label: "Metode Pembayaran", icon: CreditCard, path: "/payment-methods" },
-        { label: "Notifikasi", icon: Bell, path: "/notifications" },
-        { label: "Pengaturan", icon: Settings, path: "/settings" },
-        { label: "Pusat Bantuan", icon: HelpCircle, path: "/help" },
-    ]
+    // Profile state
+    const [isLoading, setIsLoading] = useState(false)
+    const [profile, setProfile] = useState({
+        name: '',
+        gender: 'Laki-laki',
+        day: '1',
+        month: 'Jan',
+        year: '2000',
+        city: '',
+        phone: '',
+        email: ''
+    })
+
+    // Fetch user data on mount
+    useEffect(() => {
+        const fetchUser = async () => {
+            const user = await getCurrentUser()
+            if (user) {
+                if (user.avatar_url) setAvatarUrl(user.avatar_url)
+
+                const dob = user.date_of_birth ? new Date(user.date_of_birth) : null
+
+                setProfile({
+                    name: user.name || '',
+                    gender: user.gender || 'Laki-laki',
+                    day: dob ? dob.getDate().toString() : '1',
+                    month: dob ? dob.toLocaleDateString('id-ID', { month: 'short' }) : 'Jan',
+                    year: dob ? dob.getFullYear().toString() : '2000',
+                    city: user.city || '',
+                    phone: user.phone || '',
+                    email: user.email || ''
+                })
+            }
+        }
+        fetchUser()
+    }, [])
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+
+        try {
+            // Convert Month Name to Index for Date Object
+            const monthMap: { [key: string]: number } = {
+                "Jan": 0, "Feb": 1, "Mar": 2, "Apr": 3, "Mei": 4, "Jun": 5,
+                "Jul": 6, "Agu": 7, "Sep": 8, "Okt": 9, "Nov": 10, "Des": 11
+            }
+
+            // Construct Date string YYYY-MM-DD
+            // Be careful with timezones, simpler to store as string YYYY-MM-DD for consistency
+            const monthIndex = monthMap[profile.month] || 0
+            const date = new Date(parseInt(profile.year), monthIndex, parseInt(profile.day), 12) // Noon to avoid timezone shift issues
+            const dobString = date.toISOString().split('T')[0]
+
+            const result = await updateProfile({
+                full_name: profile.name,
+                gender: profile.gender,
+                date_of_birth: dobString,
+                city: profile.city,
+                phone: profile.phone
+            })
+
+            if (result.success) {
+                showToast("Profil berhasil diperbarui", 'success')
+            } else {
+                showToast(result.error || "Gagal memperbarui profil", 'error')
+            }
+        } catch (error) {
+            console.error("Save error:", error)
+            showToast("Terjadi kesalahan sistem", 'error')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
 
     return (
         <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
@@ -144,8 +214,8 @@ export default function ProfilePage() {
                                     <Camera className="w-6 h-6 text-white" />
                                 </div>
                             </div>
-                            <h2 className="font-bold text-xl">Akmal Hasan</h2>
-                            <p className="text-gray-500 text-sm font-medium">Google</p>
+                            <h2 className="font-bold text-xl">{profile.name || "User"}</h2>
+                            <p className="text-gray-500 text-sm font-medium">Member</p>
                         </div>
 
                         {/* Member Tier Banner */}
@@ -217,12 +287,13 @@ export default function ProfilePage() {
                                 <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
                                     <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Data Pribadi</h2>
 
-                                    <form className="space-y-6">
+                                    <form onSubmit={handleSave} className="space-y-6">
                                         <div className="space-y-2">
                                             <label className="text-sm font-bold text-gray-500">Nama Lengkap</label>
                                             <input
                                                 type="text"
-                                                defaultValue="Akmal Hasan"
+                                                value={profile.name}
+                                                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                                                 className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
                                             />
                                             <p className="text-xs text-gray-400">Nama lengkap Anda akan disingkat untuk nama profil.</p>
@@ -232,9 +303,13 @@ export default function ProfilePage() {
                                             <div className="space-y-2">
                                                 <label className="text-sm font-bold text-gray-500">Kelamin</label>
                                                 <div className="relative">
-                                                    <select defaultValue="Laki-laki" className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer">
-                                                        <option>Laki-laki</option>
-                                                        <option>Perempuan</option>
+                                                    <select
+                                                        value={profile.gender}
+                                                        onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="Laki-laki">Laki-laki</option>
+                                                        <option value="Perempuan">Perempuan</option>
                                                     </select>
                                                     <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 w-4 h-4 text-gray-400 pointer-events-none" />
                                                 </div>
@@ -244,7 +319,11 @@ export default function ProfilePage() {
                                                 <label className="text-sm font-bold text-gray-500">Tanggal Lahir</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     <div className="relative">
-                                                        <select defaultValue="19" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
+                                                        <select
+                                                            value={profile.day}
+                                                            onChange={(e) => setProfile({ ...profile, day: e.target.value })}
+                                                            className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center"
+                                                        >
                                                             {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
                                                                 <option key={d} value={d}>{d}</option>
                                                             ))}
@@ -252,7 +331,11 @@ export default function ProfilePage() {
                                                         <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
                                                     </div>
                                                     <div className="relative col-span-1">
-                                                        <select defaultValue="Mar" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
+                                                        <select
+                                                            value={profile.month}
+                                                            onChange={(e) => setProfile({ ...profile, month: e.target.value })}
+                                                            className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center"
+                                                        >
                                                             {["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"].map((m) => (
                                                                 <option key={m} value={m}>{m}</option>
                                                             ))}
@@ -260,7 +343,11 @@ export default function ProfilePage() {
                                                         <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 w-3 h-3 text-gray-400 pointer-events-none" />
                                                     </div>
                                                     <div className="relative">
-                                                        <select defaultValue="2003" className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center">
+                                                        <select
+                                                            value={profile.year}
+                                                            onChange={(e) => setProfile({ ...profile, year: e.target.value })}
+                                                            className="w-full px-2 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none appearance-none cursor-pointer text-center"
+                                                        >
                                                             {Array.from({ length: 50 }, (_, i) => 2010 - i).map(y => (
                                                                 <option key={y} value={y}>{y}</option>
                                                             ))}
@@ -275,42 +362,55 @@ export default function ProfilePage() {
                                             <label className="text-sm font-bold text-gray-500">Kota Tempat Tinggal</label>
                                             <input
                                                 type="text"
+                                                value={profile.city}
+                                                onChange={(e) => setProfile({ ...profile, city: e.target.value })}
                                                 placeholder="Kota Tempat Tinggal"
                                                 className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
                                             />
                                         </div>
 
-                                        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                                            <button type="button" className="px-6 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                                        {/* Contact Section Moved Inside Form for Single Save Button */}
+                                        <div className="pt-8 mt-8 border-t-2 border-dashed border-gray-300">
+                                            <h2 className="font-bold text-lg mb-6">Kontak</h2>
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-bold text-gray-500">Email</label>
+                                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200 cursor-not-allowed opacity-80">
+                                                        <Mail className="w-5 h-5 text-gray-400" />
+                                                        <span className="font-medium text-gray-600 truncate">{profile.email}</span>
+                                                        <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded shrink-0">Verified</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-400">Email tidak dapat diubah.</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-bold text-gray-500">Nomor Ponsel</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="tel"
+                                                            value={profile.phone}
+                                                            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                                                            placeholder="0812..."
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                        />
+                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 sticky bottom-0 bg-white/95 backdrop-blur py-4 z-10">
+                                            <button type="button" onClick={() => router.back()} className="px-6 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
                                                 Batal
                                             </button>
-                                            <button type="submit" className="px-8 py-2.5 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                                                Simpan
+                                            <button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="px-8 py-2.5 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-wait"
+                                            >
+                                                {isLoading ? 'Menyimpan...' : 'Simpan'}
                                             </button>
                                         </div>
                                     </form>
-                                </div>
-
-                                <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
-                                    <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Kontak</h2>
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-500">Email</label>
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                                                <Mail className="w-5 h-5 text-gray-400" />
-                                                <span className="font-medium">akmal@example.com</span>
-                                                <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Verified</span>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-500">Nomor Ponsel</label>
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                                                <Phone className="w-5 h-5 text-gray-400" />
-                                                <span className="font-medium">+62 812 3456 7890</span>
-                                                <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Verified</span>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </>
                         ) : (

@@ -81,6 +81,8 @@ export async function signOut() {
 /**
  * Get current authenticated user with profile data
  */
+// ... imports ...
+
 export async function getCurrentUser() {
     const supabase = await createClient()
 
@@ -106,7 +108,47 @@ export async function getCurrentUser() {
         role: profile?.role || 'customer',
         phone: profile?.phone,
         avatar_url: profile?.avatar_url,
+        gender: profile?.gender,
+        date_of_birth: profile?.date_of_birth,
+        city: profile?.city,
     }
+}
+
+interface ProfileData {
+    full_name: string
+    gender?: string
+    date_of_birth?: string
+    city?: string
+    phone?: string
+}
+
+export async function updateProfile(data: ProfileData) {
+    const supabase = await createClient()
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+        .from('users')
+        .update({
+            full_name: data.full_name,
+            gender: data.gender,
+            date_of_birth: data.date_of_birth,
+            city: data.city,
+            phone: data.phone,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+    if (error) {
+        console.error('Update Profile Error:', error)
+        return { error: 'Gagal memperbarui profil' }
+    }
+
+    revalidatePath('/profile')
+    return { success: true }
 }
 
 /**

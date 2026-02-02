@@ -4,6 +4,7 @@ import { getCourts } from './courts'
 import { getAvailableSlots, createBooking as createBookingApi } from './bookings'
 import { revalidatePath } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
+import { getCurrentUser } from '@/lib/auth/actions'
 
 /**
  * Server action to fetch courts (Local DB)
@@ -51,14 +52,21 @@ export async function createBooking(data: {
     durationHours: number
     notes?: string
 }) {
+    // Get current user for booking details
+    const user = await getCurrentUser()
+
+    // Fallback values if user data is missing (should verify auth before calling this)
+    const customerName = user?.name || "Customer (Web)"
+    const customerPhone = user?.phone || "0000000000"
+
     const smashBooking = {
         venue_id: data.courtId,
         court_id: data.courtUuid,
         booking_date: data.bookingDate,
         start_time: data.startTime,
         duration: data.durationHours,
-        customer_name: "Customer (Web)", // TODO: Get from auth
-        phone: "0000000000" // TODO: Get from auth
+        customer_name: customerName,
+        phone: customerPhone
     }
 
     // Call Smash API
