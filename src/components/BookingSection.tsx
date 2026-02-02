@@ -8,6 +8,7 @@ import { AuthModal } from "@/components/AuthModal"
 import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
+import { useLoading } from "@/lib/loading-context"
 
 export function BookingSection() {
     const [selectedHall, setSelectedHall] = useState<any | null>(null)
@@ -91,11 +92,15 @@ export function BookingSection() {
         checkAuth();
     }, []);
 
+    // Global loading hook
+    const { startLoading, stopLoading } = useLoading();
+
     // Fetch venues on mount
     useEffect(() => {
         async function loadVenues() {
             setIsLoadingVenues(true);
             setApiError(null);
+            startLoading("Memuat venue...");
             try {
                 const venuesData = await fetchVenues();
 
@@ -158,10 +163,11 @@ export function BookingSection() {
                 setApiError('Failed to connect to PWA Smash');
             } finally {
                 setIsLoadingVenues(false);
+                stopLoading();
             }
         }
         loadVenues();
-    }, []);
+    }, [startLoading, stopLoading]);
 
     // Fetch venue details (with courts) when venue is selected
     useEffect(() => {
@@ -172,6 +178,7 @@ export function BookingSection() {
             }
 
             setIsLoadingVenueDetails(true);
+            startLoading("Memuat detail lapangan...");
             try {
                 const details = await fetchVenueDetails(selectedHall.id);
                 if (details && details.courts) {
@@ -190,10 +197,11 @@ export function BookingSection() {
                 console.error("Failed to load venue details:", error);
             } finally {
                 setIsLoadingVenueDetails(false);
+                stopLoading();
             }
         }
         loadVenueDetails();
-    }, [selectedHall?.id]);
+    }, [selectedHall?.id, startLoading, stopLoading]);
 
     // Fetch available slots when venue and date selected
     useEffect(() => {

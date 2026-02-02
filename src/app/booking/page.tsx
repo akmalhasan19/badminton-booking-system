@@ -10,6 +10,7 @@ import { format, isWeekend } from "date-fns"
 import { id } from "date-fns/locale"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, MapPin, MapPinOff } from "lucide-react"
+import { useLoading } from "@/lib/loading-context"
 
 // Types matching database
 type Court = {
@@ -92,10 +93,14 @@ export default function BookingPage() {
         )
     }, [])
 
+    // Global loading hook
+    const { startLoading, stopLoading } = useLoading();
+
     // 2. Fetch Courts & Pricing
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true)
+            startLoading("Memuat lapangan...")
             try {
                 // Fetch active courts
                 const { data: courtsData, error: courtsError } = await supabase
@@ -160,11 +165,12 @@ export default function BookingPage() {
                 console.error("Error fetching booking data:", error)
             } finally {
                 setIsLoading(false)
+                stopLoading()
             }
         }
 
         fetchData()
-    }, [date, userLocation]) // Re-run when date changes (pricing) or location updates
+    }, [date, userLocation, startLoading, stopLoading]) // Re-run when date changes (pricing) or location updates
 
     const handleBooking = () => {
         alert("Fitur Booking akan segera hadir! (MVP Demo)")
