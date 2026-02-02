@@ -65,14 +65,18 @@ export default function ProfilePage() {
         }
     }
 
-    const handleCropComplete = async (croppedBlob: Blob) => {
+    const handleCropComplete = async (croppedImageUrl: string) => {
         setImageToCrop(null) // Close cropper
         showToast("Mengupload foto profil...", 'success')
 
-        const formData = new FormData()
-        formData.append('file', croppedBlob, 'avatar.jpg')
-
         try {
+            // Convert Base64/DataURL to Blob
+            const response = await fetch(croppedImageUrl)
+            const blob = await response.blob()
+
+            const formData = new FormData()
+            formData.append('file', blob, 'avatar.jpg')
+
             const result = await uploadAvatar(formData)
             if (result.success && result.avatarUrl) {
                 setAvatarUrl(result.avatarUrl)
