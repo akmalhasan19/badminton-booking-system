@@ -6,19 +6,20 @@ import { motion, AnimatePresence } from "framer-motion"
 import { TIME_SLOTS } from "@/constants"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
-import { fetchCourts, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
+import { fetchVenues, fetchSmashCourts, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
 import { getCurrentUser } from "@/lib/auth/actions"
 
 export function BookingSection() {
-    const [selectedHall, setSelectedHall] = useState<any | null>(null) // Using 'any' for now since Court type from DB differs
-    const [selectedCourt, setSelectedCourt] = useState<number | null>(null)
+    const [selectedHall, setSelectedHall] = useState<any | null>(null)
+    const [selectedCourt, setSelectedCourt] = useState<any | null>(null) // Changed from number to Court object
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'))
     const [selectedTimes, setSelectedTimes] = useState<string[]>([])
     const [bookingStatus, setBookingStatus] = useState<'idle' | 'success' | 'loading'>('idle')
     const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
 
-    // Real data from Supabase
-    const [courts, setCourts] = useState<any[]>([])
+    // Real data from API
+    const [courts, setCourts] = useState<any[]>([]) // This variable name in UI represents 'Venues' (Halls)
+    const [smashCourts, setSmashCourts] = useState<any[]>([]) // Actual courts from API
     const [availableSlots, setAvailableSlots] = useState<{ time: string, available: boolean }[]>([])
     const [isLoadingCourts, setIsLoadingCourts] = useState(true)
     const [isLoadingSlots, setIsLoadingSlots] = useState(false)
@@ -53,15 +54,54 @@ export function BookingSection() {
         checkAuth();
     }, []);
 
-    // Fetch courts on mount
+    // Fetch venues and courts on mount
     useEffect(() => {
-        async function loadCourts() {
+        async function loadData() {
             setIsLoadingCourts(true);
-            const data = await fetchCourts();
-            setCourts(data);
-            setIsLoadingCourts(false);
+            try {
+                const [venuesData, courtsData] = await Promise.all([
+                    fetchVenues(),
+                    fetchSmashCourts()
+                ]);
+
+                setSmashCourts(courtsData);
+
+                if (venuesData && venuesData.length > 0) {
+                    // Map API Venues to UI 'Hall' objects
+                    const mappedVenues = venuesData.map((venue: any) => {
+                        // Filter courts for this venue if possible, otherwise use all
+                        // Assuming courtsData has venue_id, or we just count all if single venue system
+                        const venueCourts = courtsData.filter((c: any) => c.venue_id === venue.id || !c.venue_id);
+
+                        return {
+                            id: venue.id,
+                            name: venue.name,
+                            type: 'Professional', // Hardcoded for now
+                            pricePerHour: venueCourts[0]?.hourly_rate || 50000, // Use first court's price or default
+                            image_url: venue.image_url,
+                            totalCourts: venueCourts.length || 1, // Fallback to 1
+                            description: venue.description || 'Professional Badminton Hall',
+                            location: { // Parse address or use placeholders
+                                city: 'Jakarta',
+                                district: 'Jakarta Selatan',
+                                subDistrict: 'Tebet',
+                                address: venue.address
+                            },
+                        };
+                    });
+
+                    setCourts(mappedVenues);
+                } else {
+                    setCourts([]);
+                }
+            } catch (error) {
+                console.error("Failed to load booking data:", error);
+            } finally {
+                setIsLoadingCourts(false);
+            }
         }
-        loadCourts();
+        loadData();
+
     }, []);
 
     // Fetch available slots when court and date selected
@@ -120,7 +160,7 @@ export function BookingSection() {
 
         // Calculate duration and price
         const durationHours = selectedTimes.length;
-        const pricePerHour = 50; // Default price - should fetch from pricing table
+        const pricePerHour = selectedHall.pricePerHour || 50;
         const totalPrice = durationHours * pricePerHour;
 
         // Calculate end time
@@ -133,6 +173,7 @@ export function BookingSection() {
         // Create booking
         const result = await createBooking({
             courtId: selectedHall.id,
+            courtUuid: selectedCourt.id,
             bookingDate: selectedDate,
             startTime: selectedTimes[0],
             endTime: endTime,
@@ -157,7 +198,7 @@ export function BookingSection() {
         }, 4000);
     }
 
-    // Auth Modal Component replaced by shared component
+
 
     // Modal Component Logic
     const LocationModal = () => {
@@ -494,40 +535,45 @@ export function BookingSection() {
                                     </h4>
 
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {Array.from({ length: selectedHall.totalCourts }).map((_, idx) => {
-                                            const courtNum = idx + 1;
-                                            const isSelected = selectedCourt === courtNum;
-                                            return (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => setSelectedCourt(courtNum)}
-                                                    className={`relative h-48 rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between p-4
+                                        {smashCourts
+                                            .filter(c => c.venue_id === selectedHall.id || !c.venue_id)
+                                            .map((court, idx) => {
+                                                const isSelected = selectedCourt?.id === court.id;
+                                                // Fallback name if only ID exists
+                                                const displayName = court.name || `Court ${idx + 1}`;
+
+                                                return (
+                                                    <button
+                                                        key={court.id}
+                                                        onClick={() => setSelectedCourt(court)}
+                                                        className={`relative h-48 rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between p-4
                                                     ${isSelected
-                                                            ? 'bg-black border-black text-white shadow-hard scale-[1.02]'
-                                                            : 'bg-gray-50 border-gray-200 hover:border-black hover:bg-white text-black hover:shadow-hard-sm'
-                                                        }`}
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <span className={`text-4xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity ${isSelected ? 'text-white' : 'text-black'}`}>
-                                                            {courtNum.toString().padStart(2, '0')}
-                                                        </span>
-                                                        {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint" />}
-                                                    </div>
+                                                                ? 'bg-black border-black text-white shadow-hard scale-[1.02]'
+                                                                : 'bg-gray-50 border-gray-200 hover:border-black hover:bg-white text-black hover:shadow-hard-sm'
+                                                            }`}
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <span className={`text-4xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                                {/* Display court name or number derived from name */}
+                                                                {displayName.replace('LAPANGAN', '').trim()}
+                                                            </span>
+                                                            {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint" />}
+                                                        </div>
 
-                                                    {/* Mini Court Visual */}
-                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-16 border border-current opacity-20 rounded-sm">
-                                                        <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
-                                                        <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
-                                                    </div>
+                                                        {/* Mini Court Visual */}
+                                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-16 border border-current opacity-20 rounded-sm">
+                                                            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
+                                                            <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
+                                                        </div>
 
-                                                    <div className="text-right">
-                                                        <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-gray-400 group-hover:text-black'}`}>
-                                                            Available
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            )
-                                        })}
+                                                        <div className="text-right">
+                                                            <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-gray-400 group-hover:text-black'}`}>
+                                                                Available
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                )
+                                            })}
                                     </div>
                                 </div>
                             </motion.div>
