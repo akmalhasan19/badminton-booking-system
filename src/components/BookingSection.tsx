@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown } from "lucide-react"
+import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown, Loader2, MapPinOff, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { TIME_SLOTS } from "@/constants"
 import { Hall, Court } from "@/types"
@@ -23,6 +23,11 @@ export function BookingSection() {
     const [availableSlots, setAvailableSlots] = useState<{ time: string, available: boolean }[]>([])
     const [isLoadingCourts, setIsLoadingCourts] = useState(true)
     const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+    const [apiError, setApiError] = useState<string | null>(null)
+
+    // Geolocation State
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+    const [locationStatus, setLocationStatus] = useState<'loading' | 'granted' | 'denied' | 'unsupported' | 'idle'>('idle')
 
     // Location Filter State (Disabled for now - will implement later with location data in courts table)
     const [locationFilter, setLocationFilter] = useState<{
@@ -42,6 +47,37 @@ export function BookingSection() {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
+    // Request geolocation permission on mount
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        if (!navigator.geolocation) {
+            setLocationStatus('unsupported');
+            return;
+        }
+
+        setLocationStatus('loading');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setUserLocation({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+                setLocationStatus('granted');
+            },
+            (error) => {
+                console.error("Geolocation error:", error);
+                setLocationStatus('denied');
+            },
+            {
+                enableHighAccuracy: false,
+                timeout: 10000,
+                maximumAge: 300000 // 5 minutes cache
+            }
+        );
+    }, []);
+
     // Fetch user on mount
     useEffect(() => {
         async function checkAuth() {
@@ -58,6 +94,7 @@ export function BookingSection() {
     useEffect(() => {
         async function loadData() {
             setIsLoadingCourts(true);
+            setApiError(null);
             try {
                 const [venuesData, courtsData] = await Promise.all([
                     fetchVenues(),
@@ -91,11 +128,14 @@ export function BookingSection() {
                     });
 
                     setCourts(mappedVenues);
+                    setApiError(null);
                 } else {
                     setCourts([]);
+                    setApiError('No venues available from PWA Smash');
                 }
             } catch (error) {
                 console.error("Failed to load booking data:", error);
+                setApiError('Failed to connect to PWA Smash');
             } finally {
                 setIsLoadingCourts(false);
             }
@@ -372,11 +412,49 @@ export function BookingSection() {
                 </AnimatePresence>
 
                 <div className="mb-16">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black ${selectedHall || courts.length > 0 ? 'bg-pastel-mint text-black' : 'bg-gray-100 text-gray-400'}`}>
-                            <Zap className="w-3 h-3 mr-1 fill-current" />
-                            {selectedHall || courts.length > 0 ? "Connected to PWA Smash" : "Connecting..."}
-                        </span>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                        {/* API Connection Status */}
+                        {isLoadingCourts ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black bg-yellow-100 text-yellow-700">
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Connecting...
+                            </span>
+                        ) : apiError ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-400 bg-red-50 text-red-600">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Connection Failed
+                            </span>
+                        ) : courts.length > 0 ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black bg-pastel-mint text-black">
+                                <Zap className="w-3 h-3 mr-1 fill-current" />
+                                Connected to PWA Smash
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-gray-300 bg-gray-100 text-gray-500">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                No Venues Available
+                            </span>
+                        )}
+
+                        {/* Location Status */}
+                        {locationStatus === 'loading' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-300 bg-blue-50 text-blue-600">
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Getting Location...
+                            </span>
+                        )}
+                        {locationStatus === 'granted' && userLocation && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-green-300 bg-green-50 text-green-600">
+                                <MapPin className="w-3 h-3 mr-1" />
+                                Location Enabled
+                            </span>
+                        )}
+                        {locationStatus === 'denied' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-orange-300 bg-orange-50 text-orange-600">
+                                <MapPinOff className="w-3 h-3 mr-1" />
+                                Location Denied
+                            </span>
+                        )}
                     </div>
                     <h2 className="text-5xl md:text-7xl font-display font-black text-black mb-4 uppercase tracking-tighter">
                         Pick Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-pink text-stroke-2" style={{ WebkitTextStroke: '2px black' }}>Battlefield</span>
