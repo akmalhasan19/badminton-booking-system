@@ -206,6 +206,28 @@ export async function uploadAvatar(formData: FormData) {
             return { error: 'Unauthorized' }
         }
 
+        // 4. Security: Rate Limiting (DoS Protection)
+        // Prevent abuse by limiting uploads to once per minute per user
+        // We use the 'updated_at' field as a proxy for the last activity
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('updated_at')
+            .eq('id', user.id)
+            .single()
+
+        if (userProfile?.updated_at) {
+            const lastUpdate = new Date(userProfile.updated_at).getTime()
+            const now = Date.now()
+            const timeDiff = now - lastUpdate
+            const ONE_MINUTE = 60 * 1000
+
+            // If updated less than 1 minute ago
+            if (timeDiff < ONE_MINUTE) {
+                const remainingSeconds = Math.ceil((ONE_MINUTE - timeDiff) / 1000)
+                return { error: `Rate limit exceeded. Please wait ${remainingSeconds} seconds before uploading again.` }
+            }
+        }
+
         const buffer = Buffer.from(await file.arrayBuffer())
 
         // 4. Security: Magic Bytes / File Signature Validation
@@ -215,7 +237,20 @@ export async function uploadAvatar(formData: FormData) {
             return { error: 'File content does not match its extension. Possible malicious file.' }
         }
 
-        // 5. Conversion: Convert to WebP using Sharp (Also acts as sanity check)
+        // 5. Security: Image Dimension & Pixel Flood Protection
+        // Check metadata before full processing to prevent DoS via decompression bombs or pixel floods
+        const metadata = await sharp(buffer).metadata()
+        const MAX_DIMENSION = 4096
+
+        if (!metadata.width || !metadata.height) {
+            return { error: 'Invalid image file: Unable to determine dimensions.' }
+        }
+
+        if (metadata.width > MAX_DIMENSION || metadata.height > MAX_DIMENSION) {
+            return { error: `Image too large. Maximum dimensions allowed are ${MAX_DIMENSION}x${MAX_DIMENSION} pixels.` }
+        }
+
+        // 6. Conversion: Convert to WebP using Sharp (Also acts as sanity check)
         const optimizedBuffer = await sharp(buffer)
             .resize({ width: 500, height: 500, fit: 'cover' }) // Resize to reasonable avatar size
             .webp({ quality: 80 })
