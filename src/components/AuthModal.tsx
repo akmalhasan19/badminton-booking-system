@@ -19,6 +19,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
+        confirmPassword: '',
         name: '',
         phone: ''
     })
@@ -49,6 +50,12 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
 
         try {
             if (mode === 'register') {
+                if (formData.password !== formData.confirmPassword) {
+                    setError("Passwords do not match");
+                    setIsLoading(false);
+                    return;
+                }
+
                 const result = await signUp({
                     email: formData.email,
                     password: formData.password,
@@ -126,13 +133,13 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-[2.5rem] p-6 md:p-8 w-full max-w-[400px] shadow-2xl border-2 border-black relative overflow-hidden"
+                    className="bg-white rounded-[2.5rem] p-6 md:p-8 w-full max-w-[400px] shadow-2xl border-2 border-black relative overflow-y-auto max-h-[85vh]"
                 >
                     {/* Close Button */}
                     {!isLoading && (
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+                            className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-[80]"
                         >
                             <X className="w-6 h-6 text-black" />
                         </button>
@@ -251,6 +258,20 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                                     className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
                                 />
                             </div>
+
+                            {mode === 'register' && (
+                                <div className="relative group">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                    <input
+                                        type="password"
+                                        placeholder="Re-enter Password"
+                                        required
+                                        value={formData.confirmPassword}
+                                        onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                        className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
+                                    />
+                                </div>
+                            )}
 
                             <button
                                 type="submit"
