@@ -37,13 +37,21 @@ export async function getApplicationByToken(token: string): Promise<{ data: Appl
             .single()
 
         if (error) {
-            console.error('Fetch error:', error)
-            return { data: null, error: 'Application not found or invalid token.' }
+            console.error('Fetch error details:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            })
+            // Debugging: Check if key is loaded (log only first 5 chars)
+            console.log('Service Key loaded:', supabaseServiceKey ? `${supabaseServiceKey.substring(0, 5)}...` : 'NO KEY')
+
+            return { data: null, error: `Debug Error: ${error.message} (Code: ${error.code})` }
         }
 
         return { data, error: null }
-    } catch (err) {
+    } catch (err: any) {
         console.error('Unexpected error:', err)
-        return { data: null, error: 'An unexpected error occurred.' }
+        return { data: null, error: `Unexpected Error: ${err.message || err}` }
     }
 }
