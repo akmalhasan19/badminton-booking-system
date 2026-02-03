@@ -2,12 +2,15 @@
 
 import { ArrowRight, Zap } from "lucide-react"
 import { Tab } from "@/types"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface HeroProps {
     setActiveTab: (tab: Tab) => void;
 }
 
 export function Hero({ setActiveTab }: HeroProps) {
+    const { t } = useLanguage()
+
     return (
         <section className="relative w-full overflow-hidden pt-32 pb-20">
             {/* Grid Background */}
@@ -25,16 +28,16 @@ export function Hero({ setActiveTab }: HeroProps) {
                     {/* Text Content */}
                     <div className="lg:col-span-7 space-y-8 z-10">
                         <div className="inline-block bg-pastel-acid border-2 border-black px-4 py-2 rounded-full shadow-hard-sm transform -rotate-2">
-                            <span className="font-bold text-sm tracking-widest uppercase">The Future of Badminton</span>
+                            <span className="font-bold text-sm tracking-widest uppercase">{t.hero_badge}</span>
                         </div>
 
                         <h1 className="text-6xl md:text-8xl font-display font-black leading-[0.9] text-dark tracking-tighter">
-                            SERVE <span className="text-stroke-2 text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-mint" style={{ WebkitTextStroke: '2px #121212' }}>LOOKS.</span> <br />
-                            SMASH <span className="bg-pastel-pink px-2 italic transform inline-block -rotate-1 border-2 border-black shadow-hard-sm rounded-lg">HARD.</span>
+                            {t.hero_line1_word1} <span className="text-stroke-2 text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-mint" style={{ WebkitTextStroke: '2px #121212' }}>{t.hero_line1_word2}</span> <br />
+                            {t.hero_line2_word1} <span className="bg-pastel-pink px-2 italic transform inline-block -rotate-1 border-2 border-black shadow-hard-sm rounded-lg">{t.hero_line2_word2}</span>
                         </h1>
 
                         <p className="text-xl text-gray-700 font-medium max-w-lg leading-relaxed border-l-4 border-pastel-acid pl-6">
-                            A next-gen court booking experience. Curated for the modern player who cares about aesthetics as much as athletics.
+                            {t.hero_description}
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-5 pt-4">
@@ -43,14 +46,14 @@ export function Hero({ setActiveTab }: HeroProps) {
                                 className="group relative px-8 py-4 bg-dark text-white font-bold text-xl rounded-xl border-2 border-black shadow-hard hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
                             >
                                 <span className="flex items-center">
-                                    Book Now <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                                    {t.book_now} <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </span>
                             </button>
                             <button
                                 onClick={() => setActiveTab(Tab.SHOP)}
                                 className="px-8 py-4 bg-white text-dark font-bold text-xl rounded-xl border-2 border-black shadow-hard hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
                             >
-                                Shop Gear
+                                {t.shop_gear}
                             </button>
                         </div>
                     </div>
@@ -69,7 +72,7 @@ export function Hero({ setActiveTab }: HeroProps) {
                                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
                             />
                             <div className="absolute top-4 left-4 bg-pastel-acid border-2 border-black px-3 py-1 rounded-md shadow-hard-sm">
-                                <span className="font-bold text-xs uppercase">New Season</span>
+                                <span className="font-bold text-xs uppercase">{t.new_season}</span>
                             </div>
                             {/* Sticker */}
                             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-pastel-pink rounded-full border-2 border-black flex items-center justify-center animate-spin-slow">
@@ -90,3 +93,4 @@ export function Hero({ setActiveTab }: HeroProps) {
         </section>
     )
 }
+

@@ -45,6 +45,17 @@ export type Dictionary = {
     registration_success: string;
     registration_success_msg: string;
     back_to_home: string;
+
+    // Hero Section
+    hero_badge: string;
+    hero_line1_word1: string;
+    hero_line1_word2: string;
+    hero_line2_word1: string;
+    hero_line2_word2: string;
+    hero_description: string;
+    book_now: string;
+    shop_gear: string;
+    new_season: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -90,7 +101,18 @@ export const dictionaries: Record<Language, Dictionary> = {
         submitting: "Submitting...",
         registration_success: "Registration Successful!",
         registration_success_msg: "Thank you for joining. Please wait up to 1x24 hours for verification process. Our team will contact you via email for the next steps.",
-        back_to_home: "Back to Home"
+        back_to_home: "Back to Home",
+
+        // Hero Section
+        hero_badge: "The Future of Badminton",
+        hero_line1_word1: "SERVE",
+        hero_line1_word2: "LOOKS.",
+        hero_line2_word1: "SMASH",
+        hero_line2_word2: "HARD.",
+        hero_description: "A next-gen court booking experience. Curated for the modern player who cares about aesthetics as much as athletics.",
+        book_now: "Book Now",
+        shop_gear: "Shop Gear",
+        new_season: "New Season"
     },
     id: {
         home: "BERANDA",
@@ -134,7 +156,18 @@ export const dictionaries: Record<Language, Dictionary> = {
         submitting: "Mengirim...",
         registration_success: "Registrasi Berhasil!",
         registration_success_msg: "Terima kasih telah bergabung. Mohon tunggu maksimal 1x24 jam untuk proses verifikasi. Tim kami akan segera menghubungi Anda melalui email untuk langkah selanjutnya.",
-        back_to_home: "Kembali ke Beranda"
+        back_to_home: "Kembali ke Beranda",
+
+        // Hero Section
+        hero_badge: "Masa Depan Badminton",
+        hero_line1_word1: "TAMPIL",
+        hero_line1_word2: "KEREN.",
+        hero_line2_word1: "SMASH",
+        hero_line2_word2: "KERAS.",
+        hero_description: "Pengalaman booking lapangan generasi baru. Dirancang untuk pemain modern yang peduli estetika sebesar atletis.",
+        book_now: "Pesan Sekarang",
+        shop_gear: "Belanja Perlengkapan",
+        new_season: "Musim Baru"
     },
     jv: {
         home: "GRIYA",
@@ -178,6 +211,17 @@ export const dictionaries: Record<Language, Dictionary> = {
         submitting: "Ngirim...",
         registration_success: "Registrasi Berhasil!",
         registration_success_msg: "Matur nuwun sampun gabung. Ngentosi maksimal 1x24 jam kangge proses verifikasi. Tim kami badhe ngubungi Panjenengan liwat email kangge langkah selajengipun.",
-        back_to_home: "Wangsul dateng Griya"
+        back_to_home: "Wangsul dateng Griya",
+
+        // Hero Section
+        hero_badge: "Masa Depan Badminton",
+        hero_line1_word1: "TAMPIL",
+        hero_line1_word2: "GAGAH.",
+        hero_line2_word1: "SMASH",
+        hero_line2_word2: "SERU.",
+        hero_description: "Pengalaman pesen lapangan generasi anyar. Dirancang kangge pemain modern ingkang peduli estetika kados atletis.",
+        book_now: "Pesen Sakniki",
+        shop_gear: "Tumbas Perlengkapan",
+        new_season: "Musim Anyar"
     }
 }
