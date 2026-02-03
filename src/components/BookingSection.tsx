@@ -105,9 +105,15 @@ export function BookingSection() {
                 const venuesData = await fetchVenues();
 
                 if (venuesData && venuesData.length > 0) {
+                    // Filter out dummy/test venues
+                    const validVenues = venuesData.filter((v: any) =>
+                        !v.name.toLowerCase().includes('smash test arena') &&
+                        !v.name.toLowerCase().includes('dummy')
+                    );
+
                     // Fetch details for each venue to get court prices
                     const venuesWithPrices = await Promise.all(
-                        venuesData.map(async (venue: any) => {
+                        validVenues.map(async (venue: any) => {
                             try {
                                 const details = await fetchVenueDetails(venue.id);
                                 // Get minimum hourly rate from courts
