@@ -182,15 +182,48 @@ export default function PartnerRegisterPage() {
         setLocationStatus('idle')
 
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
+                const lat = position.coords.latitude
+                const lon = position.coords.longitude
+
                 setFormData(prev => ({
                     ...prev,
-                    venueLatitude: position.coords.latitude,
-                    venueLongitude: position.coords.longitude
+                    venueLatitude: lat,
+                    venueLongitude: lon
                 }))
+
+                try {
+                    // Use OpenStreetMap Nominatim for reverse geocoding
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+                        {
+                            headers: {
+                                'User-Agent': 'SmashBadmintonBooking/1.0' // Required by Nominatim
+                            }
+                        }
+                    )
+
+                    if (response.ok) {
+                        const data = await response.json()
+                        if (data.display_name) {
+                            setFormData(prev => ({
+                                ...prev,
+                                venueAddress: data.display_name
+                            }))
+                            toast.success("Location and address detected successfully!")
+                        } else {
+                            toast.success("Coordinates detected, but address could not be found.")
+                        }
+                    } else {
+                        toast.success("Coordinates detected. Please fill address manually.")
+                    }
+                } catch (error) {
+                    console.error("Reverse geocoding error:", error)
+                    toast.success("Coordinates detected. Please fill address manually.")
+                }
+
                 setLocationStatus('success')
                 setIsGettingLocation(false)
-                toast.success("Location detected successfully!")
             },
             (error) => {
                 console.error("Geolocation error:", error)
