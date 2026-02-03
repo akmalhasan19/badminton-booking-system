@@ -186,7 +186,122 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
         })
 
         if (emailError) {
-            console.error('Resend Error:', emailError)
+            console.error('Resend Error (Admin):', emailError)
+            // We don't fail the whole request if email fails, but we log it
+        }
+
+        // 4. Send Confirmation Email to Partner
+        const { error: partnerEmailError } = await resend.emails.send({
+            from: 'Smash Partner <onboarding@resend.dev>',
+            to: [data.email],
+            subject: '✅ Aplikasi Partner Diterima - Smash & Serve',
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="100%" style="max-width: 560px; background-color: #ffffff; border: 3px solid #000000; border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0px #000000;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #E0F55D; padding: 32px; text-align: center; border-bottom: 3px solid #000000;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 900; color: #000000; letter-spacing: -0.5px;">
+                                ✅ APLIKASI DITERIMA
+                            </h1>
+                            <p style="margin: 8px 0 0; font-size: 16px; font-weight: 600; color: #333333;">
+                                Kami sedang memproses pendaftaran Anda
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 32px 28px;">
+                            <p style="margin: 0 0 16px; font-size: 16px; color: #333333;">
+                                Halo <strong>${data.ownerName}</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
+                                Terima kasih telah mendaftarkan <strong>${data.venueName}</strong> sebagai partner Smash & Serve! Aplikasi Anda telah kami terima dan sedang dalam proses review.
+                            </p>
+                            
+                            <!-- Application Summary Box -->
+                            <div style="background-color: #f8f8f8; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                                <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333;">
+                                    📋 Ringkasan Aplikasi
+                                </h3>
+                                <table style="width: 100%; font-size: 14px;">
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #666;">Nama GOR:</td>
+                                        <td style="padding: 8px 0; color: #000; font-weight: 600;">${data.venueName}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #666;">Alamat:</td>
+                                        <td style="padding: 8px 0; color: #000; font-weight: 600;">${data.venueAddress}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #666;">Email:</td>
+                                        <td style="padding: 8px 0; color: #000; font-weight: 600;">${data.email}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #666;">Telepon:</td>
+                                        <td style="padding: 8px 0; color: #000; font-weight: 600;">${data.phone}</td>
+                                    </tr>
+                                    ${data.subscriptionPlan ? `
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #666;">Paket Langganan:</td>
+                                        <td style="padding: 8px 0; color: #000; font-weight: 600;">${PLAN_FEATURES[data.subscriptionPlan].displayName}</td>
+                                    </tr>
+                                    ` : ''}
+                                </table>
+                            </div>
+                            
+                            <!-- Timeline Box -->
+                            <div style="background-color: #fff7ed; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                                <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #b45309;">
+                                    ⏰ Apa yang terjadi selanjutnya?
+                                </h3>
+                                <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #333333; line-height: 1.8;">
+                                    <li>Tim kami akan meninjau aplikasi Anda dalam <strong>1x24 jam</strong></li>
+                                    <li>Anda akan menerima email pemberitahuan hasil review</li>
+                                    <li>Jika disetujui, Anda akan mendapat link untuk melengkapi pendaftaran GOR</li>
+                                </ol>
+                            </div>
+                            
+                            <p style="margin: 28px 0 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                                Jika Anda memiliki pertanyaan, jangan ragu untuk menghubungi tim kami di <a href="mailto:smash.email.web@gmail.com" style="color: #000; font-weight: 600;">smash.email.web@gmail.com</a>
+                            </p>
+                            
+                            <p style="margin: 24px 0 0; font-size: 15px; color: #333333;">
+                                Salam hangat,<br>
+                                <strong>Tim Smash & Serve</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f8f8; padding: 20px 28px; border-top: 2px dashed #e0e0e0;">
+                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
+                                © 2026 Smash & Serve. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+            `
+        })
+
+        if (partnerEmailError) {
+            console.error('Resend Error (Partner Confirmation):', partnerEmailError)
             // We don't fail the whole request if email fails, but we log it
         }
 
@@ -205,6 +320,7 @@ type ApprovalResult = {
     success: boolean
     error?: string
     inviteUrl?: string
+    emailSent?: boolean
 }
 
 export async function approveApplication(applicationId: string): Promise<ApprovalResult> {
@@ -261,7 +377,7 @@ export async function approveApplication(applicationId: string): Promise<Approva
         }
 
         // 3. Update application status
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('partner_applications')
             .update({ status: 'approved' })
             .eq('id', applicationId)
@@ -364,7 +480,7 @@ export async function approveApplication(applicationId: string): Promise<Approva
             // Don't fail the whole operation if email fails
         }
 
-        return { success: true, inviteUrl }
+        return { success: true, inviteUrl, emailSent: !emailError }
     } catch (err) {
         console.error('Approve Application Error:', err)
         return { success: false, error: 'An unexpected error occurred' }

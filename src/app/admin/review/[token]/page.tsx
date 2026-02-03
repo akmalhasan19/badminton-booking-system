@@ -80,9 +80,16 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
             const result = await approveApplication(application.id)
 
             if (result.success) {
-                toast.success("Partner approved! Registration invite has been sent to their email.", {
-                    duration: 5000
-                })
+                if (result.emailSent === false) {
+                    toast.warning(`Partner approved, but email failed to send! Invite Link: ${result.inviteUrl}`, {
+                        duration: 10000,
+                    })
+                    console.log("Invite URL:", result.inviteUrl)
+                } else {
+                    toast.success("Partner approved! Registration invite has been sent to their email.", {
+                        duration: 5000
+                    })
+                }
                 setApplication(prev => prev ? { ...prev, status: 'approved' } : null)
                 setShowApproveDialog(false)
             } else {
