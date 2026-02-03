@@ -34,11 +34,17 @@ export default function PaymentMethodsPage() {
             <div
                 onClick={() => router.push('/')}
                 className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+                title="Kembali ke Beranda"
             >
                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
                     <SmashLogo className="w-full h-full bg-black" />
                 </div>
                 <span className="text-xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
+                {/* Tooltip */}
+                <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-black text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
+                    Kembali ke Beranda
+                    <div className="absolute -top-1 right-4 w-2 h-2 bg-black transform rotate-45"></div>
+                </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">

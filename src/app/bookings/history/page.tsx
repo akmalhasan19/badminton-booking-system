@@ -54,11 +54,17 @@ export default function BookingHistoryPage() {
             <div
                 onClick={() => router.push('/')}
                 className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+                title="Kembali ke Beranda"
             >
                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
                     <SmashLogo className="w-full h-full bg-black" />
                 </div>
                 <span className="text-xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
+                {/* Tooltip */}
+                <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-black text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
+                    Kembali ke Beranda
+                    <div className="absolute -top-1 right-4 w-2 h-2 bg-black transform rotate-45"></div>
+                </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
@@ -87,8 +93,8 @@ export default function BookingHistoryPage() {
                             <button
                                 onClick={() => setActiveTab('completed')}
                                 className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'completed'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 Pesanan Selesai
@@ -96,8 +102,8 @@ export default function BookingHistoryPage() {
                             <button
                                 onClick={() => setActiveTab('cancelled')}
                                 className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'cancelled'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 Dibatalkan/Refund
@@ -135,8 +141,8 @@ export default function BookingHistoryPage() {
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'completed'
-                                                            ? 'bg-green-100 text-green-700 border-green-200'
-                                                            : 'bg-red-100 text-red-700 border-red-200'
+                                                        ? 'bg-green-100 text-green-700 border-green-200'
+                                                        : 'bg-red-100 text-red-700 border-red-200'
                                                         }`}>
                                                         {booking.status === 'completed' ? 'Selesai' : 'Dibatalkan'}
                                                     </span>
