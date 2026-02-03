@@ -98,3 +98,77 @@ export async function createBooking(data: {
 export async function updateBookingStatus(bookingId: string, status: string, paidAmount?: number) {
     return await smashApi.updateBookingStatus(bookingId, status, paidAmount)
 }
+
+// ============== NOTIFICATIONS ==============
+
+export type NotificationType = 'booking_confirmed' | 'booking_cancelled' | 'payment_reminder' | 'points_earned' | 'system' | 'promo'
+
+export interface Notification {
+    id: string
+    user_id: string
+    type: NotificationType
+    title: string
+    message: string
+    read: boolean
+    created_at: string
+    // Optional metadata for different notification types
+    metadata?: {
+        booking_id?: string
+        court_name?: string
+        booking_date?: string
+        points?: number
+        promo_code?: string
+    }
+}
+
+/**
+ * Server action to fetch user notifications
+ * TODO: Connect to real API once notifications endpoint is available
+ */
+export async function fetchNotifications(): Promise<Notification[]> {
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return []
+    }
+
+    // TODO: Replace with actual API call when ready
+    // Example: return await smashApi.getNotifications(user.id)
+
+    // For now, return empty array - no dummy data
+    return []
+}
+
+/**
+ * Server action to mark a notification as read
+ * TODO: Connect to real API once notifications endpoint is available
+ */
+export async function markNotificationAsRead(notificationId: string): Promise<{ success: boolean }> {
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return { success: false }
+    }
+
+    // TODO: Replace with actual API call when ready
+    // Example: return await smashApi.markNotificationRead(notificationId)
+
+    return { success: true }
+}
+
+/**
+ * Server action to mark all notifications as read
+ * TODO: Connect to real API once notifications endpoint is available
+ */
+export async function markAllNotificationsAsRead(): Promise<{ success: boolean }> {
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return { success: false }
+    }
+
+    // TODO: Replace with actual API call when ready
+    // Example: return await smashApi.markAllNotificationsRead(user.id)
+
+    return { success: true }
+}

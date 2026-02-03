@@ -88,6 +88,21 @@ export type Dictionary = {
     goal_payments: string;
     goal_members: string;
     goal_tournaments: string;
+
+    // Footer
+    footer_tagline: string;
+    footer_tagline_line2: string;
+    footer_platform: string;
+    footer_find_court: string;
+    footer_tournaments: string;
+    footer_coaching: string;
+    footer_pro_shop: string;
+    footer_legal: string;
+    footer_privacy: string;
+    footer_terms: string;
+    footer_cookies: string;
+    footer_copyright: string;
+    footer_designed_in: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -176,7 +191,22 @@ export const dictionaries: Record<Language, Dictionary> = {
         goal_management: "Easy Management",
         goal_payments: "Online Payments",
         goal_members: "Member System",
-        goal_tournaments: "Tournaments"
+        goal_tournaments: "Tournaments",
+
+        // Footer
+        footer_tagline: "Badminton for the internet generation.",
+        footer_tagline_line2: "Less hassle. More hustle.",
+        footer_platform: "Platform",
+        footer_find_court: "Find a Court",
+        footer_tournaments: "Tournaments",
+        footer_coaching: "Coaching",
+        footer_pro_shop: "Pro Shop",
+        footer_legal: "Legal",
+        footer_privacy: "Privacy",
+        footer_terms: "Terms",
+        footer_cookies: "Cookies",
+        footer_copyright: "© 2024 Smash & Serve. Made with 🏸",
+        footer_designed_in: "Designed in the Metaverse"
     },
     id: {
         home: "BERANDA",
@@ -263,7 +293,22 @@ export const dictionaries: Record<Language, Dictionary> = {
         goal_management: "Manajemen Mudah",
         goal_payments: "Pembayaran Online",
         goal_members: "Sistem Member",
-        goal_tournaments: "Turnamen"
+        goal_tournaments: "Turnamen",
+
+        // Footer
+        footer_tagline: "Badminton untuk generasi internet.",
+        footer_tagline_line2: "Lebih mudah. Lebih semangat.",
+        footer_platform: "Platform",
+        footer_find_court: "Cari Lapangan",
+        footer_tournaments: "Turnamen",
+        footer_coaching: "Pelatihan",
+        footer_pro_shop: "Toko Pro",
+        footer_legal: "Legal",
+        footer_privacy: "Privasi",
+        footer_terms: "Ketentuan",
+        footer_cookies: "Cookies",
+        footer_copyright: "© 2024 Smash & Serve. Dibuat dengan 🏸",
+        footer_designed_in: "Didesain di Metaverse"
     },
     jv: {
         home: "GRIYA",
@@ -350,7 +395,22 @@ export const dictionaries: Record<Language, Dictionary> = {
         goal_management: "Manajemen Gampil",
         goal_payments: "Pembayaran Online",
         goal_members: "Sistem Member",
-        goal_tournaments: "Turnamen"
+        goal_tournaments: "Turnamen",
+
+        // Footer
+        footer_tagline: "Badminton kangge generasi internet.",
+        footer_tagline_line2: "Langkung gampil. Langkung semangat.",
+        footer_platform: "Platform",
+        footer_find_court: "Pados Lapangan",
+        footer_tournaments: "Turnamen",
+        footer_coaching: "Pelatihan",
+        footer_pro_shop: "Toko Pro",
+        footer_legal: "Legal",
+        footer_privacy: "Privasi",
+        footer_terms: "Ketentuan",
+        footer_cookies: "Cookies",
+        footer_copyright: "© 2024 Smash & Serve. Didamel kaliyan 🏸",
+        footer_designed_in: "Didesain wonten Metaverse"
     }
 }
 
