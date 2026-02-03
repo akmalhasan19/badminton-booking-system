@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { toast } from "sonner"
 import { ArrowRight, Building2, User, Mail, Phone, Hash, CheckCircle, Globe, Layout, Users } from "lucide-react"
 
 import Image from "next/image"
@@ -164,6 +165,8 @@ export default function PartnerRegisterPage() {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSubmitting(true)
@@ -172,13 +175,14 @@ export default function PartnerRegisterPage() {
             const result = await submitPartnerApplication(formData)
 
             if (result.success) {
+                toast.success("Application submitted successfully!")
                 setIsSubmitted(true)
             } else {
-                alert("Failed to submit application: " + result.error)
+                toast.error("Failed to submit application: " + result.error)
             }
         } catch (error) {
             console.error(error)
-            alert("An error occurred during submission.")
+            toast.error("An unexpected error occurred. Please try again.")
         } finally {
             setIsSubmitting(false)
         }

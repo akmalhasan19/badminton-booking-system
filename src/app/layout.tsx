@@ -13,6 +13,8 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+import { Toaster } from "sonner";
+
 export const metadata: Metadata = {
   title: "Smash & Serve",
   description: "A next-gen court booking experience",
@@ -31,6 +33,7 @@ export default function RootLayout({
         <div className="bg-noise"></div>
         <LoadingProvider>
           {children}
+          <Toaster position="top-center" richColors />
         </LoadingProvider>
       </body>
     </html>
