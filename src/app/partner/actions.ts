@@ -393,86 +393,90 @@ export async function approveApplication(applicationId: string): Promise<Approva
             to: [application.email],
             subject: '🎉 Selamat! Aplikasi Partner Anda Disetujui - Smash & Serve',
             html: `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+                <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8" >
+        <meta name="viewport" content = "width=device-width, initial-scale=1.0" >
+        </head>
+        < body style = "margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace, sans-serif; background-color: #f3f4f6;" >
+        <table width="100%" cellpadding = "0" cellspacing = "0" style = "background-color: #f3f4f6; padding: 40px 20px;" >
         <tr>
-            <td align="center">
-                <table width="100%" style="max-width: 560px; background-color: #ffffff; border: 3px solid #000000; border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0px #000000;">
-                    <!-- Header -->
-                    <tr>
-                        <td style="background-color: #E0F55D; padding: 32px; text-align: center; border-bottom: 3px solid #000000;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 900; color: #000000; letter-spacing: -0.5px;">
-                                🎉 SELAMAT!
-                            </h1>
-                            <p style="margin: 8px 0 0; font-size: 16px; font-weight: 600; color: #333333;">
-                                Aplikasi Partner Anda Disetujui
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Body -->
-                    <tr>
-                        <td style="padding: 32px 28px;">
-                            <p style="margin: 0 0 16px; font-size: 16px; color: #333333;">
-                                Halo <strong>${application.owner_name}</strong>,
-                            </p>
-                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
-                                Kami dengan senang hati mengabarkan bahwa aplikasi Anda untuk mendaftarkan <strong>${application.venue_name}</strong> sebagai partner resmi Smash & Serve telah <strong style="color: #16a34a;">DISETUJUI</strong>!
-                            </p>
-                            
-                            <!-- Next Steps Box -->
-                            <div style="background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                                <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #166534;">
-                                    📋 Langkah Selanjutnya
-                                </h3>
-                                <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #333333; line-height: 1.8;">
-                                    <li>Klik tombol di bawah untuk membuat akun GOR Anda</li>
-                                    <li>Lengkapi informasi profil venue</li>
-                                    <li>Mulai kelola booking badminton Anda!</li>
-                                </ol>
-                            </div>
-                            
-                            <!-- CTA Button -->
-                            <div style="text-align: center; margin: 32px 0;">
-                                <a href="${inviteUrl}" style="display: inline-block; background-color: #E0F55D; color: #000000; padding: 18px 36px; font-size: 16px; font-weight: 900; text-decoration: none; border: 3px solid #000; border-radius: 12px; box-shadow: 4px 4px 0px 0px #000; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    🏸 Daftarkan GOR Anda
-                                </a>
-                            </div>
-                            
-                            <!-- Expiry Notice -->
-                            <div style="background-color: #fef3c7; border: 2px solid #d97706; border-radius: 8px; padding: 12px 16px; text-align: center;">
-                                <p style="margin: 0; font-size: 13px; color: #92400e;">
-                                    ⏰ <strong>Penting:</strong> Link di atas berlaku selama <strong>7 hari</strong>. Segera daftarkan GOR Anda sebelum link kadaluarsa.
-                                </p>
-                            </div>
-                            
-                            <p style="margin: 28px 0 0; font-size: 14px; color: #666666; line-height: 1.6;">
-                                Jika Anda memiliki pertanyaan, jangan ragu untuk menghubungi tim kami di <a href="mailto:smash.email.web@gmail.com" style="color: #000; font-weight: 600;">smash.email.web@gmail.com</a>
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Footer -->
-                    <tr>
-                        <td style="background-color: #f8f8f8; padding: 20px 28px; border-top: 2px dashed #e0e0e0;">
-                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
-                                © 2026 Smash & Serve. All rights reserved.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
+        <td align="center" >
+        <!--Main Container-- >
+        <table width="100%" style = "max-width: 600px; background-color: #ffffff; border: 3px solid #000000; box-shadow: 8px 8px 0px #000000;" >
+        <!--Header -->
+        <tr>
+        <td style="background-color: #ccfd35; padding: 40px 20px; text-align: center; border-bottom: 3px solid #000000;" >
+        <!--Icon -->
+        <img src="${process.env.NEXT_PUBLIC_APP_URL}/email/partner-approved-icon.png" alt = "Celebration Icon" style = "width: 120px; height: 120px; display: block; margin: 0 auto 20px auto; filter: drop-shadow(4px 4px 0px #000000);" >
+
+        <h1 style="margin: 0; font-size: 32px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: -1px; line-height: 1.2;" >
+        SELAMAT!
+        </h1>
+        < p style = "margin: 10px 0 0; font-size: 18px; font-weight: 700; color: #000000; text-transform: uppercase;" >
+        Aplikasi Partner Anda Disetujui
+        </p>
+        </td>
         </tr>
-    </table>
-</body>
-</html>
-            `
+
+        < !--Body -->
+        <tr>
+        <td style="padding: 40px 30px;" >
+        <p style="margin: 0 0 20px; font-size: 16px; color: #000000; font-weight: 700;" >
+        Halo ${application.owner_name},
+            </p>
+            < p style = "margin: 0 0 30px; font-size: 16px; color: #333333; line-height: 1.6;" >
+            Kami dengan senang hati mengabarkan bahwa aplikasi Anda untuk mendaftarkan < strong > ${application.venue_name} < /strong> sebagai partner resmi Smash & Serve telah <strong style="background-color: #ccfd35; padding: 2px 6px; border: 1px solid #000;">DISETUJUI!</strong >
+            </p>
+
+        < !--Next Steps Box-- >
+        <div style="background-color: #ffffff; border: 3px solid #000000; padding: 25px; margin: 30px 0; box-shadow: 4px 4px 0px #000000;" >
+        <h3 style="margin: 0 0 15px; font-size: 16px; font-weight: 900; text-transform: uppercase; border-bottom: 3px solid #000000; padding-bottom: 10px; display: inline-block;" >
+        LANGKAH SELANJUTNYA
+        </h3>
+        < ol style = "margin: 0; padding-left: 20px; font-size: 15px; color: #000000; line-height: 1.8; font-weight: 500;" >
+        <li>Klik tombol di bawah untuk membuat akun GOR Anda </li>
+        < li > Lengkapi informasi profil venue </li>
+        < li > Mulai kelola booking badminton Anda! </li>
+        </ol>
+        </div>
+
+        < !--CTA Button-- >
+        <div style="text-align: center; margin: 40px 0;" >
+        <a href="${inviteUrl}" style = "display: inline-block; background-color: #000000; color: #ffffff; padding: 18px 40px; font-size: 18px; font-weight: 900; text-decoration: none; border: 3px solid #000000; box-shadow: 6px 6px 0px #ccfd35; text-transform: uppercase; transition: all 0.2s;" >
+        DAFTARKAN GOR ANDA
+        </a>
+        </div>
+
+        < !--Expiry Notice-- >
+        <div style="background-color: #fef3c7; border: 3px solid #000000; padding: 15px; text-align: center;" >
+        <p style="margin: 0; font-size: 14px; color: #000000; font-weight: 600;" >
+                                    ⚠️ PENTING: Link ini berlaku selama < strong > 7 hari </strong>.
+            </p>
+            </div>
+
+            < p style = "margin: 30px 0 0; font-size: 14px; color: #666666; font-weight: 500;" >
+                Butuh bantuan ? email kami di < a href = "mailto:smash.email.web@gmail.com" style = "color: #000000; text-decoration: underline; font-weight: 700;" > smash.email.web@gmail.com</a>
+                    </p>
+                    </td>
+                    </tr>
+
+                    < !--Footer -->
+                        <tr>
+                        <td style="background-color: #000000; padding: 20px; text-align: center;" >
+                            <p style="margin: 0; font-size: 12px; color: #ffffff; font-weight: 700; text-transform: uppercase;" >
+                                © 2026 Smash & Serve.All rights reserved.
+                            </p>
+            </td>
+            </tr>
+            </table>
+            </td>
+            </tr>
+            </table>
+            </body>
+            </html>
+                `
         })
 
         if (emailError) {
@@ -524,76 +528,76 @@ export async function rejectApplication(applicationId: string): Promise<{ succes
             to: [application.email],
             subject: 'Pembaruan Status Aplikasi Partner - Smash & Serve',
             html: `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
-        <tr>
-            <td align="center">
-                <table width="100%" style="max-width: 560px; background-color: #ffffff; border: 3px solid #000000; border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0px #000000;">
-                    <!-- Header -->
-                    <tr>
-                        <td style="background-color: #fef2f2; padding: 32px; text-align: center; border-bottom: 3px solid #000000;">
-                            <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #000000; letter-spacing: -0.5px;">
-                                Pembaruan Status Aplikasi
-                            </h1>
-                        </td>
-                    </tr>
-                    
-                    <!-- Body -->
-                    <tr>
-                        <td style="padding: 32px 28px;">
-                            <p style="margin: 0 0 16px; font-size: 16px; color: #333333;">
-                                Halo <strong>${application.owner_name}</strong>,
-                            </p>
-                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
-                                Terima kasih atas minat Anda untuk bergabung sebagai partner Smash & Serve dengan mendaftarkan <strong>${application.venue_name}</strong>.
-                            </p>
-                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
-                                Setelah meninjau aplikasi Anda dengan seksama, dengan berat hati kami sampaikan bahwa aplikasi Anda <strong style="color: #dc2626;">belum dapat kami setujui</strong> pada saat ini.
-                            </p>
-                            
-                            <!-- Info Box -->
-                            <div style="background-color: #f8f8f8; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.7;">
-                                    Keputusan ini dapat disebabkan oleh berbagai faktor seperti kelengkapan dokumen, lokasi venue, atau kapasitas kami saat ini untuk menerima partner baru.
+            < !DOCTYPE html >
+                <html>
+                <head>
+                <meta charset="utf-8" >
+                    <meta name="viewport" content = "width=device-width, initial-scale=1.0" >
+                        </head>
+                        < body style = "margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;" >
+                            <table width="100%" cellpadding = "0" cellspacing = "0" style = "background-color: #f5f5f5; padding: 40px 20px;" >
+                                <tr>
+                                <td align="center" >
+                                    <table width="100%" style = "max-width: 560px; background-color: #ffffff; border: 3px solid #000000; border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0px #000000;" >
+                                        <!--Header -->
+                                            <tr>
+                                            <td style="background-color: #fef2f2; padding: 32px; text-align: center; border-bottom: 3px solid #000000;" >
+                                                <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #000000; letter-spacing: -0.5px;" >
+                                                    Pembaruan Status Aplikasi
+                                                        </h1>
+                                                        </td>
+                                                        </tr>
+
+                                                        < !--Body -->
+                                                            <tr>
+                                                            <td style="padding: 32px 28px;" >
+                                                                <p style="margin: 0 0 16px; font-size: 16px; color: #333333;" >
+                                                                    Halo < strong > ${application.owner_name} </strong>,
+                                                                        </p>
+                                                                        < p style = "margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;" >
+                                                                            Terima kasih atas minat Anda untuk bergabung sebagai partner Smash & Serve dengan mendaftarkan < strong > ${application.venue_name} </strong>.
+                                                                                </p>
+                                                                                < p style = "margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;" >
+                                                                                    Setelah meninjau aplikasi Anda dengan seksama, dengan berat hati kami sampaikan bahwa aplikasi Anda < strong style = "color: #dc2626;" > belum dapat kami setujui </strong> pada saat ini.
+                                                                                        </p>
+
+                                                                                        < !--Info Box-- >
+                                                                                            <div style="background-color: #f8f8f8; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; margin: 24px 0;" >
+                                                                                                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.7;" >
+                                                                                                    Keputusan ini dapat disebabkan oleh berbagai faktor seperti kelengkapan dokumen, lokasi venue, atau kapasitas kami saat ini untuk menerima partner baru.
                                 </p>
-                            </div>
-                            
-                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
-                                Kami sangat menghargai waktu dan usaha yang telah Anda investasikan dalam proses aplikasi ini. Jangan berkecil hati — Anda dipersilakan untuk mengajukan aplikasi kembali di masa mendatang.
+                                                                                                        </div>
+
+                                                                                                        < p style = "margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;" >
+                                                                                                            Kami sangat menghargai waktu dan usaha yang telah Anda investasikan dalam proses aplikasi ini.Jangan berkecil hati — Anda dipersilakan untuk mengajukan aplikasi kembali di masa mendatang.
                             </p>
-                            
-                            <p style="margin: 28px 0 0; font-size: 14px; color: #666666; line-height: 1.6;">
-                                Jika Anda memiliki pertanyaan atau membutuhkan klarifikasi lebih lanjut, silakan hubungi kami di <a href="mailto:smash.email.web@gmail.com" style="color: #000; font-weight: 600;">smash.email.web@gmail.com</a>
+
+                                                                                                                < p style = "margin: 28px 0 0; font-size: 14px; color: #666666; line-height: 1.6;" >
+                                                                                                                    Jika Anda memiliki pertanyaan atau membutuhkan klarifikasi lebih lanjut, silakan hubungi kami di < a href = "mailto:smash.email.web@gmail.com" style = "color: #000; font-weight: 600;" > smash.email.web@gmail.com</a>
+                                                                                                                        </p>
+
+                                                                                                                        < p style = "margin: 24px 0 0; font-size: 15px; color: #333333;" >
+                                                                                                                            Salam hangat, <br>
+                                                                                                                                <strong>Tim Smash & Serve </strong>
+                                                                                                                                    </p>
+                                                                                                                                    </td>
+                                                                                                                                    </tr>
+
+                                                                                                                                    < !--Footer -->
+                                                                                                                                        <tr>
+                                                                                                                                        <td style="background-color: #f8f8f8; padding: 20px 28px; border-top: 2px dashed #e0e0e0;" >
+                                                                                                                                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;" >
+                                © 2026 Smash & Serve.All rights reserved.
                             </p>
-                            
-                            <p style="margin: 24px 0 0; font-size: 15px; color: #333333;">
-                                Salam hangat,<br>
-                                <strong>Tim Smash & Serve</strong>
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Footer -->
-                    <tr>
-                        <td style="background-color: #f8f8f8; padding: 20px 28px; border-top: 2px dashed #e0e0e0;">
-                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
-                                © 2026 Smash & Serve. All rights reserved.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
             </td>
-        </tr>
-    </table>
-</body>
-</html>
-            `
+            </tr>
+            </table>
+            </td>
+            </tr>
+            </table>
+            </body>
+            </html>
+                `
         })
 
         if (emailError) {
