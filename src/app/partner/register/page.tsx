@@ -129,6 +129,10 @@ const AnimatedBackground = () => (
     </div>
 )
 
+import { SubscriptionPlan } from "@/lib/constants/plans"
+
+// ... imports ...
+
 export default function PartnerRegisterPage() {
     const [showOnboarding, setShowOnboarding] = useState(true)
     const [formData, setFormData] = useState({
@@ -139,14 +143,19 @@ export default function PartnerRegisterPage() {
         website: "",
         flooringMaterial: "",
         routineClubs: "",
-        goals: [] as string[]
+        goals: [] as string[],
+        subscriptionPlan: null as SubscriptionPlan | null
     })
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
 
-    const handleOnboardingComplete = (selectedGoals: string[]) => {
-        setFormData(prev => ({ ...prev, goals: selectedGoals }))
+    const handleOnboardingComplete = (selectedGoals: string[], plan?: SubscriptionPlan) => {
+        setFormData(prev => ({
+            ...prev,
+            goals: selectedGoals,
+            subscriptionPlan: plan || null
+        }))
         setShowOnboarding(false)
     }
 

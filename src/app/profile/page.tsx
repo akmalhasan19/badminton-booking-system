@@ -1,11 +1,12 @@
 "use client"
 
-import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift, Lock, Shield, AlertTriangle } from "lucide-react"
-import { motion } from "framer-motion"
+import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift, Lock, Shield, AlertTriangle, Loader2, CheckCircle, ArrowLeft } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { SmashLogo } from "@/components/SmashLogo"
 import { ImageCropper } from "@/components/ImageCropper"
 import { uploadAvatar, getCurrentUser, updateProfile } from "@/lib/auth/actions"
+import { sendPasswordResetCode, verifyPasswordResetCode, updatePasswordWithOTP } from "@/lib/auth/password-reset-actions"
 import { useState, useRef, useEffect } from "react"
 import { Toast, ToastType } from "@/components/ui/Toast"
 
@@ -46,6 +47,16 @@ export default function ProfilePage() {
     ]
 
     const [activeTab, setActiveTab] = useState<'info' | 'security' | 'billing'>('info')
+
+    // Password Reset State
+    const [passwordStep, setPasswordStep] = useState<1 | 2 | 3>(1)
+    const [resetEmail, setResetEmail] = useState('')
+    const [otpCode, setOtpCode] = useState('')
+    const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+    const [passwordLoading, setPasswordLoading] = useState(false)
+    const [passwordError, setPasswordError] = useState<string | null>(null)
+    const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
 
     const handleAvatarClick = () => {
         fileInputRef.current?.click()
@@ -419,70 +430,319 @@ export default function ProfilePage() {
                             </>
                         ) : (
                             <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
-                                <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Ubah Password</h2>
-
-                                <form className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-500">Password Saat Ini</label>
-                                        <div className="relative">
-                                            <input
-                                                type="password"
-                                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
-                                                placeholder="Masukkan password lama"
-                                            />
-                                            <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-500">Password Baru</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="password"
-                                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
-                                                    placeholder="Minimal 8 karakter"
-                                                />
-                                                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                                    <h2 className="font-bold text-lg">Ubah Password</h2>
+                                    {/* Step indicator */}
+                                    <div className="flex items-center gap-2">
+                                        {[1, 2, 3].map((step) => (
+                                            <div
+                                                key={step}
+                                                className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm font-bold transition-colors ${passwordStep >= step
+                                                        ? 'bg-pastel-acid text-black'
+                                                        : 'bg-gray-100 text-gray-400'
+                                                    }`}
+                                            >
+                                                {passwordStep > step ? <CheckCircle className="w-4 h-4" /> : step}
                                             </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-500">Konfirmasi Password</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="password"
-                                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
-                                                    placeholder="Ulangi password baru"
-                                                />
-                                                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Error/Success Messages */}
+                                <AnimatePresence mode="wait">
+                                    {passwordError && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="mb-4 p-4 bg-red-100 border-2 border-red-500 rounded-lg text-red-700 text-sm font-medium"
+                                        >
+                                            {passwordError}
+                                        </motion.div>
+                                    )}
+                                    {passwordSuccess && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="mb-4 p-4 bg-green-100 border-2 border-green-500 rounded-lg text-green-700 text-sm font-medium flex items-center gap-2"
+                                        >
+                                            <CheckCircle className="w-4 h-4" />
+                                            {passwordSuccess}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                <AnimatePresence mode="wait">
+                                    {/* Step 1: Email Verification */}
+                                    {passwordStep === 1 && (
+                                        <motion.div
+                                            key="step1"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            className="space-y-6"
+                                        >
+                                            <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-xl">
+                                                <p className="text-sm text-blue-700 font-medium">
+                                                    Untuk keamanan, masukkan email yang terdaftar untuk menerima kode verifikasi.
+                                                </p>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="bg-yellow-300 border-2 border-black p-5 rounded-xl flex gap-4 items-start shadow-hard relative overflow-hidden">
-                                        <div className="absolute -right-4 -top-4 w-12 h-12 bg-white/30 rounded-full blur-xl pointer-events-none"></div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-500">Email Terdaftar</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="email"
+                                                        value={resetEmail}
+                                                        onChange={(e) => setResetEmail(e.target.value)}
+                                                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                        placeholder="masukkan@email.com"
+                                                    />
+                                                    <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                </div>
+                                            </div>
 
-                                        <div className="bg-black/5 p-2 rounded-lg border-2 border-black/10 shrink-0">
-                                            <AlertTriangle className="w-5 h-5 text-black" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-display font-bold text-black text-base">Tips Keamanan</h4>
-                                            <p className="text-sm text-black/80 font-medium mt-1 leading-relaxed">
-                                                Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk password yang lebih kuat.
-                                                Jangan gunakan tanggal lahir atau informasi pribadi yang mudah ditebak.
-                                            </p>
-                                        </div>
-                                    </div>
+                                            <button
+                                                type="button"
+                                                disabled={passwordLoading || !resetEmail}
+                                                onClick={async () => {
+                                                    setPasswordLoading(true)
+                                                    setPasswordError(null)
+                                                    const result = await sendPasswordResetCode(resetEmail)
+                                                    setPasswordLoading(false)
+                                                    if (result.error) {
+                                                        setPasswordError(result.error)
+                                                    } else {
+                                                        setPasswordSuccess(result.message || 'Kode verifikasi telah dikirim')
+                                                        setTimeout(() => {
+                                                            setPasswordSuccess(null)
+                                                            setPasswordStep(2)
+                                                        }, 1500)
+                                                    }
+                                                }}
+                                                className="w-full px-8 py-3 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                            >
+                                                {passwordLoading ? (
+                                                    <>
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                        Mengirim...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Mail className="w-5 h-5" />
+                                                        Kirim Kode Verifikasi
+                                                    </>
+                                                )}
+                                            </button>
+                                        </motion.div>
+                                    )}
 
-                                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                                        <button type="button" className="px-6 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-                                            Batal
-                                        </button>
-                                        <button type="submit" className="px-8 py-2.5 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                                            Ubah Password
-                                        </button>
-                                    </div>
-                                </form>
+                                    {/* Step 2: OTP Verification */}
+                                    {passwordStep === 2 && (
+                                        <motion.div
+                                            key="step2"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            className="space-y-6"
+                                        >
+                                            <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-xl">
+                                                <p className="text-sm text-blue-700 font-medium">
+                                                    Kode verifikasi 6 digit telah dikirim ke <strong>{resetEmail}</strong>
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-500">Kode Verifikasi</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={otpCode}
+                                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                                        className="w-full px-4 py-4 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-mono text-2xl text-center tracking-[0.5em] outline-none transition-colors"
+                                                        placeholder="000000"
+                                                        maxLength={6}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-gray-500 text-center mt-2">
+                                                    Kode berlaku selama 10 menit
+                                                </p>
+                                            </div>
+
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setPasswordStep(1)
+                                                        setOtpCode('')
+                                                        setPasswordError(null)
+                                                    }}
+                                                    className="px-6 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                                                >
+                                                    <ArrowLeft className="w-4 h-4" />
+                                                    Kembali
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={passwordLoading || otpCode.length !== 6}
+                                                    onClick={async () => {
+                                                        setPasswordLoading(true)
+                                                        setPasswordError(null)
+                                                        const result = await verifyPasswordResetCode(resetEmail, otpCode)
+                                                        setPasswordLoading(false)
+                                                        if (result.error) {
+                                                            setPasswordError(result.error)
+                                                        } else {
+                                                            setPasswordSuccess('Kode berhasil diverifikasi!')
+                                                            setTimeout(() => {
+                                                                setPasswordSuccess(null)
+                                                                setPasswordStep(3)
+                                                            }, 1000)
+                                                        }
+                                                    }}
+                                                    className="flex-1 px-8 py-3 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                >
+                                                    {passwordLoading ? (
+                                                        <>
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            Memverifikasi...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle className="w-5 h-5" />
+                                                            Verifikasi Kode
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Step 3: New Password */}
+                                    {passwordStep === 3 && (
+                                        <motion.div
+                                            key="step3"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            className="space-y-6"
+                                        >
+                                            <div className="bg-green-50 border-2 border-green-200 p-4 rounded-xl flex items-center gap-3">
+                                                <CheckCircle className="w-5 h-5 text-green-600" />
+                                                <p className="text-sm text-green-700 font-medium">
+                                                    Email terverifikasi! Silakan buat password baru.
+                                                </p>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-bold text-gray-500">Password Baru</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="password"
+                                                            value={newPassword}
+                                                            onChange={(e) => setNewPassword(e.target.value)}
+                                                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                            placeholder="Minimal 8 karakter"
+                                                        />
+                                                        <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-bold text-gray-500">Konfirmasi Password</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="password"
+                                                            value={confirmPassword}
+                                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-black rounded-lg font-medium outline-none transition-colors"
+                                                            placeholder="Ulangi password baru"
+                                                        />
+                                                        <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-yellow-300 border-2 border-black p-5 rounded-xl flex gap-4 items-start shadow-hard relative overflow-hidden">
+                                                <div className="absolute -right-4 -top-4 w-12 h-12 bg-white/30 rounded-full blur-xl pointer-events-none"></div>
+
+                                                <div className="bg-black/5 p-2 rounded-lg border-2 border-black/10 shrink-0">
+                                                    <AlertTriangle className="w-5 h-5 text-black" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-display font-bold text-black text-base">Tips Keamanan</h4>
+                                                    <p className="text-sm text-black/80 font-medium mt-1 leading-relaxed">
+                                                        Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk password yang lebih kuat.
+                                                        Jangan gunakan tanggal lahir atau informasi pribadi yang mudah ditebak.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setPasswordStep(1)
+                                                        setResetEmail('')
+                                                        setOtpCode('')
+                                                        setNewPassword('')
+                                                        setConfirmPassword('')
+                                                        setPasswordError(null)
+                                                    }}
+                                                    className="px-6 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    Batal
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={passwordLoading || !newPassword || !confirmPassword || newPassword !== confirmPassword || newPassword.length < 8}
+                                                    onClick={async () => {
+                                                        if (newPassword !== confirmPassword) {
+                                                            setPasswordError('Password tidak cocok')
+                                                            return
+                                                        }
+                                                        if (newPassword.length < 8) {
+                                                            setPasswordError('Password harus minimal 8 karakter')
+                                                            return
+                                                        }
+                                                        setPasswordLoading(true)
+                                                        setPasswordError(null)
+                                                        const result = await updatePasswordWithOTP(resetEmail, otpCode, newPassword)
+                                                        setPasswordLoading(false)
+                                                        if (result.error) {
+                                                            setPasswordError(result.error)
+                                                        } else {
+                                                            setPasswordSuccess('Password berhasil diubah!')
+                                                            // Reset form after success
+                                                            setTimeout(() => {
+                                                                setPasswordStep(1)
+                                                                setResetEmail('')
+                                                                setOtpCode('')
+                                                                setNewPassword('')
+                                                                setConfirmPassword('')
+                                                                setPasswordSuccess(null)
+                                                            }, 3000)
+                                                        }
+                                                    }}
+                                                    className="flex-1 px-8 py-3 bg-pastel-acid text-black border-2 border-black rounded-lg font-bold shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                >
+                                                    {passwordLoading ? (
+                                                        <>
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            Menyimpan...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Lock className="w-5 h-5" />
+                                                            Ubah Password
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
                                 <div className="mt-12 pt-8 border-t-2 border-dashed border-gray-300">
                                     <h2 className="font-bold text-lg mb-6 flex items-center gap-2">
