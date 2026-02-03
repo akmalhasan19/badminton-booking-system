@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { getApplicationByToken } from "../actions"
 import { PLAN_FEATURES, SubscriptionPlan } from "@/lib/constants/plans"
 import { approveApplication, rejectApplication } from "@/app/partner/actions"
 import { toast } from "sonner"
@@ -38,6 +38,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
     const [error, setError] = useState<string | null>(null)
     const [token, setToken] = useState<string | null>(null)
 
+
     useEffect(() => {
         params.then(p => setToken(p.token))
     }, [params])
@@ -47,25 +48,22 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
 
         const fetchApplication = async () => {
             setIsLoading(true)
-            const supabase = createClient()
 
-            const { data, error: fetchError } = await supabase
-                .from('partner_applications')
-                .select('*')
-                .eq('review_token', token)
-                .single()
+            // Use server action to bypass RLS (token-based access)
+            const result = await getApplicationByToken(token)
 
-            if (fetchError) {
-                console.error('Fetch error:', fetchError)
+            if (result.error) {
+                console.error('Fetch error:', result.error)
                 setError('Application not found or invalid token.')
             } else {
-                setApplication(data)
+                setApplication(result.data)
             }
             setIsLoading(false)
         }
 
         fetchApplication()
     }, [token])
+
 
     const handleApprove = async () => {
         if (!application) return
