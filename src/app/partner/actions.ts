@@ -207,73 +207,74 @@ type ApprovalResult = {
     inviteUrl?: string
 }
 
-export async function approveApplication(applicationId: string): Promise<ApprovalResult> {
-    try {
-        // 1. Fetch the application
-        const { data: application, error: fetchError } = await supabase
-            .from('partner_applications')
-            .select('*')
-            .eq('id', applicationId)
-            .single()
+// Use service role key for admin actions to bypass RLS
+const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-        if (fetchError || !application) {
-            return { success: false, error: 'Application not found' }
-        }
+// 1. Fetch the application
+const { data: application, error: fetchError } = await supabaseAdmin
+    .from('partner_applications')
+    .select('*')
+    .eq('id', applicationId)
+    .single()
 
-        if (application.status !== 'pending') {
-            return { success: false, error: 'Application has already been processed' }
-        }
+if (fetchError || !application) {
+    return { success: false, error: 'Application not found' }
+}
 
-        // 2. Call PWA Smash API to generate invite
-        const smashApiUrl = process.env.NEXT_PUBLIC_SMASH_API_BASE_URL
-        const smashApiToken = process.env.SMASH_API_TOKEN
+if (application.status !== 'pending') {
+    return { success: false, error: 'Application has already been processed' }
+}
 
-        if (!smashApiUrl || !smashApiToken) {
-            return { success: false, error: 'PWA Smash API configuration missing' }
-        }
+// 2. Call PWA Smash API to generate invite
+const smashApiUrl = process.env.NEXT_PUBLIC_SMASH_API_BASE_URL
+const smashApiToken = process.env.SMASH_API_TOKEN
 
-        const inviteResponse = await fetch(`${smashApiUrl}/partner-invites`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${smashApiToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: application.email,
-                partner_name: application.venue_name
-            })
-        })
+if (!smashApiUrl || !smashApiToken) {
+    return { success: false, error: 'PWA Smash API configuration missing' }
+}
 
-        if (!inviteResponse.ok) {
-            const errorData = await inviteResponse.json().catch(() => ({}))
-            console.error('PWA Smash API Error:', errorData)
-            return { success: false, error: `Failed to generate invite: ${inviteResponse.status}` }
-        }
+const inviteResponse = await fetch(`${smashApiUrl}/partner-invites`, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${smashApiToken}`,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        email: application.email,
+        partner_name: application.venue_name
+    })
+})
 
-        const inviteData = await inviteResponse.json()
-        const inviteUrl = inviteData.invite_url
+if (!inviteResponse.ok) {
+    const errorData = await inviteResponse.json().catch(() => ({}))
+    console.error('PWA Smash API Error:', errorData)
+    return { success: false, error: `Failed to generate invite: ${inviteResponse.status}` }
+}
 
-        if (!inviteUrl) {
-            return { success: false, error: 'Invalid response from PWA Smash API' }
-        }
+const inviteData = await inviteResponse.json()
+const inviteUrl = inviteData.invite_url
 
-        // 3. Update application status
-        const { error: updateError } = await supabase
-            .from('partner_applications')
-            .update({ status: 'approved' })
-            .eq('id', applicationId)
+if (!inviteUrl) {
+    return { success: false, error: 'Invalid response from PWA Smash API' }
+}
 
-        if (updateError) {
-            console.error('Database update error:', updateError)
-            return { success: false, error: 'Failed to update application status' }
-        }
+// 3. Update application status
+const { error: updateError } = await supabase
+    .from('partner_applications')
+    .update({ status: 'approved' })
+    .eq('id', applicationId)
 
-        // 4. Send approval email to partner
-        const { error: emailError } = await resend.emails.send({
-            from: 'Smash Partner <onboarding@resend.dev>',
-            to: [application.email],
-            subject: '🎉 Selamat! Aplikasi Partner Anda Disetujui - Smash & Serve',
-            html: `
+if (updateError) {
+    console.error('Database update error:', updateError)
+    return { success: false, error: 'Failed to update application status' }
+}
+
+// 4. Send approval email to partner
+const { error: emailError } = await resend.emails.send({
+    from: 'Smash Partner <onboarding@resend.dev>',
+    to: [application.email],
+    subject: '🎉 Selamat! Aplikasi Partner Anda Disetujui - Smash & Serve',
+    html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -354,24 +355,27 @@ export async function approveApplication(applicationId: string): Promise<Approva
 </body>
 </html>
             `
-        })
+})
 
-        if (emailError) {
-            console.error('Failed to send approval email:', emailError)
-            // Don't fail the whole operation if email fails
-        }
+if (emailError) {
+    console.error('Failed to send approval email:', emailError)
+    // Don't fail the whole operation if email fails
+}
 
-        return { success: true, inviteUrl }
+return { success: true, inviteUrl }
     } catch (err) {
-        console.error('Approve Application Error:', err)
-        return { success: false, error: 'An unexpected error occurred' }
-    }
+    console.error('Approve Application Error:', err)
+    return { success: false, error: 'An unexpected error occurred' }
+}
 }
 
 export async function rejectApplication(applicationId: string): Promise<{ success: boolean; error?: string }> {
     try {
+        // Use service role key for admin actions to bypass RLS
+        const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
         // 1. Fetch the application
-        const { data: application, error: fetchError } = await supabase
+        const { data: application, error: fetchError } = await supabaseAdmin
             .from('partner_applications')
             .select('*')
             .eq('id', applicationId)
@@ -386,7 +390,7 @@ export async function rejectApplication(applicationId: string): Promise<{ succes
         }
 
         // 2. Update application status
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('partner_applications')
             .update({ status: 'rejected' })
             .eq('id', applicationId)
