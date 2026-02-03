@@ -55,9 +55,13 @@ export async function createBooking(data: {
     // Get current user for booking details
     const user = await getCurrentUser()
 
-    // Fallback values if user data is missing (should verify auth before calling this)
-    const customerName = user?.name || "Customer (Web)"
-    const customerPhone = user?.phone || "0000000000"
+    // Enforce authentication
+    if (!user) {
+        return { success: false, error: 'Unauthorized: Harap login terlebih dahulu untuk melakukan booking.' }
+    }
+
+    const customerName = user.name
+    const customerPhone = user.phone || ""
 
     const smashBooking = {
         venue_id: data.courtId,

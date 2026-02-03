@@ -335,6 +335,14 @@ export function BookingSection() {
         });
 
         if (result.error) {
+            // Handle Unauthorized specifically
+            if (result.error.includes('Unauthorized') || result.error.includes('login')) {
+                setIsLoggedIn(false); // Force sync state
+                setShowAuthModal(true);
+                setBookingStatus('idle');
+                return;
+            }
+
             alert(`Booking failed: ${result.error}`);
             setBookingStatus('idle');
             return;
