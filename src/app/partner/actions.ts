@@ -72,7 +72,7 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
 
         // 3. Send Email Notification via Resend
         const { data: emailData, error: emailError } = await resend.emails.send({
-            from: 'Smash Partner <onboarding@resend.dev>', // Use resend.dev for testing unless domain is verified
+            from: 'Smash Partner <onboarding@smashcourts.online>', // Use verified domain
             to: ['smash.email.web@gmail.com'],
             subject: `New Partner Application: ${data.ownerName}`,
             html: `
@@ -192,7 +192,7 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
 
         // 4. Send Confirmation Email to Partner
         const { error: partnerEmailError } = await resend.emails.send({
-            from: 'Smash Partner <onboarding@resend.dev>',
+            from: 'Smash Partner <onboarding@smashcourts.online>',
             to: [data.email],
             subject: '✅ Aplikasi Partner Diterima - Smash & Serve',
             html: `
@@ -389,7 +389,7 @@ export async function approveApplication(applicationId: string): Promise<Approva
 
         // 4. Send approval email to partner
         const { error: emailError } = await resend.emails.send({
-            from: 'Smash Partner <onboarding@resend.dev>',
+            from: 'Smash Partner <onboarding@smashcourts.online>',
             to: [application.email],
             subject: '🎉 Selamat! Aplikasi Partner Anda Disetujui - Smash & Serve',
             html: `
@@ -520,7 +520,7 @@ export async function rejectApplication(applicationId: string): Promise<{ succes
 
         // 3. Send rejection email to partner
         const { error: emailError } = await resend.emails.send({
-            from: 'Smash Partner <onboarding@resend.dev>',
+            from: 'Smash Partner <onboarding@smashcourts.online>',
             to: [application.email],
             subject: 'Pembaruan Status Aplikasi Partner - Smash & Serve',
             html: `
