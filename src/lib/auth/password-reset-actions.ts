@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { sendPasswordResetOTP } from '@/lib/resend'
 
 /**
@@ -14,7 +14,7 @@ function generateOTP(): string {
  * Send password reset OTP to user's email
  */
 export async function sendPasswordResetCode(email: string) {
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // 1. Check if email exists in our system
     const { data: user, error: userError } = await supabase
@@ -92,7 +92,7 @@ export async function sendPasswordResetCode(email: string) {
  * Verify OTP code
  */
 export async function verifyPasswordResetCode(email: string, code: string) {
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // 1. Find the token
     const { data: tokenData, error: tokenError } = await supabase
@@ -129,12 +129,17 @@ export async function updatePasswordWithOTP(
     code: string,
     newPassword: string
 ) {
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // 1. Verify the OTP first
     const verifyResult = await verifyPasswordResetCode(email, code)
     if (verifyResult.error) {
         return { error: verifyResult.error }
+    }
+
+    const userId = verifyResult.userId
+    if (!userId) {
+        return { error: 'User not found in token' }
     }
 
     // 2. Validate password strength
@@ -144,9 +149,10 @@ export async function updatePasswordWithOTP(
 
     // 3. Update password using Supabase Admin API
     // Note: We need to use service role for this
-    const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-    })
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { password: newPassword }
+    )
 
     if (updateError) {
         console.error('Failed to update password:', updateError)
