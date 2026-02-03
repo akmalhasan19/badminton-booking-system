@@ -11,6 +11,18 @@ import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@
 import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
 
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
+
 export function BookingSection() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -164,10 +176,13 @@ export function BookingSection() {
                                     photo_url: venue.photo_url,
                                     totalCourts: venue.courts_count || details?.courts?.length || 0,
                                     description: venue.description || 'Professional Badminton Hall',
+                                    // Use actual coordinates and city from API
+                                    latitude: venue.latitude,
+                                    longitude: venue.longitude,
                                     location: {
-                                        city: 'Jakarta',
-                                        district: 'Jakarta Selatan',
-                                        subDistrict: 'Tebet',
+                                        city: venue.city || 'Unknown',
+                                        district: '',
+                                        subDistrict: '',
                                         address: venue.address
                                     },
                                     operating_hours_start: venue.operating_hours_start,
@@ -183,10 +198,13 @@ export function BookingSection() {
                                     photo_url: venue.photo_url,
                                     totalCourts: venue.courts_count || 0,
                                     description: venue.description || 'Professional Badminton Hall',
+                                    // Use actual coordinates and city from API
+                                    latitude: venue.latitude,
+                                    longitude: venue.longitude,
                                     location: {
-                                        city: 'Jakarta',
-                                        district: 'Jakarta Selatan',
-                                        subDistrict: 'Tebet',
+                                        city: venue.city || 'Unknown',
+                                        district: '',
+                                        subDistrict: '',
                                         address: venue.address
                                     },
                                     operating_hours_start: venue.operating_hours_start,
@@ -266,11 +284,57 @@ export function BookingSection() {
         };
     }, []);
 
-    const { exactMatches, nearbyMatches } = useMemo(() => {
-        // For now, just show all venues in exactMatches
-        // Type filtering disabled until we add 'type' column to venues table
-        return { exactMatches: venues, nearbyMatches: [] };
-    }, [venues]);
+    const { exactMatches, nearbyMatches, tooFarVenues } = useMemo(() => {
+        // Distance thresholds in km
+        const NEARBY_RADIUS_KM = 50;  // Venues within 50km are considered nearby
+        const MAX_RADIUS_KM = 150;    // Venues beyond 150km are too far
+
+        // If user location is not available, show all venues with warning
+        if (!userLocation || locationStatus !== 'granted') {
+            return {
+                exactMatches: venues,
+                nearbyMatches: [],
+                tooFarVenues: []
+            };
+        }
+
+        const nearby: any[] = [];
+        const tooFar: any[] = [];
+
+        venues.forEach(venue => {
+            // If venue doesn't have coordinates, include it in nearby (benefit of doubt)
+            if (!venue.latitude || !venue.longitude) {
+                nearby.push({ ...venue, distanceKm: null });
+                return;
+            }
+
+            const distance = calculateDistanceKm(
+                userLocation.lat,
+                userLocation.lng,
+                venue.latitude,
+                venue.longitude
+            );
+
+            if (distance <= NEARBY_RADIUS_KM) {
+                nearby.push({ ...venue, distanceKm: Math.round(distance) });
+            } else if (distance <= MAX_RADIUS_KM) {
+                tooFar.push({ ...venue, distanceKm: Math.round(distance) });
+            } else {
+                // Venue is beyond MAX_RADIUS_KM - don't show at all
+                tooFar.push({ ...venue, distanceKm: Math.round(distance) });
+            }
+        });
+
+        // Sort by distance
+        nearby.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+        tooFar.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+
+        return {
+            exactMatches: nearby,
+            nearbyMatches: [],
+            tooFarVenues: tooFar
+        };
+    }, [venues, userLocation, locationStatus]);
 
 
 
@@ -657,8 +721,16 @@ export function BookingSection() {
                                                             alt={court.name}
                                                             className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                                                         />
-                                                        <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                                                            Court
+                                                        <div className="absolute top-4 left-4 flex gap-2">
+                                                            <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                                                Court
+                                                            </span>
+                                                            {court.distanceKm !== null && court.distanceKm !== undefined && (
+                                                                <span className="bg-pastel-mint text-black px-3 py-1 rounded-full text-xs font-bold border border-black">
+                                                                    <MapPin className="w-3 h-3 inline mr-1" />
+                                                                    {court.distanceKm} km
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="absolute bottom-4 right-4 bg-white border-2 border-black px-3 py-1 rounded-lg text-xs font-bold">
                                                             Available
@@ -689,9 +761,22 @@ export function BookingSection() {
                                     </div>
                                 ) : (
                                     <div className="col-span-1 md:col-span-2 py-12 text-center border-2 border-dashed border-gray-300 rounded-[2rem]">
-                                        <Map className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                        <h3 className="text-xl font-display font-black text-gray-400 uppercase">No venues found here</h3>
-                                        <p className="text-gray-500 font-medium mt-2">Try changing your location filter.</p>
+                                        <MapPinOff className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-xl font-display font-black text-gray-400 uppercase">Tidak Ada Venue Di Sekitarmu</h3>
+                                        {tooFarVenues.length > 0 ? (
+                                            <div className="mt-4">
+                                                <p className="text-gray-500 font-medium">
+                                                    Ada {tooFarVenues.length} venue yang jaraknya lebih dari 50km dari lokasimu.
+                                                </p>
+                                                <p className="text-sm text-gray-400 mt-2">
+                                                    Venue terdekat: <span className="font-bold">{tooFarVenues[0]?.name}</span> ({tooFarVenues[0]?.distanceKm} km)
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500 font-medium mt-2">
+                                                Belum ada venue partner pada saat ini.
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 

@@ -26,6 +26,9 @@ export interface SmashVenue {
     operating_hours_end: number;
     booking_tolerance: number;
     description?: string;
+    latitude?: number;
+    longitude?: number;
+    city?: string;
 }
 
 export interface SmashCourt {
