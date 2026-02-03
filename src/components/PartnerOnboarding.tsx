@@ -6,23 +6,25 @@ import { ArrowRight, Check, Sparkles, TrendingUp, Calendar, CreditCard, Users, T
 import Image from "next/image"
 import { SubscriptionPlanSelector } from "@/components/SubscriptionPlanSelector"
 import { SubscriptionPlan } from "@/lib/constants/plans"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface PartnerOnboardingProps {
     onComplete: (goals: string[], plan?: SubscriptionPlan) => void
 }
 
-const GOALS = [
-    { id: "bookings", label: "Increase Bookings", icon: TrendingUp },
-    { id: "management", label: "Easy Management", icon: Calendar },
-    { id: "payments", label: "Online Payments", icon: CreditCard },
-    { id: "members", label: "Member System", icon: Users },
-    { id: "tournaments", label: "Tournaments", icon: Trophy },
-]
-
 export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
+    const { t } = useLanguage()
     const [step, setStep] = useState(0)
     const [selectedGoals, setSelectedGoals] = useState<string[]>([])
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null)
+
+    const GOALS = [
+        { id: "bookings", label: t.goal_bookings, icon: TrendingUp },
+        { id: "management", label: t.goal_management, icon: Calendar },
+        { id: "payments", label: t.goal_payments, icon: CreditCard },
+        { id: "members", label: t.goal_members, icon: Users },
+        { id: "tournaments", label: t.goal_tournaments, icon: Trophy },
+    ]
 
     const toggleGoal = (id: string) => {
         if (selectedGoals.includes(id)) {
@@ -88,14 +90,14 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                 >
                                     <div className="inline-flex items-center gap-2 bg-pastel-yellow px-4 py-1.5 rounded-full border border-black shadow-hard-sm">
                                         <Sparkles className="w-4 h-4" />
-                                        <span className="font-bold text-sm">Welcome Partner</span>
+                                        <span className="font-bold text-sm">{t.welcome_partner}</span>
                                     </div>
                                     <h1 className="text-4xl md:text-5xl font-display font-bold leading-tight">
-                                        Revolutionize Your <br />
-                                        <span className="text-pastel-lilac text-stroke-2">Sports Venue.</span>
+                                        {t.revolutionize_your} <br />
+                                        <span className="text-pastel-lilac text-stroke-2">{t.sports_venue}</span>
                                     </h1>
                                     <p className="text-lg text-gray-600">
-                                        Join the future of court booking. We help you manage, grow, and automate your sports facility business effortlessly.
+                                        {t.onboarding_desc}
                                     </p>
                                 </motion.div>
                             )}
@@ -110,13 +112,13 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                 >
                                     <div className="inline-flex items-center gap-2 bg-pastel-mint px-4 py-1.5 rounded-full border border-black shadow-hard-sm">
                                         <TrendingUp className="w-4 h-4" />
-                                        <span className="font-bold text-sm">Your Goals</span>
+                                        <span className="font-bold text-sm">{t.your_goals}</span>
                                     </div>
                                     <h2 className="text-3xl md:text-4xl font-display font-bold">
-                                        What matters most to you right now?
+                                        {t.goals_title}
                                     </h2>
                                     <p className="text-gray-600">
-                                        Select the key areas where you want to see improvement. We'll tailor the experience for you.
+                                        {t.goals_desc}
                                     </p>
 
                                     <div className="flex flex-wrap gap-3 mt-4">
@@ -149,10 +151,10 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                     <div className="md:hidden space-y-6">
                                         <div className="inline-flex items-center gap-2 bg-pastel-lilac px-4 py-1.5 rounded-full border border-black shadow-hard-sm">
                                             <Gem className="w-4 h-4" />
-                                            <span className="font-bold text-sm">Choose Plan</span>
+                                            <span className="font-bold text-sm">{t.choose_plan}</span>
                                         </div>
                                         <h2 className="text-3xl font-display font-bold">
-                                            Select Subscription
+                                            {t.select_subscription}
                                         </h2>
                                         <div className="mt-4">
                                             <SubscriptionPlanSelector
@@ -189,9 +191,9 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                         </motion.div>
 
                                         <div className="mt-8 text-center relative z-10">
-                                            <h3 className="text-2xl font-bold font-display">Pick Your Plan</h3>
+                                            <h3 className="text-2xl font-bold font-display">{t.pick_your_plan}</h3>
                                             <p className="text-gray-500 mt-2 flex items-center justify-center gap-2">
-                                                See options on the right <ArrowRight className="w-4 h-4" />
+                                                {t.see_options_right} <ArrowRight className="w-4 h-4" />
                                             </p>
                                         </div>
                                     </div>
@@ -208,19 +210,19 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                 >
                                     <div className="inline-flex items-center gap-2 bg-pastel-pink px-4 py-1.5 rounded-full border border-black shadow-hard-sm">
                                         <Check className="w-4 h-4" />
-                                        <span className="font-bold text-sm">All Set</span>
+                                        <span className="font-bold text-sm">{t.all_set}</span>
                                     </div>
                                     <h2 className="text-3xl md:text-4xl font-display font-bold">
-                                        You're ready to <br />
-                                        <span className="bg-pastel-acid px-2">Level Up!</span> 🚀
+                                        {t.ready_to} <br />
+                                        <span className="bg-pastel-acid px-2">{t.level_up}</span> 🚀
                                     </h2>
                                     <p className="text-gray-600 text-lg">
-                                        Based on your choices, we're confident Smash can boost your revenue by up to <strong>40%</strong> in the first 3 months.
+                                        {t.boost_msg}
                                     </p>
 
                                     <div className="bg-gray-50 p-6 rounded-xl border-2 border-black border-dashed">
-                                        <h4 className="font-bold mb-2">Next Step:</h4>
-                                        <p className="text-sm text-gray-600">Complete your venue profile registration to get access to your dashboard.</p>
+                                        <h4 className="font-bold mb-2">{t.next_step}</h4>
+                                        <p className="text-sm text-gray-600">{t.next_step_desc}</p>
                                     </div>
                                 </motion.div>
                             )}
@@ -233,7 +235,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                             disabled={step === 0}
                             className={`text-sm font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors ${step === 0 ? "opacity-0 cursor-default" : "opacity-100"}`}
                         >
-                            Back
+                            {t.back_btn}
                         </button>
 
                         <div className="flex items-center gap-4">
@@ -242,7 +244,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                     onClick={() => onComplete([])}
                                     className="text-gray-500 font-medium text-sm hover:text-black transition-colors"
                                 >
-                                    Skip
+                                    {t.skip_btn}
                                 </button>
                             )}
 
@@ -252,7 +254,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                 disabled={step === 2 && !selectedPlan}
                                 className="bg-black text-white px-6 py-3 rounded-xl font-bold border-2 border-transparent hover:bg-white hover:text-black hover:border-black transition-all shadow-hard-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {step === 3 ? "Get Started" : "Continue"} <ArrowRight className="w-4 h-4" />
+                                {step === 3 ? t.get_started : t.continue_btn} <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
@@ -283,11 +285,11 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                 <div className="mb-6">
                                     <div className="inline-flex items-center gap-2 bg-pastel-lilac px-4 py-1.5 rounded-full border border-black shadow-hard-sm mb-4">
                                         <Gem className="w-4 h-4" />
-                                        <span className="font-bold text-sm">Choose Plan</span>
+                                        <span className="font-bold text-sm">{t.choose_plan}</span>
                                     </div>
                                     <h2 className="text-4xl font-display font-bold leading-tight">
-                                        Select Your Power <br />
-                                        <span className="bg-pastel-acid px-2 skew-x-[-10deg] inline-block">Subscription.</span>
+                                        {t.select_your_power} <br />
+                                        <span className="bg-pastel-acid px-2 skew-x-[-10deg] inline-block">{t.subscription_word}</span>
                                     </h2>
                                 </div>
                                 <div className="flex-1 min-h-0">
@@ -385,7 +387,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                             <div className="relative">
                                                 <div className="w-80 h-auto bg-white rounded-2xl border-2 border-black shadow-hard-lg overflow-hidden">
                                                     <div className="bg-black text-white p-3 text-center font-bold text-sm border-b-2 border-black">
-                                                        Verified Partner
+                                                        {t.verified_partner}
                                                     </div>
                                                     <div className="p-8 flex flex-col items-center">
                                                         <div className="w-24 h-24 bg-gray-100 rounded-full mb-4 border-2 border-black flex items-center justify-center">
@@ -400,7 +402,7 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                                         <div className="w-20 h-3 bg-gray-100 rounded-full"></div>
                                                     </div>
                                                     <div className="bg-pastel-acid p-4 text-center border-t-2 border-black font-bold">
-                                                        Ready to Launch!
+                                                        {t.ready_to_launch}
                                                     </div>
                                                 </div>
 

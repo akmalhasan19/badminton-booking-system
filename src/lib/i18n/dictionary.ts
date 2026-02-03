@@ -56,6 +56,38 @@ export type Dictionary = {
     book_now: string;
     shop_gear: string;
     new_season: string;
+
+    // Partner Onboarding
+    welcome_partner: string;
+    revolutionize_your: string;
+    sports_venue: string;
+    onboarding_desc: string;
+    your_goals: string;
+    goals_title: string;
+    goals_desc: string;
+    choose_plan: string;
+    select_subscription: string;
+    pick_your_plan: string;
+    see_options_right: string;
+    select_your_power: string;
+    subscription_word: string;
+    all_set: string;
+    ready_to: string;
+    level_up: string;
+    boost_msg: string;
+    next_step: string;
+    next_step_desc: string;
+    back_btn: string;
+    skip_btn: string;
+    continue_btn: string;
+    get_started: string;
+    verified_partner: string;
+    ready_to_launch: string;
+    goal_bookings: string;
+    goal_management: string;
+    goal_payments: string;
+    goal_members: string;
+    goal_tournaments: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -112,7 +144,39 @@ export const dictionaries: Record<Language, Dictionary> = {
         hero_description: "A next-gen court booking experience. Curated for the modern player who cares about aesthetics as much as athletics.",
         book_now: "Book Now",
         shop_gear: "Shop Gear",
-        new_season: "New Season"
+        new_season: "New Season",
+
+        // Partner Onboarding
+        welcome_partner: "Welcome Partner",
+        revolutionize_your: "Revolutionize Your",
+        sports_venue: "Sports Venue.",
+        onboarding_desc: "Join the future of court booking. We help you manage, grow, and automate your sports facility business effortlessly.",
+        your_goals: "Your Goals",
+        goals_title: "What matters most to you right now?",
+        goals_desc: "Select the key areas where you want to see improvement. We'll tailor the experience for you.",
+        choose_plan: "Choose Plan",
+        select_subscription: "Select Subscription",
+        pick_your_plan: "Pick Your Plan",
+        see_options_right: "See options on the right",
+        select_your_power: "Select Your Power",
+        subscription_word: "Subscription.",
+        all_set: "All Set",
+        ready_to: "You're ready to",
+        level_up: "Level Up!",
+        boost_msg: "Based on your choices, we're confident Smash can boost your revenue by up to 40% in the first 3 months.",
+        next_step: "Next Step:",
+        next_step_desc: "Complete your venue profile registration to get access to your dashboard.",
+        back_btn: "Back",
+        skip_btn: "Skip",
+        continue_btn: "Continue",
+        get_started: "Get Started",
+        verified_partner: "Verified Partner",
+        ready_to_launch: "Ready to Launch!",
+        goal_bookings: "Increase Bookings",
+        goal_management: "Easy Management",
+        goal_payments: "Online Payments",
+        goal_members: "Member System",
+        goal_tournaments: "Tournaments"
     },
     id: {
         home: "BERANDA",
@@ -167,7 +231,39 @@ export const dictionaries: Record<Language, Dictionary> = {
         hero_description: "Pengalaman booking lapangan generasi baru. Dirancang untuk pemain modern yang peduli estetika sebesar atletis.",
         book_now: "Pesan Sekarang",
         shop_gear: "Belanja Perlengkapan",
-        new_season: "Musim Baru"
+        new_season: "Musim Baru",
+
+        // Partner Onboarding
+        welcome_partner: "Selamat Datang Mitra",
+        revolutionize_your: "Revolusi Bisnis",
+        sports_venue: "Venue Olahraga.",
+        onboarding_desc: "Bergabunglah dengan masa depan booking lapangan. Kami bantu Anda mengelola, mengembangkan, dan mengotomatiskan bisnis fasilitas olahraga dengan mudah.",
+        your_goals: "Tujuan Anda",
+        goals_title: "Apa yang paling penting bagi Anda saat ini?",
+        goals_desc: "Pilih area utama yang ingin Anda tingkatkan. Kami akan menyesuaikan pengalaman untuk Anda.",
+        choose_plan: "Pilih Paket",
+        select_subscription: "Pilih Langganan",
+        pick_your_plan: "Pilih Paket Anda",
+        see_options_right: "Lihat pilihan di sebelah kanan",
+        select_your_power: "Pilih Kekuatan Anda",
+        subscription_word: "Langganan.",
+        all_set: "Siap!",
+        ready_to: "Anda siap untuk",
+        level_up: "Naik Level!",
+        boost_msg: "Berdasarkan pilihan Anda, kami yakin Smash dapat meningkatkan pendapatan Anda hingga 40% dalam 3 bulan pertama.",
+        next_step: "Langkah Selanjutnya:",
+        next_step_desc: "Lengkapi registrasi profil venue untuk akses dashboard Anda.",
+        back_btn: "Kembali",
+        skip_btn: "Lewati",
+        continue_btn: "Lanjutkan",
+        get_started: "Mulai Sekarang",
+        verified_partner: "Mitra Terverifikasi",
+        ready_to_launch: "Siap Diluncurkan!",
+        goal_bookings: "Tingkatkan Booking",
+        goal_management: "Manajemen Mudah",
+        goal_payments: "Pembayaran Online",
+        goal_members: "Sistem Member",
+        goal_tournaments: "Turnamen"
     },
     jv: {
         home: "GRIYA",
@@ -222,6 +318,39 @@ export const dictionaries: Record<Language, Dictionary> = {
         hero_description: "Pengalaman pesen lapangan generasi anyar. Dirancang kangge pemain modern ingkang peduli estetika kados atletis.",
         book_now: "Pesen Sakniki",
         shop_gear: "Tumbas Perlengkapan",
-        new_season: "Musim Anyar"
+        new_season: "Musim Anyar",
+
+        // Partner Onboarding
+        welcome_partner: "Sugeng Rawuh Mitra",
+        revolutionize_your: "Revolusi Bisnis",
+        sports_venue: "Panggenan Olahraga.",
+        onboarding_desc: "Ndherek kaliyan masa depan pesen lapangan. Kami bantu Panjenengan ngatur, ngembangaken, lan ngotomatisaken bisnis fasilitas olahraga kanthi gampil.",
+        your_goals: "Tujuan Panjenengan",
+        goals_title: "Punapa ingkang paling wigatos kangge Panjenengan sakniki?",
+        goals_desc: "Pilih wilayah utami ingkang Panjenengan kepengin tingkataken. Kami badhe nyesuaiaken pengalaman kangge Panjenengan.",
+        choose_plan: "Pilih Paket",
+        select_subscription: "Pilih Langganan",
+        pick_your_plan: "Pilih Paket Panjenengan",
+        see_options_right: "Tingali pilihan wonten sisih tengen",
+        select_your_power: "Pilih Kekuatan Panjenengan",
+        subscription_word: "Langganan.",
+        all_set: "Sampun Siap!",
+        ready_to: "Panjenengan sampun siap kangge",
+        level_up: "Naik Level!",
+        boost_msg: "Adhedhasar pilihan Panjenengan, kami yakin Smash saged ningkataken pendapatan dugi 40% wonten 3 wulan rumiyin.",
+        next_step: "Langkah Selajengipun:",
+        next_step_desc: "Lengkapi registrasi profil panggenan kangge akses dashboard Panjenengan.",
+        back_btn: "Wangsul",
+        skip_btn: "Lewati",
+        continue_btn: "Lanjutaken",
+        get_started: "Wiwit Sakniki",
+        verified_partner: "Mitra Terverifikasi",
+        ready_to_launch: "Siap Diluncuraken!",
+        goal_bookings: "Tingkataken Booking",
+        goal_management: "Manajemen Gampil",
+        goal_payments: "Pembayaran Online",
+        goal_members: "Sistem Member",
+        goal_tournaments: "Turnamen"
     }
 }
+
