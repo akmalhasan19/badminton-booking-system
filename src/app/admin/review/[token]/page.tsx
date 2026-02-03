@@ -115,9 +115,15 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
             const result = await rejectApplication(application.id)
 
             if (result.success) {
-                toast.success("Application rejected. Notification email has been sent.", {
-                    duration: 5000
-                })
+                if (result.emailSent === false) {
+                    toast.warning(`Application rejected, but email failed to send! Error: ${result.emailErrorDetail || 'Unknown error'}`, {
+                        duration: 10000
+                    })
+                } else {
+                    toast.success("Application rejected. Notification email has been sent.", {
+                        duration: 5000
+                    })
+                }
                 setApplication(prev => prev ? { ...prev, status: 'rejected' } : null)
                 setShowRejectDialog(false)
             } else {

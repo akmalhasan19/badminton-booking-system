@@ -487,7 +487,7 @@ export async function approveApplication(applicationId: string): Promise<Approva
     }
 }
 
-export async function rejectApplication(applicationId: string): Promise<{ success: boolean; error?: string }> {
+export async function rejectApplication(applicationId: string): Promise<{ success: boolean; error?: string; emailSent?: boolean, emailErrorDetail?: string }> {
     try {
         // Use service role key for admin actions to bypass RLS
         const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -601,7 +601,11 @@ export async function rejectApplication(applicationId: string): Promise<{ succes
             // Don't fail the whole operation if email fails
         }
 
-        return { success: true }
+        return {
+            success: true,
+            emailSent: !emailError,
+            emailErrorDetail: emailError ? emailError.message : undefined
+        }
     } catch (err) {
         console.error('Reject Application Error:', err)
         return { success: false, error: 'An unexpected error occurred' }
