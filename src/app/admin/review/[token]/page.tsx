@@ -11,6 +11,7 @@ import {
     Users, CheckCircle, XCircle, Loader2, ExternalLink, ArrowLeft
 } from "lucide-react"
 import Link from "next/link"
+import { ConfirmDialog } from "./ConfirmDialog"
 
 type ApplicationData = {
     id: string
@@ -37,6 +38,8 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [token, setToken] = useState<string | null>(null)
+    const [showApproveDialog, setShowApproveDialog] = useState(false)
+    const [showRejectDialog, setShowRejectDialog] = useState(false)
 
 
     useEffect(() => {
@@ -65,14 +68,12 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
     }, [token])
 
 
-    const handleApprove = async () => {
+    const handleApproveClick = () => {
+        setShowApproveDialog(true)
+    }
+
+    const handleApproveConfirm = async () => {
         if (!application) return
-
-        const confirmed = window.confirm(
-            `Approve application from "${application.owner_name}" for "${application.venue_name}"?\n\nThis will:\n• Generate a registration invite via PWA Smash\n• Send an approval email to the partner`
-        )
-
-        if (!confirmed) return
 
         setIsProcessing(true)
         try {
@@ -83,6 +84,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                     duration: 5000
                 })
                 setApplication(prev => prev ? { ...prev, status: 'approved' } : null)
+                setShowApproveDialog(false)
             } else {
                 toast.error(result.error || "Failed to approve application")
             }
@@ -94,14 +96,12 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
         }
     }
 
-    const handleReject = async () => {
+    const handleRejectClick = () => {
+        setShowRejectDialog(true)
+    }
+
+    const handleRejectConfirm = async () => {
         if (!application) return
-
-        const confirmed = window.confirm(
-            `Reject application from "${application.owner_name}" for "${application.venue_name}"?\n\nThis will send a rejection email to the partner.`
-        )
-
-        if (!confirmed) return
 
         setIsProcessing(true)
         try {
@@ -112,6 +112,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                     duration: 5000
                 })
                 setApplication(prev => prev ? { ...prev, status: 'rejected' } : null)
+                setShowRejectDialog(false)
             } else {
                 toast.error(result.error || "Failed to reject application")
             }
@@ -274,7 +275,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                         {isPending ? (
                             <>
                                 <button
-                                    onClick={handleApprove}
+                                    onClick={handleApproveClick}
                                     disabled={isProcessing}
                                     className="flex-1 sm:flex-none px-8 py-4 bg-pastel-acid text-black font-bold text-lg rounded-xl border-3 border-black shadow-hard-md hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-hard-md disabled:hover:translate-x-0 disabled:hover:translate-y-0"
                                 >
@@ -286,7 +287,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                                     {isProcessing ? 'Processing...' : 'Partner Approved'}
                                 </button>
                                 <button
-                                    onClick={handleReject}
+                                    onClick={handleRejectClick}
                                     disabled={isProcessing}
                                     className="flex-1 sm:flex-none px-8 py-4 bg-red-400 text-black font-bold text-lg rounded-xl border-3 border-black shadow-hard-md hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-hard-md disabled:hover:translate-x-0 disabled:hover:translate-y-0"
                                 >
@@ -317,6 +318,37 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                     </div>
                 </motion.div>
             </div>
+
+            {/* Confirmation Dialogs */}
+            <ConfirmDialog
+                isOpen={showApproveDialog}
+                onClose={() => setShowApproveDialog(false)}
+                onConfirm={handleApproveConfirm}
+                isProcessing={isProcessing}
+                variant="approve"
+                title="Approve Partner"
+                ownerName={application?.owner_name || ''}
+                venueName={application?.venue_name || ''}
+                bulletPoints={[
+                    'Generate a registration invite via PWA Smash',
+                    'Send an approval email to the partner'
+                ]}
+            />
+
+            <ConfirmDialog
+                isOpen={showRejectDialog}
+                onClose={() => setShowRejectDialog(false)}
+                onConfirm={handleRejectConfirm}
+                isProcessing={isProcessing}
+                variant="reject"
+                title="Reject Application"
+                ownerName={application?.owner_name || ''}
+                venueName={application?.venue_name || ''}
+                bulletPoints={[
+                    'Send a rejection email to the partner',
+                    'Mark this application as rejected'
+                ]}
+            />
         </div>
     )
 }
