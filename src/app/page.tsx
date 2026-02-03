@@ -1,7 +1,6 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Navbar } from "@/components/Navbar"
 import { Hero } from "@/components/Hero"
 import { Marquee } from "@/components/Marquee"
@@ -12,8 +11,33 @@ import { Footer } from "@/components/Footer"
 import { AICoach } from "@/components/AICoach"
 import { Tab } from "@/types"
 
-export default function Home() {
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME)
+function HomeContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTabState] = useState<Tab>(Tab.HOME)
+
+  // Sync state with URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'book' && activeTab !== Tab.BOOK) setActiveTabState(Tab.BOOK)
+    else if (tabParam === 'shop' && activeTab !== Tab.SHOP) setActiveTabState(Tab.SHOP)
+    else if (!tabParam && activeTab !== Tab.HOME) setActiveTabState(Tab.HOME)
+  }, [searchParams, activeTab])
+
+  const handleSetActiveTab = (tab: Tab) => {
+    setActiveTabState(tab)
+
+    // Update URL without full reload
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === Tab.HOME) params.delete('tab')
+    else if (tab === Tab.BOOK) params.set('tab', 'book')
+    else if (tab === Tab.SHOP) params.set('tab', 'shop')
+
+    // Clean up other params if switching main tabs, except when going deeper
+    if (tab !== Tab.BOOK) params.delete('venueId')
+
+    router.push(`/?${params.toString()}`, { scroll: false })
+  }
 
   // Scroll to top when tab changes
   useEffect(() => {
@@ -30,9 +54,9 @@ export default function Home() {
       default:
         return (
           <div className="flex flex-col w-full">
-            <Hero setActiveTab={setActiveTab} />
+            <Hero setActiveTab={handleSetActiveTab} />
             <Marquee />
-            <BentoGrid setActiveTab={setActiveTab} />
+            <BentoGrid setActiveTab={handleSetActiveTab} />
           </div>
         )
     }
@@ -40,7 +64,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-pastel-acid selection:text-black">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar activeTab={activeTab} setActiveTab={handleSetActiveTab} />
 
       <div className="min-h-screen">
         <AnimatePresence mode="wait">
@@ -59,5 +83,13 @@ export default function Home() {
       <Footer />
       <AICoach />
     </main>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   )
 }

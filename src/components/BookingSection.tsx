@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown, Loader2, MapPinOff, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Hall, Court } from "@/types"
@@ -11,6 +12,10 @@ import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
 
 export function BookingSection() {
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // State is initialized but will be controlled by URL for selection
     const [selectedHall, setSelectedHall] = useState<any | null>(null)
     const [selectedCourt, setSelectedCourt] = useState<any | null>(null) // Changed from number to Court object
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'))
@@ -48,6 +53,36 @@ export function BookingSection() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+
+    // Sync selectedHall with URL venueId
+    useEffect(() => {
+        const venueId = searchParams.get('venueId')
+
+        if (venueId && venues.length > 0) {
+            // Only update if not already selected or different
+            if (selectedHall?.id !== venueId) {
+                const venue = venues.find(v => v.id === venueId)
+                if (venue) setSelectedHall(venue)
+            }
+        } else if (!venueId && selectedHall) {
+            // If ID removed from URL, clear selection
+            setSelectedHall(null)
+            setSelectedCourt(null)
+        }
+    }, [searchParams, venues, selectedHall])
+
+    const handleSelectVenue = (venue: any) => {
+        // Update URL to trigger the effect above
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('venueId', venue.id)
+        router.push(`/?${params.toString()}`, { scroll: false })
+    }
+
+    const handleClearVenue = () => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('venueId')
+        router.push(`/?${params.toString()}`, { scroll: false })
+    }
 
     // Request geolocation permission on mount
     useEffect(() => {
@@ -605,7 +640,7 @@ export function BookingSection() {
                                             {exactMatches.map((court: any) => (
                                                 <div
                                                     key={court.id}
-                                                    onClick={() => setSelectedHall(court)}
+                                                    onClick={() => handleSelectVenue(court)}
                                                     className="group relative bg-white rounded-[2rem] border-2 border-black overflow-hidden cursor-pointer hover:shadow-hard transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
                                                 >
                                                     <div className="h-48 relative border-b-2 border-black overflow-hidden">
@@ -662,7 +697,7 @@ export function BookingSection() {
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-8 border-b-2 border-gray-100 pb-6">
                                     <button
-                                        onClick={() => { setSelectedHall(null); setSelectedCourt(null); }}
+                                        onClick={handleClearVenue}
                                         className="flex items-center space-x-2 text-gray-500 hover:text-black font-bold transition-colors group"
                                     >
                                         <div className="w-8 h-8 rounded-full border-2 border-gray-300 group-hover:border-black flex items-center justify-center">
