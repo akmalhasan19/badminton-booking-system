@@ -131,10 +131,10 @@ const AnimatedBackground = () => (
 )
 
 import { SubscriptionPlan } from "@/lib/constants/plans"
-
-// ... imports ...
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export default function PartnerRegisterPage() {
+    const { t } = useLanguage()
     const [showOnboarding, setShowOnboarding] = useState(true)
     const [formData, setFormData] = useState({
         ownerName: "",
@@ -274,16 +274,15 @@ export default function PartnerRegisterPage() {
                     <div className="w-16 h-16 bg-pastel-mint rounded-full border-2 border-black flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="w-8 h-8 text-black" />
                     </div>
-                    <h2 className="text-3xl font-display font-bold mb-4">Registrasi Berhasil!</h2>
+                    <h2 className="text-3xl font-display font-bold mb-4">{t.registration_success}</h2>
                     <p className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
-                        Terima kasih telah bergabung. Mohon tunggu maksimal <span className="font-bold text-black">1x24 jam</span> untuk proses verifikasi.
-                        Tim kami akan segera menghubungi Anda melalui <span className="font-bold text-black">email</span> untuk langkah selanjutnya.
+                        {t.registration_success_msg}
                     </p>
                     <button
                         onClick={() => window.location.href = "/"}
                         className="bg-black text-white px-8 py-3 rounded-lg font-bold border-2 border-transparent hover:bg-white hover:text-black hover:border-black transition-all shadow-hard-sm"
                     >
-                        Back to Home
+                        {t.back_to_home}
                     </button>
                 </motion.div>
             </div>
@@ -301,7 +300,7 @@ export default function PartnerRegisterPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="inline-block bg-pastel-lilac px-4 py-1 rounded-full border-2 border-black shadow-hard-xs mb-4"
                     >
-                        <span className="font-bold text-sm">BECOME A PARTNER</span>
+                        <span className="font-bold text-sm">{t.become_partners}</span>
                     </motion.div>
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
@@ -309,7 +308,7 @@ export default function PartnerRegisterPage() {
                         transition={{ delay: 0.1 }}
                         className="text-4xl md:text-6xl font-display font-bold mb-4"
                     >
-                        Grow Your Sports Venue <br className="hidden md:block" /> Business with <span className="text-pastel-lilac" style={{ WebkitTextStroke: '2px black', paintOrder: 'stroke fill' }}>Smash.</span>
+                        {t.grow_business.split('\n').map((line, i) => <span key={i}>{line}{i === 0 && <br className="hidden md:block" />}</span>)} <span className="text-pastel-lilac" style={{ WebkitTextStroke: '2px black', paintOrder: 'stroke fill' }}>Smash.</span>
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
@@ -317,7 +316,7 @@ export default function PartnerRegisterPage() {
                         transition={{ delay: 0.2 }}
                         className="text-gray-600 text-lg max-w-2xl mx-auto"
                     >
-                        Join our network of premium badminton courts. Manage bookings efficiently and reach more players.
+                        {t.join_network}
                     </motion.p>
                 </div>
 
@@ -333,11 +332,11 @@ export default function PartnerRegisterPage() {
                         {/* Personal & Contact Information */}
                         <div className="space-y-6">
                             <h3 className="text-xl font-bold border-b-2 border-black pb-2 flex items-center gap-2">
-                                <User className="w-5 h-5" /> Owner Details
+                                <User className="w-5 h-5" /> {t.owner_details}
                             </h3>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Nama Pemilik Gor Badminton</label>
+                                <label className="font-bold text-sm">{t.owner_name}</label>
                                 <input
                                     type="text"
                                     name="ownerName"
@@ -345,12 +344,12 @@ export default function PartnerRegisterPage() {
                                     value={formData.ownerName}
                                     onChange={handleChange}
                                     className="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
-                                    placeholder="Nama Lengkap Pemilik"
+                                    placeholder={t.owner_name_placeholder}
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Email Perusahaan/Pemilik</label>
+                                <label className="font-bold text-sm">{t.company_email}</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -366,7 +365,7 @@ export default function PartnerRegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">No Whatsapp Manajemen/Pemilik</label>
+                                <label className="font-bold text-sm">{t.whatsapp_number}</label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -385,11 +384,11 @@ export default function PartnerRegisterPage() {
                         {/* Venue Details */}
                         <div className="space-y-6">
                             <h3 className="text-xl font-bold border-b-2 border-black pb-2 flex items-center gap-2">
-                                <Building2 className="w-5 h-5" /> Venue Information
+                                <Building2 className="w-5 h-5" /> {t.venue_info}
                             </h3>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Nama GOR</label>
+                                <label className="font-bold text-sm">{t.venue_name}</label>
                                 <div className="relative">
                                     <Building2 className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -399,13 +398,13 @@ export default function PartnerRegisterPage() {
                                         value={formData.venueName}
                                         onChange={handleChange}
                                         className="w-full p-3 pl-10 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
-                                        placeholder="e.g. GOR Sinar Badminton"
+                                        placeholder={t.venue_name_placeholder}
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Lokasi GOR</label>
+                                <label className="font-bold text-sm">{t.venue_location}</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -415,7 +414,7 @@ export default function PartnerRegisterPage() {
                                         value={formData.venueAddress}
                                         onChange={handleChange}
                                         className="w-full p-3 pl-10 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
-                                        placeholder="Alamat lengkap GOR"
+                                        placeholder={t.venue_location_placeholder}
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 mt-2">
@@ -426,21 +425,21 @@ export default function PartnerRegisterPage() {
                                         className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-pastel-lilac border-2 border-black rounded-lg hover:bg-pastel-lilac/80 transition-colors disabled:opacity-50"
                                     >
                                         {isGettingLocation ? (
-                                            <><Loader2 className="w-4 h-4 animate-spin" /> Detecting...</>
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> {t.detecting}</>
                                         ) : (
-                                            <><MapPin className="w-4 h-4" /> Use My Current Location</>
+                                            <><MapPin className="w-4 h-4" /> {t.use_current_location}</>
                                         )}
                                     </button>
                                     {locationStatus === 'success' && (
                                         <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" /> Koordinat terdeteksi
+                                            <CheckCircle className="w-3 h-3" /> {t.coords_detected}
                                         </span>
                                     )}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Sosial Media Page</label>
+                                <label className="font-bold text-sm">{t.social_media}</label>
                                 <div className="relative">
                                     <Hash className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -456,7 +455,7 @@ export default function PartnerRegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Website Resmi <span className="text-gray-400 font-normal">(Opsional)</span></label>
+                                <label className="font-bold text-sm">{t.website}</label>
                                 <div className="relative">
                                     <Globe className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -471,7 +470,7 @@ export default function PartnerRegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="font-bold text-sm">Material Lantai</label>
+                                <label className="font-bold text-sm">{t.flooring_material}</label>
                                 <div className="relative">
                                     <Layout className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                                     <input
@@ -481,7 +480,7 @@ export default function PartnerRegisterPage() {
                                         value={formData.flooringMaterial}
                                         onChange={handleChange}
                                         className="w-full p-3 pl-10 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
-                                        placeholder="e.g. Karpet Vinyl, Kayu, Semen"
+                                        placeholder={t.flooring_placeholder}
                                     />
                                 </div>
                             </div>
@@ -491,10 +490,10 @@ export default function PartnerRegisterPage() {
                     {/* Additional Information */}
                     <div className="mt-8 pt-8 border-t-2 border-gray-100">
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                            <Users className="w-5 h-5" /> Club & Routine Details
+                            <Users className="w-5 h-5" /> {t.club_details}
                         </h3>
                         <div className="space-y-2">
-                            <label className="font-bold text-sm">Daftar PB Rutin</label>
+                            <label className="font-bold text-sm">{t.routine_clubs}</label>
                             <textarea
                                 name="routineClubs"
                                 required
@@ -502,7 +501,7 @@ export default function PartnerRegisterPage() {
                                 onChange={handleChange}
                                 rows={4}
                                 className="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
-                                placeholder="List badminton clubs that play routinely at your venue..."
+                                placeholder={t.routine_clubs_placeholder}
                             />
                         </div>
                     </div>
@@ -515,10 +514,10 @@ export default function PartnerRegisterPage() {
                             className="bg-pastel-acid text-black px-8 py-4 rounded-xl font-bold text-lg border-2 border-black shadow-hard-md hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
-                                "Submitting..."
+                                t.submitting
                             ) : (
                                 <>
-                                    Submit Application <ArrowRight className="w-6 h-6" />
+                                    {t.submit_application} <ArrowRight className="w-6 h-6" />
                                 </>
                             )}
                         </button>

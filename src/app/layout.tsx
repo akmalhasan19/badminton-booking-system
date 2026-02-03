@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Outfit } from "next/font/google";
 import "./globals.css";
 import { LoadingProvider } from "@/lib/loading-context";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -31,10 +32,12 @@ export default function RootLayout({
         className={`${outfit.variable} ${spaceGrotesk.variable} antialiased min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-pastel-acid selection:text-black`}
       >
         <div className="bg-noise"></div>
-        <LoadingProvider>
-          {children}
-          <Toaster position="top-center" richColors />
-        </LoadingProvider>
+        <LanguageProvider>
+          <LoadingProvider>
+            {children}
+            <Toaster position="top-center" richColors />
+          </LoadingProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

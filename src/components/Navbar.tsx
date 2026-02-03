@@ -32,17 +32,25 @@ const itemVariants = {
     exit: { y: -20, opacity: 0, filter: "blur(5px)" }
 };
 
-const menuItems = [
-    { tab: Tab.HOME, label: "HOME", color: "pastel-acid", path: "/" },
-    { tab: Tab.BOOK, label: "BOOK", color: "pastel-mint", path: "/booking" },
-    { tab: Tab.SHOP, label: "SHOP", color: "pastel-pink", path: "/shop" }
-];
-
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { AuthModal } from "@/components/AuthModal"
 
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
+    const { t } = useLanguage()
     const router = useRouter()
     const pathname = usePathname()
+    // ... state ...
+
+    const menuItems = [
+        { tab: Tab.HOME, label: t.home, color: "pastel-acid", path: "/" },
+        { tab: Tab.BOOK, label: t.book, color: "pastel-mint", path: "/booking" },
+        { tab: Tab.SHOP, label: t.shop, color: "pastel-pink", path: "/shop" }
+    ];
+
+    // ... rest of state ...
+
+    // ... (keep existing state declarations: scrolled, mobileMenuOpen, showAuthModal, highlightStyle, tabsRef, user, isLoggedIn, showUserDropdown, showMemberDetails) ...
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [showAuthModal, setShowAuthModal] = useState(false)
@@ -73,6 +81,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         setMobileMenuOpen(false)
     }
 
+    // ... (keep existing useEffects) ...
     // Check auth on mount
     useEffect(() => {
         async function checkAuth() {
@@ -117,7 +126,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             })
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentTab])
+    }, [currentTab, t]) // Added t dependency to update highlight when language changes
 
     const getBackgroundColor = (tab: Tab) => {
         switch (tab) {
@@ -181,14 +190,16 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                         ))}
                     </div>
 
-                    {/* User Account / Login Button */}
+                    {/* User Account / Login Button / Language Switcher */}
                     <div className="hidden md:block relative">
                         <div className="flex items-center gap-4">
+                            <LanguageSwitcher />
+
                             <button
                                 onClick={() => router.push('/partner/register')}
                                 className="bg-pastel-yellow text-black px-6 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                             >
-                                Join Us
+                                {t.join_us}
                             </button>
 
                             {isLoggedIn && user ? (
@@ -241,7 +252,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                                     className="flex items-center gap-1 mt-1 hover:bg-white/10 px-2 py-0.5 rounded transition-colors -ml-2 cursor-pointer"
                                                                 >
                                                                     <Star className="w-3.5 h-3.5 text-pastel-yellow fill-pastel-yellow" />
-                                                                    <span className="text-xs text-gray-300">Smash Member</span>
+                                                                    <span className="text-xs text-gray-300">{t.smash_member}</span>
                                                                     <motion.div
                                                                         animate={{ rotate: showMemberDetails ? 180 : 0 }}
                                                                         transition={{ duration: 0.2 }}
@@ -314,7 +325,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-pastel-mint/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-mint/50 transition-colors">
                                                                 <Calendar className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
-                                                            <span>Booking Saya</span>
+                                                            <span>{t.my_bookings}</span>
                                                         </button>
 
                                                         <button
@@ -324,7 +335,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-pastel-lilac/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-lilac/50 transition-colors">
                                                                 <User className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
-                                                            <span>Ubah Profil</span>
+                                                            <span>{t.edit_profile}</span>
                                                         </button>
 
                                                         <button
@@ -334,7 +345,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-pastel-pink/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-pink/50 transition-colors">
                                                                 <CreditCard className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
-                                                            <span>Metode Pembayaran</span>
+                                                            <span>{t.payment_methods}</span>
                                                         </button>
 
                                                         <div className="border-t border-gray-100 my-2" />
@@ -346,7 +357,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-pastel-yellow/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-yellow/50 transition-colors">
                                                                 <Bell className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
-                                                            <span>Notifikasi</span>
+                                                            <span>{t.notifications}</span>
                                                             <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">3</span>
                                                         </button>
 
@@ -357,7 +368,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
                                                                 <Settings className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
-                                                            <span>Pengaturan</span>
+                                                            <span>{t.settings}</span>
                                                         </button>
 
                                                         <button
@@ -367,7 +378,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-pastel-acid/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-acid/50 transition-colors">
                                                                 <HelpCircle className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
-                                                            <span>Pusat Bantuan</span>
+                                                            <span>{t.help_center}</span>
                                                         </button>
                                                     </div>
 
@@ -380,7 +391,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
                                                                 <LogOut className="w-4.5 h-4.5 text-red-600" />
                                                             </div>
-                                                            <span>Logout</span>
+                                                            <span>{t.logout}</span>
                                                         </button>
                                                     </div>
                                                 </motion.div>
@@ -392,7 +403,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 <button
                                     onClick={() => setShowAuthModal(true)}
                                     className="bg-black text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm">
-                                    Login
+                                    {t.login}
                                 </button>
                             )}
                         </div>
@@ -426,6 +437,8 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             exit="exit"
                             className="flex flex-col items-center space-y-6"
                         >
+                            <LanguageSwitcher />
+
                             {menuItems.map((item) => (
                                 <motion.button
                                     key={item.tab}
@@ -443,7 +456,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 onClick={() => { setMobileMenuOpen(false); router.push('/partner/register'); }}
                                 className="text-4xl font-bold text-pastel-yellow hover:text-yellow-600 transition-colors"
                             >
-                                Join Us
+                                {t.join_us}
                             </motion.button>
 
                             {/* Show user info or login based on auth state */}
@@ -471,7 +484,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                         whileTap={{ scale: 0.95 }}
                                     >
                                         <LogOut className="w-8 h-8" />
-                                        Logout
+                                        {t.logout}
                                     </motion.button>
                                 </>
                             ) : (
@@ -480,7 +493,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                     onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
                                     className="text-4xl font-bold text-gray-500 hover:text-black transition-colors"
                                 >
-                                    Login
+                                    {t.login}
                                 </motion.button>
                             )}
                         </motion.div>
