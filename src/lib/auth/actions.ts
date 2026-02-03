@@ -11,6 +11,8 @@ interface SignUpData {
     phone?: string
 }
 
+import { getAppUrl } from '@/lib/utils'
+
 interface SignInData {
     email: string
     password: string
@@ -22,11 +24,14 @@ interface SignInData {
 export async function signUp(data: SignUpData) {
     const supabase = await createClient()
 
+    const redirectUrl = `${getAppUrl()}/auth/callback`
+    console.log('[DEBUG] Redirect URL being sent:', redirectUrl)
+
     const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+            emailRedirectTo: redirectUrl,
             data: {
                 full_name: data.fullName,
                 phone: data.phone,
