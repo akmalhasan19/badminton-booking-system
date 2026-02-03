@@ -14,6 +14,10 @@ export type PartnerApplicationData = {
     ownerName: string
     email: string
     phone: string
+    venueName: string
+    venueAddress: string
+    venueLatitude: number | null
+    venueLongitude: number | null
     socialMedia: string
     website?: string
     flooringMaterial: string
@@ -22,19 +26,31 @@ export type PartnerApplicationData = {
     subscriptionPlan: SubscriptionPlan | null
 }
 
+// Generate a unique review token
+function generateReviewToken(): string {
+    return crypto.randomUUID()
+}
+
 export async function submitPartnerApplication(data: PartnerApplicationData) {
     try {
-        // 1. Save to Supabase (existing logic)
+        const reviewToken = generateReviewToken()
+
+        // 1. Save to Supabase
         const { error: dbError } = await supabase.from('partner_applications').insert({
             owner_name: data.ownerName,
             email: data.email,
             phone: data.phone,
+            venue_name: data.venueName,
+            venue_address: data.venueAddress,
+            venue_latitude: data.venueLatitude,
+            venue_longitude: data.venueLongitude,
             social_media: data.socialMedia,
             website: data.website || null,
             flooring_material: data.flooringMaterial,
             routine_clubs: data.routineClubs,
             goals: data.goals,
-            // subscription_plan: data.subscriptionPlan, // If you want to save JSON to DB, ensure column exists
+            subscription_plan: data.subscriptionPlan,
+            review_token: reviewToken,
             status: 'pending'
         })
 
@@ -60,23 +76,113 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
             to: ['smash.email.web@gmail.com'],
             subject: `New Partner Application: ${data.ownerName}`,
             html: `
-        <h1>New Partner Application</h1>
-        <p><strong>Owner Name:</strong> ${data.ownerName}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Phone:</strong> ${data.phone}</p>
-        <p><strong>Social Media:</strong> ${data.socialMedia}</p>
-        <p><strong>Website:</strong> ${data.website || '-'}</p>
-        <p><strong>Flooring Material:</strong> ${data.flooringMaterial}</p>
-        <p><strong>Routine Clubs:</strong> ${data.routineClubs}</p>
-        
-        <h2>Goals</h2>
-        <ul>
-          ${data.goals.map(goal => `<li>${goal}</li>`).join('')}
-        </ul>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; padding: 40px 20px; }
+                    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 3px solid #000000; box-shadow: 8px 8px 0px 0px #000000; }
+                    .header { background-color: #ccfd35; padding: 30px; border-bottom: 3px solid #000000; text-align: center; }
+                    .header h1 { margin: 0; font-size: 28px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: -1px; }
+                    .content { padding: 40px 30px; }
+                    .section { margin-bottom: 30px; }
+                    .section-title { font-size: 18px; font-weight: 800; text-transform: uppercase; border-bottom: 3px solid #000000; padding-bottom: 10px; margin-bottom: 20px; display: inline-block; }
+                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                    .field { margin-bottom: 15px; }
+                    .label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block; }
+                    .value { font-size: 16px; font-weight: 500; color: #000; }
+                    .plan-box { background-color: #d6c6ff; border: 3px solid #000000; padding: 25px; box-shadow: 4px 4px 0px 0px #000000; }
+                    .plan-name { font-size: 24px; font-weight: 900; margin-bottom: 10px; }
+                    .price { font-size: 20px; font-weight: 700; margin-bottom: 15px; }
+                    .tags { margin-top: 10px; }
+                    .tag { display: inline-block; background-color: #000; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 5px; margin-bottom: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>New Partner Application</h1>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="section">
+                            <div class="section-title">Owner Details</div>
+                            <div class="field">
+                                <span class="label">Full Name</span>
+                                <div class="value">${data.ownerName}</div>
+                            </div>
+                            <div class="field">
+                                <span class="label">Email Address</span>
+                                <div class="value"><a href="mailto:${data.email}" style="color: #000; text-decoration: underline; font-weight: bold;">${data.email}</a></div>
+                            </div>
+                            <div class="field">
+                                <span class="label">Phone Number</span>
+                                <div class="value">${data.phone}</div>
+                            </div>
+                        </div>
 
-        <h2>Selected Plan</h2>
-        ${planDetails}
-      `
+                        <div class="section">
+                            <div class="section-title">Venue Information</div>
+                            <div class="field">
+                                <span class="label">Venue Name</span>
+                                <div class="value">${data.venueName}</div>
+                            </div>
+                            <div class="field">
+                                <span class="label">Address</span>
+                                <div class="value">${data.venueAddress}</div>
+                            </div>
+                            ${data.venueLatitude && data.venueLongitude ? `
+                            <div class="field">
+                                <span class="label">Coordinates</span>
+                                <div class="value"><a href="https://www.google.com/maps?q=${data.venueLatitude},${data.venueLongitude}" target="_blank" style="color: #000; text-decoration: underline; font-weight: bold;">View on Google Maps</a></div>
+                            </div>
+                            ` : ''}
+                            <div class="field">
+                                <span class="label">Social Media</span>
+                                <div class="value">${data.socialMedia}</div>
+                            </div>
+                            <div class="field">
+                                <span class="label">Website</span>
+                                <div class="value">${data.website || '-'}</div>
+                            </div>
+                            <div class="field">
+                                <span class="label">Flooring Material</span>
+                                <div class="value">${data.flooringMaterial}</div>
+                            </div>
+                             <div class="field">
+                                <span class="label">Routine Clubs</span>
+                                <div class="value">${data.routineClubs}</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Selected Goals</div>
+                            <div class="tags">
+                                ${data.goals.map(goal => `<span class="tag">${goal}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="section" style="margin-bottom: 0;">
+                            <div class="section-title">Selected Subscription</div>
+                            ${data.subscriptionPlan ? `
+                                <div class="plan-box">
+                                    <div class="plan-name">${PLAN_FEATURES[data.subscriptionPlan].displayName}</div>
+                                    <div class="price">Rp ${(PLAN_FEATURES[data.subscriptionPlan].priceMonthly / 1000).toLocaleString('id-ID')}rb / month</div>
+                                    <div class="value" style="font-size: 14px;">${PLAN_FEATURES[data.subscriptionPlan].description}</div>
+                                </div>
+                            ` : '<div class="value">No plan selected</div>'}
+                        </div>
+
+                        <div style="margin-top: 40px; text-align: center;">
+                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/review/${reviewToken}" style="display: inline-block; background-color: #ccfd35; color: #000; padding: 16px 32px; font-size: 16px; font-weight: 900; text-decoration: none; border: 3px solid #000; box-shadow: 4px 4px 0px 0px #000; text-transform: uppercase;">
+                                Review Application
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `
         })
 
         if (emailError) {
@@ -88,5 +194,294 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
     } catch (err) {
         console.error('Unexpected Error:', err)
         return { success: false, error: 'Failed to submit application' }
+    }
+}
+
+// ============================================
+// Approval & Rejection Server Actions
+// ============================================
+
+type ApprovalResult = {
+    success: boolean
+    error?: string
+    inviteUrl?: string
+}
+
+export async function approveApplication(applicationId: string): Promise<ApprovalResult> {
+    try {
+        // 1. Fetch the application
+        const { data: application, error: fetchError } = await supabase
+            .from('partner_applications')
+            .select('*')
+            .eq('id', applicationId)
+            .single()
+
+        if (fetchError || !application) {
+            return { success: false, error: 'Application not found' }
+        }
+
+        if (application.status !== 'pending') {
+            return { success: false, error: 'Application has already been processed' }
+        }
+
+        // 2. Call PWA Smash API to generate invite
+        const smashApiUrl = process.env.NEXT_PUBLIC_SMASH_API_BASE_URL
+        const smashApiToken = process.env.SMASH_API_TOKEN
+
+        if (!smashApiUrl || !smashApiToken) {
+            return { success: false, error: 'PWA Smash API configuration missing' }
+        }
+
+        const inviteResponse = await fetch(`${smashApiUrl}/partner-invites`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${smashApiToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: application.email,
+                partner_name: application.venue_name
+            })
+        })
+
+        if (!inviteResponse.ok) {
+            const errorData = await inviteResponse.json().catch(() => ({}))
+            console.error('PWA Smash API Error:', errorData)
+            return { success: false, error: `Failed to generate invite: ${inviteResponse.status}` }
+        }
+
+        const inviteData = await inviteResponse.json()
+        const inviteUrl = inviteData.invite_url
+
+        if (!inviteUrl) {
+            return { success: false, error: 'Invalid response from PWA Smash API' }
+        }
+
+        // 3. Update application status
+        const { error: updateError } = await supabase
+            .from('partner_applications')
+            .update({ status: 'approved' })
+            .eq('id', applicationId)
+
+        if (updateError) {
+            console.error('Database update error:', updateError)
+            return { success: false, error: 'Failed to update application status' }
+        }
+
+        // 4. Send approval email to partner
+        const { error: emailError } = await resend.emails.send({
+            from: 'Smash Partner <onboarding@resend.dev>',
+            to: [application.email],
+            subject: '🎉 Selamat! Aplikasi Partner Anda Disetujui - Smash & Serve',
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="100%" style="max-width: 560px; background-color: #ffffff; border: 3px solid #000000; border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0px #000000;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #E0F55D; padding: 32px; text-align: center; border-bottom: 3px solid #000000;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 900; color: #000000; letter-spacing: -0.5px;">
+                                🎉 SELAMAT!
+                            </h1>
+                            <p style="margin: 8px 0 0; font-size: 16px; font-weight: 600; color: #333333;">
+                                Aplikasi Partner Anda Disetujui
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 32px 28px;">
+                            <p style="margin: 0 0 16px; font-size: 16px; color: #333333;">
+                                Halo <strong>${application.owner_name}</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
+                                Kami dengan senang hati mengabarkan bahwa aplikasi Anda untuk mendaftarkan <strong>${application.venue_name}</strong> sebagai partner resmi Smash & Serve telah <strong style="color: #16a34a;">DISETUJUI</strong>!
+                            </p>
+                            
+                            <!-- Next Steps Box -->
+                            <div style="background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                                <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #166534;">
+                                    📋 Langkah Selanjutnya
+                                </h3>
+                                <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #333333; line-height: 1.8;">
+                                    <li>Klik tombol di bawah untuk membuat akun GOR Anda</li>
+                                    <li>Lengkapi informasi profil venue</li>
+                                    <li>Mulai kelola booking badminton Anda!</li>
+                                </ol>
+                            </div>
+                            
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 32px 0;">
+                                <a href="${inviteUrl}" style="display: inline-block; background-color: #E0F55D; color: #000000; padding: 18px 36px; font-size: 16px; font-weight: 900; text-decoration: none; border: 3px solid #000; border-radius: 12px; box-shadow: 4px 4px 0px 0px #000; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    🏸 Daftarkan GOR Anda
+                                </a>
+                            </div>
+                            
+                            <!-- Expiry Notice -->
+                            <div style="background-color: #fef3c7; border: 2px solid #d97706; border-radius: 8px; padding: 12px 16px; text-align: center;">
+                                <p style="margin: 0; font-size: 13px; color: #92400e;">
+                                    ⏰ <strong>Penting:</strong> Link di atas berlaku selama <strong>7 hari</strong>. Segera daftarkan GOR Anda sebelum link kadaluarsa.
+                                </p>
+                            </div>
+                            
+                            <p style="margin: 28px 0 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                                Jika Anda memiliki pertanyaan, jangan ragu untuk menghubungi tim kami di <a href="mailto:smash.email.web@gmail.com" style="color: #000; font-weight: 600;">smash.email.web@gmail.com</a>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f8f8; padding: 20px 28px; border-top: 2px dashed #e0e0e0;">
+                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
+                                © 2026 Smash & Serve. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+            `
+        })
+
+        if (emailError) {
+            console.error('Failed to send approval email:', emailError)
+            // Don't fail the whole operation if email fails
+        }
+
+        return { success: true, inviteUrl }
+    } catch (err) {
+        console.error('Approve Application Error:', err)
+        return { success: false, error: 'An unexpected error occurred' }
+    }
+}
+
+export async function rejectApplication(applicationId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        // 1. Fetch the application
+        const { data: application, error: fetchError } = await supabase
+            .from('partner_applications')
+            .select('*')
+            .eq('id', applicationId)
+            .single()
+
+        if (fetchError || !application) {
+            return { success: false, error: 'Application not found' }
+        }
+
+        if (application.status !== 'pending') {
+            return { success: false, error: 'Application has already been processed' }
+        }
+
+        // 2. Update application status
+        const { error: updateError } = await supabase
+            .from('partner_applications')
+            .update({ status: 'rejected' })
+            .eq('id', applicationId)
+
+        if (updateError) {
+            console.error('Database update error:', updateError)
+            return { success: false, error: 'Failed to update application status' }
+        }
+
+        // 3. Send rejection email to partner
+        const { error: emailError } = await resend.emails.send({
+            from: 'Smash Partner <onboarding@resend.dev>',
+            to: [application.email],
+            subject: 'Pembaruan Status Aplikasi Partner - Smash & Serve',
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="100%" style="max-width: 560px; background-color: #ffffff; border: 3px solid #000000; border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0px #000000;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #fef2f2; padding: 32px; text-align: center; border-bottom: 3px solid #000000;">
+                            <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #000000; letter-spacing: -0.5px;">
+                                Pembaruan Status Aplikasi
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 32px 28px;">
+                            <p style="margin: 0 0 16px; font-size: 16px; color: #333333;">
+                                Halo <strong>${application.owner_name}</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
+                                Terima kasih atas minat Anda untuk bergabung sebagai partner Smash & Serve dengan mendaftarkan <strong>${application.venue_name}</strong>.
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
+                                Setelah meninjau aplikasi Anda dengan seksama, dengan berat hati kami sampaikan bahwa aplikasi Anda <strong style="color: #dc2626;">belum dapat kami setujui</strong> pada saat ini.
+                            </p>
+                            
+                            <!-- Info Box -->
+                            <div style="background-color: #f8f8f8; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.7;">
+                                    Keputusan ini dapat disebabkan oleh berbagai faktor seperti kelengkapan dokumen, lokasi venue, atau kapasitas kami saat ini untuk menerima partner baru.
+                                </p>
+                            </div>
+                            
+                            <p style="margin: 0 0 20px; font-size: 15px; color: #555555; line-height: 1.7;">
+                                Kami sangat menghargai waktu dan usaha yang telah Anda investasikan dalam proses aplikasi ini. Jangan berkecil hati — Anda dipersilakan untuk mengajukan aplikasi kembali di masa mendatang.
+                            </p>
+                            
+                            <p style="margin: 28px 0 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                                Jika Anda memiliki pertanyaan atau membutuhkan klarifikasi lebih lanjut, silakan hubungi kami di <a href="mailto:smash.email.web@gmail.com" style="color: #000; font-weight: 600;">smash.email.web@gmail.com</a>
+                            </p>
+                            
+                            <p style="margin: 24px 0 0; font-size: 15px; color: #333333;">
+                                Salam hangat,<br>
+                                <strong>Tim Smash & Serve</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f8f8; padding: 20px 28px; border-top: 2px dashed #e0e0e0;">
+                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
+                                © 2026 Smash & Serve. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+            `
+        })
+
+        if (emailError) {
+            console.error('Failed to send rejection email:', emailError)
+            // Don't fail the whole operation if email fails
+        }
+
+        return { success: true }
+    } catch (err) {
+        console.error('Reject Application Error:', err)
+        return { success: false, error: 'An unexpected error occurred' }
     }
 }

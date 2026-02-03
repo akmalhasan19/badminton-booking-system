@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
-import { ArrowRight, Building2, User, Mail, Phone, Hash, CheckCircle, Globe, Layout, Users } from "lucide-react"
+import { ArrowRight, Building2, User, Mail, Phone, Hash, CheckCircle, Globe, Layout, Users, MapPin, Loader2 } from "lucide-react"
 
 import Image from "next/image"
 import { PartnerOnboarding } from "@/components/PartnerOnboarding"
@@ -140,6 +140,10 @@ export default function PartnerRegisterPage() {
         ownerName: "",
         email: "",
         phone: "",
+        venueName: "",
+        venueAddress: "",
+        venueLatitude: null as number | null,
+        venueLongitude: null as number | null,
         socialMedia: "",
         website: "",
         flooringMaterial: "",
@@ -147,6 +151,9 @@ export default function PartnerRegisterPage() {
         goals: [] as string[],
         subscriptionPlan: null as SubscriptionPlan | null
     })
+
+    const [isGettingLocation, setIsGettingLocation] = useState(false)
+    const [locationStatus, setLocationStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
@@ -163,6 +170,36 @@ export default function PartnerRegisterPage() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Geolocation is not supported by your browser.")
+            return
+        }
+
+        setIsGettingLocation(true)
+        setLocationStatus('idle')
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({
+                    ...prev,
+                    venueLatitude: position.coords.latitude,
+                    venueLongitude: position.coords.longitude
+                }))
+                setLocationStatus('success')
+                setIsGettingLocation(false)
+                toast.success("Location detected successfully!")
+            },
+            (error) => {
+                console.error("Geolocation error:", error)
+                setLocationStatus('error')
+                setIsGettingLocation(false)
+                toast.error("Failed to get location. Please enter address manually.")
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        )
     }
 
 
@@ -317,6 +354,57 @@ export default function PartnerRegisterPage() {
                             <h3 className="text-xl font-bold border-b-2 border-black pb-2 flex items-center gap-2">
                                 <Building2 className="w-5 h-5" /> Venue Information
                             </h3>
+
+                            <div className="space-y-2">
+                                <label className="font-bold text-sm">Nama GOR</label>
+                                <div className="relative">
+                                    <Building2 className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        name="venueName"
+                                        required
+                                        value={formData.venueName}
+                                        onChange={handleChange}
+                                        className="w-full p-3 pl-10 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
+                                        placeholder="e.g. GOR Sinar Badminton"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="font-bold text-sm">Lokasi GOR</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        name="venueAddress"
+                                        required
+                                        value={formData.venueAddress}
+                                        onChange={handleChange}
+                                        className="w-full p-3 pl-10 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black focus:bg-white transition-colors"
+                                        placeholder="Alamat lengkap GOR"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleGetLocation}
+                                        disabled={isGettingLocation}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-pastel-lilac border-2 border-black rounded-lg hover:bg-pastel-lilac/80 transition-colors disabled:opacity-50"
+                                    >
+                                        {isGettingLocation ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> Detecting...</>
+                                        ) : (
+                                            <><MapPin className="w-4 h-4" /> Use My Current Location</>
+                                        )}
+                                    </button>
+                                    {locationStatus === 'success' && (
+                                        <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" /> Koordinat terdeteksi
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
 
                             <div className="space-y-2">
                                 <label className="font-bold text-sm">Sosial Media Page</label>
