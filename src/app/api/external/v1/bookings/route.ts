@@ -3,6 +3,28 @@ import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
+    // 0. Rate Limiting
+    // We use a simplified IP check here. In production with a proxy this might need 'x-forwarded-for' parsing.
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+        const { ratelimit } = await import('@/lib/rate-limit')
+        const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1"
+        const { success, limit, reset, remaining } = await ratelimit.limit(ip)
+
+        if (!success) {
+            return NextResponse.json(
+                { error: "Too Many Requests" },
+                {
+                    status: 429,
+                    headers: {
+                        "X-RateLimit-Limit": limit.toString(),
+                        "X-RateLimit-Remaining": remaining.toString(),
+                        "X-RateLimit-Reset": reset.toString()
+                    }
+                }
+            )
+        }
+    }
+
     if (!validateApiKey(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

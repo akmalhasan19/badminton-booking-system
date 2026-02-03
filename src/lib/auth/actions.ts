@@ -26,6 +26,7 @@ export async function signUp(data: SignUpData) {
         email: data.email,
         password: data.password,
         options: {
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
             data: {
                 full_name: data.fullName,
                 phone: data.phone,
