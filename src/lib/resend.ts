@@ -12,7 +12,7 @@ interface SendOTPEmailParams {
 export async function sendPasswordResetOTP({ to, otpCode, userName }: SendOTPEmailParams) {
     try {
         const { data, error } = await resend.emails.send({
-            from: 'Smash & Serve <noreply@smashserve.id>',
+            from: process.env.RESEND_FROM_EMAIL || 'Smash & Serve <onboarding@resend.dev>',
             to: to,
             subject: 'Kode Verifikasi Reset Password',
             html: `
