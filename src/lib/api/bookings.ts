@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export interface BookingFilters {
     userId?: string
@@ -93,6 +94,90 @@ export async function getBookingById(id: string) {
 }
 
 /**
+ * Helper: Calculate price based on court, date (weekday/weekend), and duration
+ */
+export async function calculateBookingPrice(
+    supabase: SupabaseClient,
+    courtId: string,
+    bookingDate: string,
+    durationHours: number
+): Promise<{ price: number; error?: string }> {
+    // Determine day type (Weekday vs Weekend)
+    const date = new Date(bookingDate)
+    const dayOfWeek = date.getDay() // 0 = Sunday, 6 = Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const dayType = isWeekend ? 'weekend' : 'weekday'
+
+    // Fetch pricing: Try specific court pricing first, then default (court_id is NULL)
+    // Note: The unique constraint is (court_id, day_type).
+    // We can fetch both specific and default for this day_type and pick the best match.
+    const { data: pricingData, error } = await supabase
+        .from('pricing')
+        .select('*')
+        .eq('day_type', dayType)
+        .or(`court_id.eq.${courtId},court_id.is.null`)
+
+    if (error) {
+        console.error('Error fetching pricing:', error)
+        return { price: 0, error: 'Could not fetch pricing configuration' }
+    }
+
+    // Prioritize specific court price over default
+    const specificPrice = pricingData?.find((p) => p.court_id === courtId)
+    const defaultPrice = pricingData?.find((p) => p.court_id === null)
+    const activePrice = specificPrice || defaultPrice
+
+    if (!activePrice) {
+        return { price: 0, error: `No pricing found for ${dayType}` }
+    }
+
+    return { price: Number(activePrice.price_per_hour) * durationHours }
+}
+
+/**
+ * Helper: Validate operational hours
+ */
+export async function validateOperationalHours(
+    supabase: SupabaseClient,
+    bookingDate: string,
+    startTime: string,
+    durationHours: number
+): Promise<{ isValid: boolean; error?: string }> {
+    const date = new Date(bookingDate)
+    const dayOfWeek = date.getDay()
+
+    const { data: hours, error } = await supabase
+        .from('operational_hours')
+        .select('*')
+        .eq('day_of_week', dayOfWeek)
+        .single()
+
+    if (error || !hours || !hours.is_active) {
+        return { isValid: false, error: 'Venue is closed on this day' }
+    }
+
+    // Convert times to comparable numbers or objects
+    const [openH, openM] = hours.open_time.split(':').map(Number)
+    const [closeH, closeM] = hours.close_time.split(':').map(Number)
+    const [startH, startM] = startTime.split(':').map(Number)
+
+    const bookingStartMinutes = startH * 60 + startM
+    const bookingEndMinutes = bookingStartMinutes + durationHours * 60
+    const openMinutes = openH * 60 + openM
+    const closeMinutes = closeH * 60 + closeM
+
+    if (bookingStartMinutes < openMinutes) {
+        return { isValid: false, error: `Booking cannot start before opening time (${hours.open_time})` }
+    }
+
+    if (bookingEndMinutes > closeMinutes) {
+        return { isValid: false, error: `Booking must end before closing time (${hours.close_time})` }
+    }
+
+    return { isValid: true }
+}
+
+/**
  * Create a new booking
  */
 export async function createBooking(bookingData: CreateBookingData) {
@@ -106,7 +191,18 @@ export async function createBooking(bookingData: CreateBookingData) {
         return { error: 'Not authenticated' }
     }
 
-    // 1. Check availability FIRST
+    // 1. Validate Operational Hours
+    const opsCheck = await validateOperationalHours(
+        supabase,
+        bookingData.bookingDate,
+        bookingData.startTime,
+        bookingData.durationHours
+    )
+    if (!opsCheck.isValid) {
+        return { error: opsCheck.error }
+    }
+
+    // 2. Check availability
     const isAvailable = await checkAvailability(
         bookingData.courtId,
         bookingData.bookingDate,
@@ -117,23 +213,19 @@ export async function createBooking(bookingData: CreateBookingData) {
         return { error: 'Time slot is not available' }
     }
 
-    // 2. Fetch court details for price calculation (Security Fix)
-    const { data: court, error: courtError } = await supabase
-        .from('courts')
-        .select('price_per_hour')
-        .eq('id', bookingData.courtId)
-        .single()
+    // 3. Calculate Price Correctly
+    const priceCalc = await calculateBookingPrice(
+        supabase,
+        bookingData.courtId,
+        bookingData.bookingDate,
+        bookingData.durationHours
+    )
 
-    if (courtError || !court) {
-        return { error: 'Court not found' }
+    if (priceCalc.error) {
+        return { error: priceCalc.error }
     }
 
-    // Calculate total price server-side
-    // TODO: Add dynamic pricing logic here if needed (e.g. peak hours)
-    const totalPrice = court.price_per_hour * bookingData.durationHours
-
-    // 3. Double-check availability immediately before insert (Race condition mitigation)
-    // Note: A database unique constraint on (court_id, booking_date, start_time) is the only 100% fix.
+    // 4. Double-check availability immediately before insert (Race condition mitigation)
     const isStillAvailable = await checkAvailability(
         bookingData.courtId,
         bookingData.bookingDate,
@@ -153,7 +245,7 @@ export async function createBooking(bookingData: CreateBookingData) {
             start_time: bookingData.startTime,
             end_time: bookingData.endTime,
             duration_hours: bookingData.durationHours,
-            total_price: totalPrice,
+            total_price: priceCalc.price,
             notes: bookingData.notes,
             status: 'pending',
         })
@@ -295,7 +387,13 @@ export async function getAvailableSlots(courtId: string, date: string) {
 
     for (let hour = openHour; hour < closeHour; hour++) {
         const timeSlot = `${hour.toString().padStart(2, '0')}:00`
-        const isBooked = bookings?.some((booking) => booking.start_time === timeSlot)
+        const isBooked = bookings?.some((booking) => {
+            // Simple check: same start time usually. 
+            // Better: Check if timeSlot falls within [start, end)
+            // But system seems to stick to hourly slots for now.
+            // Let's assume hourly slots.
+            return booking.start_time.startsWith(timeSlot)
+        })
 
         slots.push({
             time: timeSlot,
