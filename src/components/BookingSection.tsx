@@ -34,7 +34,7 @@ export function BookingSection() {
     const [selectedCourt, setSelectedCourt] = useState<any | null>(null) // Changed from number to Court object
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'))
     const [selectedTimes, setSelectedTimes] = useState<string[]>([])
-    const [bookingStatus, setBookingStatus] = useState<'idle' | 'success' | 'loading'>('idle')
+    const [bookingStatus, setBookingStatus] = useState<'idle' | 'success' | 'loading' | 'redirecting'>('idle')
     const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
 
     // Search Query State
@@ -436,7 +436,15 @@ export function BookingSection() {
             return;
         }
 
+        if (result.warning) {
+            alert(`Attention: ${result.warning}`);
+            // Don't clear state immediately so they can see the message
+            setBookingStatus('idle');
+            return;
+        }
+
         if (result.paymentUrl) {
+            setBookingStatus('redirecting' as any); // Type cast if needed or update state type
             window.location.href = result.paymentUrl;
             return;
         }
@@ -559,6 +567,20 @@ export function BookingSection() {
                 </div>
             </motion.div>
         );
+    }
+
+
+
+    if (bookingStatus === 'redirecting') {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 animate-fade-in relative overflow-hidden">
+                <div className="w-24 h-24 border-8 border-black border-t-pastel-mint rounded-full animate-spin mb-8"></div>
+                <h2 className="text-4xl md:text-5xl font-display font-black text-black mb-4 uppercase tracking-tighter">Redirecting to Payment...</h2>
+                <p className="text-xl font-medium text-gray-600 max-w-md">
+                    Please complete your payment on Xendit to secure your booking.
+                </p>
+            </div>
+        )
     }
 
     if (bookingStatus === 'success') {
