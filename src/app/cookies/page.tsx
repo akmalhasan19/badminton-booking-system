@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from 'react'
 import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { Tab } from "@/types"
@@ -15,7 +16,9 @@ export default function CookiesPage() {
 
     return (
         <main className="min-h-screen bg-[#FAFAFA] font-sans selection:bg-pastel-acid selection:text-black">
-            <Navbar activeTab={Tab.HOME} setActiveTab={handleTabChange} />
+            <Suspense fallback={<div className="h-20" />}>
+                <Navbar activeTab={Tab.HOME} setActiveTab={handleTabChange} />
+            </Suspense>
 
             <div className="pt-32 pb-20 px-4">
                 <div className="max-w-4xl mx-auto">

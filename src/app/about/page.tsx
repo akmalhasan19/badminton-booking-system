@@ -1,4 +1,4 @@
-import React from 'react';
+import { Suspense } from 'react';
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import Hero from "@/components/about/Hero";
@@ -10,7 +10,9 @@ import Team from "@/components/about/Team";
 export default function AboutPage() {
     return (
         <div className="min-h-screen bg-neo-bg text-neo-black font-sans selection:bg-neo-pink selection:text-black">
-            <Navbar />
+            <Suspense fallback={<div className="h-20" />}>
+                <Navbar />
+            </Suspense>
             <main>
                 <Hero />
                 <Stats />
