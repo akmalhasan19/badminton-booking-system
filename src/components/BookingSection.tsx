@@ -35,6 +35,9 @@ export function BookingSection() {
     const [bookingStatus, setBookingStatus] = useState<'idle' | 'success' | 'loading'>('idle')
     const [filterType, setFilterType] = useState<'All' | 'Rubber' | 'Wooden' | 'Synthetic'>('All')
 
+    // Search Query State
+    const [searchQuery, setSearchQuery] = useState("")
+
     // Real data from API
     const [venues, setVenues] = useState<any[]>([]) // Venues (Halls) from API
     const [venueCourts, setVenueCourts] = useState<SmashCourt[]>([]) // Courts for selected venue
@@ -66,9 +69,19 @@ export function BookingSection() {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
-    // Sync selectedHall with URL venueId
+    // Sync state with URL params (search, date, venueId)
     useEffect(() => {
         const venueId = searchParams.get('venueId')
+        const dateParam = searchParams.get('date')
+        const qParam = searchParams.get('q')
+
+        if (dateParam) {
+            setSelectedDate(dateParam)
+        }
+
+        if (qParam) {
+            setSearchQuery(qParam)
+        }
 
         if (venueId && venues.length > 0) {
             // Only update if not already selected or different
@@ -152,15 +165,9 @@ export function BookingSection() {
                 const venuesData = await fetchVenues();
 
                 if (venuesData && venuesData.length > 0) {
-                    // Filter out dummy/test venues
-                    const validVenues = venuesData.filter((v: any) =>
-                        !v.name.toLowerCase().includes('smash test arena') &&
-                        !v.name.toLowerCase().includes('dummy')
-                    );
-
                     // Fetch details for each venue to get court prices
                     const venuesWithPrices = await Promise.all(
-                        validVenues.map(async (venue: any) => {
+                        venuesData.map(async (venue: any) => {
                             try {
                                 const details = await fetchVenueDetails(venue.id);
                                 // Get minimum hourly rate from courts
@@ -289,10 +296,21 @@ export function BookingSection() {
         const NEARBY_RADIUS_KM = 50;  // Venues within 50km are considered nearby
         const MAX_RADIUS_KM = 150;    // Venues beyond 150km are too far
 
-        // If user location is not available, show all venues with warning
+        // Filter by Search Query first
+        let filteredVenues = venues;
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            filteredVenues = venues.filter(venue =>
+                venue.name.toLowerCase().includes(lowerQuery) ||
+                venue.location.city.toLowerCase().includes(lowerQuery) ||
+                (venue.location.address && venue.location.address.toLowerCase().includes(lowerQuery))
+            );
+        }
+
+        // If user location is not available or searching, show all filtered venues
         if (!userLocation || locationStatus !== 'granted') {
             return {
-                exactMatches: venues,
+                exactMatches: filteredVenues,
                 nearbyMatches: [],
                 tooFarVenues: []
             };
@@ -301,7 +319,7 @@ export function BookingSection() {
         const nearby: any[] = [];
         const tooFar: any[] = [];
 
-        venues.forEach(venue => {
+        filteredVenues.forEach(venue => {
             // If venue doesn't have coordinates, include it in nearby (benefit of doubt)
             if (!venue.latitude || !venue.longitude) {
                 nearby.push({ ...venue, distanceKm: null });
@@ -334,7 +352,7 @@ export function BookingSection() {
             nearbyMatches: [],
             tooFarVenues: tooFar
         };
-    }, [venues, userLocation, locationStatus]);
+    }, [venues, userLocation, locationStatus, searchQuery]);
 
 
 

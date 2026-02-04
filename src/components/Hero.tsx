@@ -3,6 +3,7 @@
 import { ArrowRight, Zap } from "lucide-react"
 import { Tab } from "@/types"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { HeroBookingWidget } from "@/components/HeroBookingWidget"
 
 interface HeroProps {
     setActiveTab: (tab: Tab) => void;
@@ -12,7 +13,7 @@ export function Hero({ setActiveTab }: HeroProps) {
     const { t } = useLanguage()
 
     return (
-        <section className="relative w-full overflow-hidden pt-32 pb-20">
+        <section className="relative w-full overflow-hidden pt-28 lg:pt-36 pb-20">
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 w-full h-[130%] pointer-events-none"
@@ -23,13 +24,23 @@ export function Hero({ setActiveTab }: HeroProps) {
             />
 
             <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4">
+                {/* Top Section: Badge & Booking Widget */}
+                <div className="flex flex-col gap-6 mb-12 relative z-20">
+                    {/* Badge */}
+                    <div className="inline-block self-center bg-pastel-acid border-2 border-black px-4 py-2 rounded-full shadow-hard-sm transform -rotate-1">
+                        <span className="font-bold text-sm tracking-widest uppercase">{t.hero_badge}</span>
+                    </div>
+
+                    {/* Booking Widget - Full Width */}
+                    <div className="w-full">
+                        <HeroBookingWidget className="max-w-none w-full shadow-hard-lg" />
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
                     {/* Text Content */}
                     <div className="lg:col-span-7 space-y-8 z-10">
-                        <div className="inline-block bg-pastel-acid border-2 border-black px-4 py-2 rounded-full shadow-hard-sm transform -rotate-2">
-                            <span className="font-bold text-sm tracking-widest uppercase">{t.hero_badge}</span>
-                        </div>
 
                         <h1 className="text-[13vw] sm:text-6xl md:text-8xl font-display font-black leading-[0.9] text-dark tracking-tighter">
                             {t.hero_line1_word1} <span className="text-stroke-2 text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-mint" style={{ WebkitTextStroke: '2px #121212' }}>{t.hero_line1_word2}</span> <br />
@@ -59,13 +70,13 @@ export function Hero({ setActiveTab }: HeroProps) {
                     </div>
 
                     {/* Hero Visual */}
-                    <div className="lg:col-span-5 relative h-[500px] lg:h-[600px] flex items-center justify-center">
+                    <div className="lg:col-span-5 relative h-[450px] lg:h-[550px] flex items-center justify-center mt-12 lg:mt-24">
                         {/* Abstract Shapes */}
-                        <div className="absolute top-10 right-10 w-48 h-48 bg-pastel-mint rounded-full border-2 border-black mix-blend-multiply animate-float opacity-80"></div>
-                        <div className="absolute bottom-10 left-10 w-64 h-64 bg-pastel-lilac rounded-full border-2 border-black mix-blend-multiply animate-float opacity-80" style={{ animationDelay: '1s' }}></div>
+                        <div className="absolute top-10 right-10 w-40 h-40 bg-pastel-mint rounded-full border-2 border-black mix-blend-multiply animate-float opacity-80"></div>
+                        <div className="absolute bottom-10 left-10 w-56 h-56 bg-pastel-lilac rounded-full border-2 border-black mix-blend-multiply animate-float opacity-80" style={{ animationDelay: '1s' }}></div>
 
                         {/* Main Image Card */}
-                        <div className="relative z-10 w-full max-w-md aspect-[4/5] bg-white rounded-3xl border-2 border-black shadow-hard-lg overflow-hidden transform rotate-3 hover:rotate-0 transition-all duration-500">
+                        <div className="relative z-10 w-full max-w-sm aspect-[4/5] bg-white rounded-3xl border-2 border-black shadow-hard-lg overflow-hidden transform rotate-3 hover:rotate-0 transition-all duration-500">
                             <img
                                 src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=2070&auto=format&fit=crop"
                                 alt="Badminton Style"
