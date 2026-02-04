@@ -6,7 +6,7 @@ import { Menu, X, User, LogOut, ChevronDown, Calendar, CreditCard, Bell, HelpCir
 import { Tab } from "@/types"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser, signOut } from "@/lib/auth/actions"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 
 interface NavbarProps {
     activeTab?: Tab;
@@ -40,11 +40,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const { t } = useLanguage()
     const router = useRouter()
     const pathname = usePathname()
+    const searchParams = useSearchParams()
     // ... state ...
 
     const menuItems = [
         { tab: Tab.HOME, label: t.home, color: "pastel-acid", path: "/" },
-        { tab: Tab.BOOK, label: t.book, color: "pastel-mint", path: "/booking" },
+        { tab: Tab.BOOK, label: t.book, color: "pastel-mint", path: "/?tab=book" },
         { tab: Tab.SHOP, label: t.shop, color: "pastel-pink", path: "/shop" }
     ];
 
@@ -65,6 +66,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
     // Determine current active tab
     const currentTab = activeTab || (() => {
+        if (pathname === "/" && searchParams.get('tab') === 'book') return Tab.BOOK
         if (pathname === "/") return Tab.HOME
         if (pathname.startsWith("/booking")) return Tab.BOOK
         if (pathname.startsWith("/shop")) return Tab.SHOP

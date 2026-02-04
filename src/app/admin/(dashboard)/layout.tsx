@@ -1,5 +1,4 @@
 import { isAdmin, getCurrentUser } from "@/lib/auth/actions";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
     LayoutDashboard,

@@ -5,6 +5,7 @@ import { getAvailableSlots, createBooking as createBookingApi } from './bookings
 import { revalidatePath } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 import { getCurrentUser } from '@/lib/auth/actions'
+import { createInvoice } from '@/lib/xendit/client'
 
 /**
  * Server action to fetch courts (Local DB)
@@ -76,20 +77,55 @@ export async function createBooking(data: {
     // Call Smash API
     const apiResult = await smashApi.createBooking(smashBooking)
 
-    if (apiResult.error) {
-        return { success: false, error: apiResult.error }
+    if (apiResult.error || !apiResult.data?.id) {
+        return { success: false, error: apiResult.error || 'Failed to create booking' }
     }
 
-    // 2. If successful, save to Supabase (Local History)
-    // We reuse the existing createBookingApi but we might need to mock/adjust data 
-    // since we don't have a local 'courts' record that matches the external Venue ID.
-    // We skip local DB write if we don't have matching local tables, to avoid errors.
+    const bookingId = apiResult.data.id
 
-    if (apiResult.success) {
-        revalidatePath('/')
+    // 2. Calculate Price for Payment
+    // We need to fetch venue details again to get the accurate price
+    // Optimization: We could pass price from frontend but that is insecure.
+    const venueDetails = await smashApi.getVenueDetails(data.courtId)
+    const selectedCourt = venueDetails?.courts.find(c => c.id === data.courtUuid)
+    const hourlyRate = selectedCourt?.hourly_rate || 50000
+    const amount = hourlyRate * data.durationHours
+
+    // 3. Create Xendit Invoice
+    const appUrl = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000'
+        : (process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app')
+
+    try {
+        const invoice = await createInvoice({
+            externalId: bookingId,
+            amount: amount,
+            payerEmail: user.email,
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
+            successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
+            failureRedirectUrl: `${appUrl}/?status=failed`,
+        })
+
+        if (apiResult.success) {
+            revalidatePath('/')
+        }
+
+        return {
+            success: true,
+            data: apiResult.data,
+            paymentUrl: invoice.invoice_url
+        }
+
+    } catch (error) {
+        console.error('Failed to create payment invoice:', error)
+        // Return success but with warning/no payment URL
+        // User will see booking in "Pending" state in their history
+        return {
+            success: true,
+            data: apiResult.data,
+            warning: 'Booking created but payment link generation failed. Please check your bookings page.'
+        }
     }
-
-    return apiResult
 }
 
 /**

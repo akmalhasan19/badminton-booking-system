@@ -17,7 +17,7 @@ export function BookingTable({ bookings }: { bookings: any[] }) {
             } else {
                 toast.success(`Booking ${newStatus}!`)
             }
-        } catch (e) {
+        } catch {
             toast.error('Something went wrong')
         } finally {
             setUpdatingId(null)

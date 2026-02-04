@@ -436,7 +436,12 @@ export function BookingSection() {
             return;
         }
 
-        // Success!
+        if (result.paymentUrl) {
+            window.location.href = result.paymentUrl;
+            return;
+        }
+
+        // Success! (Fallback if no payment URL or free booking)
         setBookingStatus('success');
 
         // Reset after animation
