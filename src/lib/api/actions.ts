@@ -94,11 +94,10 @@ export async function createBooking(data: {
     const subtotal = hourlyRate * data.durationHours
     const amount = subtotal + SERVICE_FEE
 
-    // 3. Create Xendit Invoice
-    const appUrl = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000'
-        : (process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app')
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
+
+    // 3. Create Xendit Invoice
     try {
         const invoice = await createInvoice({
             externalId: bookingId,
@@ -108,6 +107,49 @@ export async function createBooking(data: {
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
         })
+
+        // 4. Save to Local Database (Dual Write)
+        const { createServiceClient } = await import('@/lib/supabase/server')
+        const supabase = createServiceClient()
+
+        // 4a. Sync Court to Local DB if not exists (for FK constraint)
+        const { data: existingCourt } = await supabase
+            .from('courts')
+            .select('id')
+            .eq('id', data.courtUuid)
+            .single()
+
+        if (!existingCourt) {
+            // Court not in local DB, sync from PWA API data
+            const courtDetails = venueDetails?.courts.find(c => c.id === data.courtUuid)
+            const { error: courtInsertError } = await supabase.from('courts').insert({
+                id: data.courtUuid,
+                name: courtDetails?.name || 'Court',
+                description: `${venueDetails?.name || 'Venue'} - Synced from PWA`,
+                is_active: true
+            })
+            if (courtInsertError) {
+                console.error('Failed to sync court to local DB:', courtInsertError)
+            }
+        }
+
+        // 4b. Insert Booking
+        const { error: dbError } = await supabase.from('bookings').insert({
+            id: bookingId,
+            user_id: user.id,
+            court_id: data.courtUuid,
+            booking_date: data.bookingDate,
+            start_time: data.startTime,
+            end_time: data.endTime,
+            total_price: amount,
+            status: 'pending',
+            duration_hours: data.durationHours,
+        })
+
+        if (dbError) {
+            console.error('Failed to save booking to local DB:', dbError)
+            // We don't block the user but we log it.
+        }
 
         if (apiResult.success) {
             revalidatePath('/')
