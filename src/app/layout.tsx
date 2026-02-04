@@ -1,5 +1,6 @@
+import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata } from "next";
-import { Space_Grotesk, Outfit } from "next/font/google";
+import { Space_Grotesk, Outfit, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { LoadingProvider } from "@/lib/loading-context";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
@@ -11,6 +12,13 @@ const spaceGrotesk = Space_Grotesk({
 
 const outfit = Outfit({
   variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
@@ -29,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${spaceGrotesk.variable} antialiased min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-pastel-acid selection:text-black`}
+        className={`${outfit.variable} ${spaceGrotesk.variable} ${spaceMono.variable} antialiased min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-pastel-acid selection:text-black`}
       >
         <div className="bg-noise"></div>
         <LanguageProvider>
@@ -38,6 +46,9 @@ export default function RootLayout({
             <Toaster position="top-center" richColors />
           </LoadingProvider>
         </LanguageProvider>
+        {process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </body>
     </html>
   );

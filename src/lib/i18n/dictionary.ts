@@ -226,7 +226,7 @@ export const dictionaries: Record<Language, Dictionary> = {
         footer_privacy: "Privacy",
         footer_terms: "Terms",
         footer_cookies: "Cookies",
-        footer_copyright: "© 2024 Smash & Serve. Made with 🏸",
+        footer_copyright: "© 2024 Smash & Serve.",
         footer_designed_in: "Designed in the Metaverse",
 
         // Booking Section
@@ -349,7 +349,7 @@ export const dictionaries: Record<Language, Dictionary> = {
         footer_privacy: "Privasi",
         footer_terms: "Ketentuan",
         footer_cookies: "Cookies",
-        footer_copyright: "© 2024 Smash & Serve. Dibuat dengan 🏸",
+        footer_copyright: "© 2024 Smash & Serve.",
         footer_designed_in: "Didesain di Metaverse",
 
         // Booking Section
@@ -472,7 +472,7 @@ export const dictionaries: Record<Language, Dictionary> = {
         footer_privacy: "Privasi",
         footer_terms: "Ketentuan",
         footer_cookies: "Cookies",
-        footer_copyright: "© 2024 Smash & Serve. Didamel kaliyan 🏸",
+        footer_copyright: "© 2024 Smash & Serve.",
         footer_designed_in: "Didesain wonten Metaverse",
 
         // Booking Section

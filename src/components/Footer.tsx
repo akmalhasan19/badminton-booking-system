@@ -43,8 +43,9 @@ export function Footer() {
                         <ul className="space-y-4 text-gray-400">
                             <li><Link href="/" className="hover:text-white cursor-pointer transition-colors">{t.footer_find_court}</Link></li>
                             <li><Link href="/tournaments" className="hover:text-white cursor-pointer transition-colors">{t.footer_tournaments}</Link></li>
-                            <li><Link href="/coaching" className="hover:text-white cursor-pointer transition-colors">{t.footer_coaching}</Link></li>
+                            <li><Link href="/" className="hover:text-white cursor-pointer transition-colors">{t.footer_coaching}</Link></li>
                             <li><Link href="/" className="hover:text-white cursor-pointer transition-colors">{t.footer_pro_shop}</Link></li>
+                            <li><Link href="/about" className="text-neo-pink hover:text-neo-green font-bold cursor-pointer transition-colors border-b-2 border-transparent hover:border-neo-green inline-block">ABOUT US</Link></li>
                         </ul>
                     </div>
 

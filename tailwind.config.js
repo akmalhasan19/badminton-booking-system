@@ -19,6 +19,7 @@ module.exports = {
       fontFamily: {
         sans: ['Outfit', 'sans-serif'],
         display: ['Space Grotesk', 'sans-serif'],
+        mono: ['var(--font-space-mono)', 'monospace'],
       },
       colors: {
         pastel: {
@@ -29,12 +30,27 @@ module.exports = {
           acid: '#CCFF00',
           peach: '#FFDAC1',
         },
+        neo: {
+          bg: '#FFFFF0',
+          black: '#121212',
+          green: '#A3E635',
+          pink: '#FF90E8',
+          blue: '#60A5FA',
+          yellow: '#FACC15',
+          orange: '#FB923C',
+          purple: '#C084FC',
+        },
         dark: '#121212',
       },
       boxShadow: {
         'hard': '4px 4px 0px 0px #121212',
         'hard-sm': '2px 2px 0px 0px #121212',
         'hard-lg': '8px 8px 0px 0px #121212',
+        'hard-xl': '12px 12px 0px 0px #000000',
+        'hard-hover': '2px 2px 0px 0px #000000',
+      },
+      borderWidth: {
+        '3': '3px',
       },
       animation: {
         'marquee': 'marquee 25s linear infinite',
@@ -70,4 +86,3 @@ module.exports = {
   },
   plugins: [require("tailwindcss-animate")],
 }
-
