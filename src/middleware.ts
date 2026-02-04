@@ -36,10 +36,14 @@ export async function middleware(request: NextRequest) {
     if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/review')) {
         if (!session) {
             // No session, redirect to home
-            return NextResponse.redirect(new URL('/', request.url))
+            // DEBUG: Commenting out to allow "Access Denied" screen to show for logged out users too
+            // return NextResponse.redirect(new URL('/', request.url))
         }
 
         // Check if user is admin
+        // DEPRECATED in Middleware: We now handle detailed authorization in the Admin Layout (layout.tsx)
+        // to show a proper "Access Denied" debug screen instead of silently redirecting.
+        /*
         const { data: user } = await supabase
             .from('users')
             .select('role')
@@ -50,6 +54,7 @@ export async function middleware(request: NextRequest) {
             // Not an admin, redirect to home
             return NextResponse.redirect(new URL('/', request.url))
         }
+        */
     }
 
     // Protect customer dashboard routes

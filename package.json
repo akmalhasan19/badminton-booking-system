@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google-analytics/data": "^5.2.1",
     "@gsap/react": "^2.1.2",
     "@next/third-parties": "^16.1.6",
     "@supabase/ssr": "^0.8.0",

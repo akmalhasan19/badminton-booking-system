@@ -162,6 +162,10 @@ export async function updateProfile(data: ProfileData) {
  */
 export async function isAdmin() {
     const user = await getCurrentUser()
+    // Check for hardcoded admin email from environment variable
+    if (process.env.ADMIN_EMAIL && user?.email === process.env.ADMIN_EMAIL) {
+        return true
+    }
     return user?.role === 'admin'
 }
 
