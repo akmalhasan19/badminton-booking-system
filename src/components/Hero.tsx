@@ -31,7 +31,7 @@ export function Hero({ setActiveTab }: HeroProps) {
                             <span className="font-bold text-sm tracking-widest uppercase">{t.hero_badge}</span>
                         </div>
 
-                        <h1 className="text-6xl md:text-8xl font-display font-black leading-[0.9] text-dark tracking-tighter">
+                        <h1 className="text-[13vw] sm:text-6xl md:text-8xl font-display font-black leading-[0.9] text-dark tracking-tighter">
                             {t.hero_line1_word1} <span className="text-stroke-2 text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-mint" style={{ WebkitTextStroke: '2px #121212' }}>{t.hero_line1_word2}</span> <br />
                             {t.hero_line2_word1} <span className="bg-pastel-pink px-2 italic transform inline-block -rotate-1 border-2 border-black shadow-hard-sm rounded-lg">{t.hero_line2_word2}</span>
                         </h1>
