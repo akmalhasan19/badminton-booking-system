@@ -830,11 +830,11 @@ export function BookingSection() {
                                         <div className="w-8 h-8 rounded-full border-2 border-gray-300 group-hover:border-black flex items-center justify-center">
                                             <ChevronLeft className="w-4 h-4" />
                                         </div>
-                                        <span className="text-sm uppercase tracking-wider">Back to Halls</span>
+                                        <span className="text-sm uppercase tracking-wider">{t.back_to_halls}</span>
                                     </button>
                                     <div className="text-right">
                                         <h3 className="text-2xl font-display font-black text-black uppercase">{selectedHall.name}</h3>
-                                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{selectedHall.type} Floor</span>
+                                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{selectedHall.type} {t.floor}</span>
                                     </div>
                                 </div>
 
@@ -845,7 +845,7 @@ export function BookingSection() {
                                         className="p-4 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-all group relative"
                                     >
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-xs font-bold text-gray-400 uppercase">Location</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase">{t.location_label}</span>
                                             <div className="flex items-center gap-1">
                                                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isAddressExpanded ? 'rotate-180' : ''}`} />
                                             </div>
@@ -878,8 +878,8 @@ export function BookingSection() {
                                         </p>
                                     </div>
                                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <span className="text-xs font-bold text-gray-400 uppercase">Facilities</span>
-                                        <p className="font-bold text-black">{selectedHall.totalCourts} Courts</p>
+                                        <span className="text-xs font-bold text-gray-400 uppercase">{t.facilities_label}</span>
+                                        <p className="font-bold text-black">{selectedHall.totalCourts} {t.courts}</p>
                                         <p className="text-xs text-gray-500">Shower, Parking, Cafe</p>
                                     </div>
                                 </div>
@@ -887,7 +887,7 @@ export function BookingSection() {
                                 {/* Court Grid */}
                                 <div className="mb-6">
                                     <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6 flex items-center">
-                                        <MapPin className="w-4 h-4 mr-2" /> Select Court Location
+                                        <MapPin className="w-4 h-4 mr-2" /> {t.select_court_location}
                                     </h4>
 
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -969,15 +969,15 @@ export function BookingSection() {
                                     {selectedHall && (
                                         <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="font-bold text-gray-500 text-xs uppercase">Venue</span>
+                                                <span className="font-bold text-gray-500 text-xs uppercase">{t.venue_label}</span>
                                                 <span className="font-black text-black">{selectedHall.name}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <span className="font-bold text-gray-500 text-xs uppercase">Court</span>
+                                                <span className="font-bold text-gray-500 text-xs uppercase">{t.court_label}</span>
                                                 <span className="font-black text-black">{selectedCourt ? (selectedCourt.name || `Lapangan ${selectedCourt.court_number}`) : '—'}</span>
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-gray-200">
-                                                <span className="block font-bold text-gray-500 text-xs uppercase mb-1">Address</span>
+                                                <span className="block font-bold text-gray-500 text-xs uppercase mb-1">{t.address_label}</span>
                                                 <p className="text-xs text-gray-700">{selectedHall.location.address}</p>
                                             </div>
                                         </div>
@@ -985,7 +985,7 @@ export function BookingSection() {
 
                                     <div className={`transition-all duration-300 ${!selectedCourt ? 'opacity-50 pointer-events-none blur-[1px]' : 'opacity-100'}`}>
                                         <div className="mb-6">
-                                            <label className="block text-sm font-bold text-black mb-3 uppercase tracking-wide">Select Date</label>
+                                            <label className="block text-sm font-bold text-black mb-3 uppercase tracking-wide">{t.select_date}</label>
                                             <div className="relative">
                                                 <input
                                                     type="date"
@@ -998,7 +998,7 @@ export function BookingSection() {
                                         </div>
 
                                         <div className="mb-8">
-                                            <label className="block text-sm font-bold text-black mb-3 uppercase tracking-wide">Available Slots</label>
+                                            <label className="block text-sm font-bold text-black mb-3 uppercase tracking-wide">{t.available_slots}</label>
                                             <div className="grid grid-cols-3 gap-3">
                                                 {isLoadingSlots ? (
                                                     <div className="col-span-3 flex justify-center py-4">
@@ -1006,7 +1006,7 @@ export function BookingSection() {
                                                     </div>
                                                 ) : getCourtSlots().length === 0 ? (
                                                     <div className="col-span-3 text-center py-4 text-gray-500 text-sm">
-                                                        Tidak ada slot tersedia
+                                                        {t.no_slots}
                                                     </div>
                                                 ) : getCourtSlots().map((slot, idx) => {
                                                     const booked = !slot.available;
@@ -1025,7 +1025,7 @@ export function BookingSection() {
                                                                 }`}
                                                         >
                                                             <span className={booked ? 'line-through' : ''}>{slot.time}</span>
-                                                            {booked && <span className="block text-[10px] font-bold uppercase">Booked</span>}
+                                                            {booked && <span className="block text-[10px] font-bold uppercase">{t.booked}</span>}
                                                         </button>
                                                     )
                                                 })}
@@ -1035,15 +1035,15 @@ export function BookingSection() {
 
                                     <div className="border-t-2 border-dashed border-gray-300 pt-6 space-y-3">
                                         <div className="flex justify-between text-sm font-medium text-gray-500">
-                                            <span>Court Fee ({selectedTimes.length}hr)</span>
+                                            <span>{t.court_fee} ({selectedTimes.length}hr)</span>
                                             <span>Rp {selectedHall ? (selectedHall.pricePerHour * selectedTimes.length).toLocaleString('id-ID') : 0}</span>
                                         </div>
                                         <div className="flex justify-between text-sm font-medium text-gray-500">
-                                            <span>Service Fee</span>
+                                            <span>{t.service_fee}</span>
                                             <span>Rp 2.000</span>
                                         </div>
                                         <div className="flex justify-between text-2xl font-black text-black pt-2">
-                                            <span>TOTAL</span>
+                                            <span>{t.total}</span>
                                             <span>Rp {selectedHall ? ((selectedHall.pricePerHour * selectedTimes.length) + 2000).toLocaleString('id-ID') : 0}</span>
                                         </div>
 
@@ -1052,7 +1052,7 @@ export function BookingSection() {
                                             onClick={handleBook}
                                             className="w-full mt-6 bg-black text-white font-display font-black text-xl py-5 rounded-xl border-2 border-transparent hover:bg-pastel-acid hover:text-black hover:border-black shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
                                         >
-                                            CONFIRM BOOKING
+                                            {t.confirm_booking}
                                         </button>
                                     </div>
                                 </div>

@@ -107,6 +107,23 @@ export type Dictionary = {
     // Booking Section
     lock_it_in: string;
     details_header: string;
+    back_to_halls: string;
+    select_date: string;
+    available_slots: string;
+    court_fee: string;
+    service_fee: string;
+    total: string;
+    confirm_booking: string;
+    booked: string;
+    no_slots: string;
+    select_court_location: string;
+    location_label: string;
+    facilities_label: string;
+    courts: string;
+    floor: string;
+    venue_label: string;
+    court_label: string;
+    address_label: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -214,7 +231,24 @@ export const dictionaries: Record<Language, Dictionary> = {
 
         // Booking Section
         lock_it_in: "Lock It In",
-        details_header: "Details"
+        details_header: "Details",
+        back_to_halls: "Back to Halls",
+        select_date: "Select Date",
+        available_slots: "Available Slots",
+        court_fee: "Court Fee",
+        service_fee: "Service Fee",
+        total: "TOTAL",
+        confirm_booking: "CONFIRM BOOKING",
+        booked: "Booked",
+        no_slots: "No slots available",
+        select_court_location: "Select Court Location",
+        location_label: "Location",
+        facilities_label: "Facilities",
+        courts: "Courts",
+        floor: "Floor",
+        venue_label: "Venue",
+        court_label: "Court",
+        address_label: "Address"
     },
     id: {
         home: "BERANDA",
@@ -320,7 +354,24 @@ export const dictionaries: Record<Language, Dictionary> = {
 
         // Booking Section
         lock_it_in: "Amankan Slot",
-        details_header: "Detail"
+        details_header: "Detail",
+        back_to_halls: "Kembali ke Daftar",
+        select_date: "Pilih Tanggal",
+        available_slots: "Slot Tersedia",
+        court_fee: "Biaya Sewa",
+        service_fee: "Biaya Layanan",
+        total: "TOTAL",
+        confirm_booking: "KONFIRMASI BOOKING",
+        booked: "Dipesan",
+        no_slots: "Tidak ada slot tersedia",
+        select_court_location: "Pilih Posisi Lapangan",
+        location_label: "Lokasi",
+        facilities_label: "Fasilitas",
+        courts: "Lapangan",
+        floor: "Lantai",
+        venue_label: "Venue",
+        court_label: "Lapangan",
+        address_label: "Alamat"
     },
     jv: {
         home: "GRIYA",
@@ -426,7 +477,24 @@ export const dictionaries: Record<Language, Dictionary> = {
 
         // Booking Section
         lock_it_in: "Pesthekake Slot",
-        details_header: "Katerangan"
+        details_header: "Katerangan",
+        back_to_halls: "Wangsul dateng Daftar",
+        select_date: "Pilih Tanggal",
+        available_slots: "Slot Kasedhiya",
+        court_fee: "Biaya Sewa",
+        service_fee: "Biaya Layanan",
+        total: "GUNGGUNG",
+        confirm_booking: "KONFIRMASI PESENAN",
+        booked: "Dipesen",
+        no_slots: "Mboten wonten slot",
+        select_court_location: "Pilih Panggenan Lapangan",
+        location_label: "Lokasi",
+        facilities_label: "Fasilitas",
+        courts: "Lapangan",
+        floor: "Lantai",
+        venue_label: "Panggenan",
+        court_label: "Lapangan",
+        address_label: "Alamat"
     }
 }
 
