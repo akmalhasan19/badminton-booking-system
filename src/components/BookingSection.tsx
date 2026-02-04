@@ -10,6 +10,7 @@ import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking } fr
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 // Calculate distance between two coordinates using Haversine formula
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -26,6 +27,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 export function BookingSection() {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const { t } = useLanguage()
 
     // State is initialized but will be controlled by URL for selection
     const [selectedHall, setSelectedHall] = useState<any | null>(null)
@@ -68,6 +70,7 @@ export function BookingSection() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+    const [isAddressExpanded, setIsAddressExpanded] = useState(false);
 
     // Sync state with URL params (search, date, venueId)
     useEffect(() => {
@@ -87,7 +90,10 @@ export function BookingSection() {
             // Only update if not already selected or different
             if (selectedHall?.id !== venueId) {
                 const venue = venues.find(v => v.id === venueId)
-                if (venue) setSelectedHall(venue)
+                if (venue) {
+                    setSelectedHall(venue)
+                    setIsAddressExpanded(false)
+                }
             }
         } else if (!venueId && selectedHall) {
             // If ID removed from URL, clear selection
@@ -660,14 +666,24 @@ export function BookingSection() {
                         )}
                     </div>
                     <h2 className="text-5xl md:text-7xl font-display font-black text-black mb-4 uppercase tracking-tighter">
-                        Pick Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-pink text-stroke-2" style={{ WebkitTextStroke: '2px black' }}>Battlefield</span>
+                        {selectedHall ? (
+                            <>
+                                You Choose <span className="text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-pink text-stroke-2" style={{ WebkitTextStroke: '2px black' }}>{selectedHall.name}</span>
+                            </>
+                        ) : (
+                            <>
+                                Pick Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-pastel-lilac to-pastel-pink text-stroke-2" style={{ WebkitTextStroke: '2px black' }}>Battlefield</span>
+                            </>
+                        )}
                     </h2>
-                    <p className="text-xl font-medium text-gray-600 border-l-4 border-black pl-4">
-                        {selectedHall ? "Select your specific court." : "Find the perfect venue near you."}
-                    </p>
+                    {!selectedHall && (
+                        <p className="text-xl font-medium text-gray-600 border-l-4 border-black pl-4">
+                            Find the perfect venue near you.
+                        </p>
+                    )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                     {/* Left Column: Hall & Court Selection */}
                     <div className="lg:col-span-8 space-y-8">
@@ -824,10 +840,42 @@ export function BookingSection() {
 
                                 {/* Details Venue */}
                                 <div className="mb-8 grid grid-cols-2 gap-4">
-                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <span className="text-xs font-bold text-gray-400 uppercase">Location</span>
-                                        <p className="font-bold text-black">{selectedHall.location.address}</p>
-                                        <p className="text-xs text-gray-500">{selectedHall.location.subDistrict}, {selectedHall.location.city}</p>
+                                    <div
+                                        onClick={() => setIsAddressExpanded(!isAddressExpanded)}
+                                        className="p-4 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-all group relative"
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-xs font-bold text-gray-400 uppercase">Location</span>
+                                            <div className="flex items-center gap-1">
+                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isAddressExpanded ? 'rotate-180' : ''}`} />
+                                            </div>
+                                        </div>
+
+                                        <motion.div
+                                            initial={false}
+                                            animate={{ height: isAddressExpanded ? "auto" : 60 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            className="overflow-hidden relative"
+                                        >
+                                            <p className="font-bold text-black">
+                                                {selectedHall.location.address}
+                                            </p>
+
+                                            <AnimatePresence>
+                                                {!isAddressExpanded && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-gray-50 to-transparent"
+                                                    />
+                                                )}
+                                            </AnimatePresence>
+                                        </motion.div>
+
+                                        <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                                            {selectedHall.location.subDistrict}, {selectedHall.location.city}
+                                        </p>
                                     </div>
                                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                                         <span className="text-xs font-bold text-gray-400 uppercase">Facilities</span>
@@ -866,10 +914,10 @@ export function BookingSection() {
                                                         }`}
                                                 >
                                                     <div className="flex justify-between items-start">
-                                                        <span className={`text-4xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity ${isSelected ? 'text-white' : 'text-black'}`}>
-                                                            {displayName.replace('LAPANGAN', '').trim() || String(court.court_number)}
+                                                        <span className={`text-3xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                            {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
                                                         </span>
-                                                        {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint" />}
+                                                        {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint shrink-0" />}
                                                     </div>
 
                                                     {/* Mini Court Visual */}
@@ -908,13 +956,13 @@ export function BookingSection() {
                                 </div>
                             ) : (
                                 // Active State
-                                <div className="bg-white rounded-[2rem] border-2 border-black shadow-hard p-6 lg:p-8 animate-fade-in-up">
+                                <div className="bg-white rounded-[2.5rem] border-2 border-black shadow-hard p-6 lg:p-8 animate-fade-in-up">
                                     <div className="flex items-center space-x-3 mb-8 border-b-2 border-black pb-4">
                                         <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-xl font-display">
                                             {selectedCourt ? '3' : '2'}
                                         </div>
                                         <h3 className="text-2xl font-display font-bold text-black uppercase">
-                                            {selectedCourt ? "Lock It In" : "Details"}
+                                            {selectedCourt ? t.lock_it_in : t.details_header}
                                         </h3>
                                     </div>
 

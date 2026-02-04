@@ -103,6 +103,10 @@ export type Dictionary = {
     footer_cookies: string;
     footer_copyright: string;
     footer_designed_in: string;
+
+    // Booking Section
+    lock_it_in: string;
+    details_header: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -206,7 +210,11 @@ export const dictionaries: Record<Language, Dictionary> = {
         footer_terms: "Terms",
         footer_cookies: "Cookies",
         footer_copyright: "© 2024 Smash & Serve. Made with 🏸",
-        footer_designed_in: "Designed in the Metaverse"
+        footer_designed_in: "Designed in the Metaverse",
+
+        // Booking Section
+        lock_it_in: "Lock It In",
+        details_header: "Details"
     },
     id: {
         home: "BERANDA",
@@ -308,7 +316,11 @@ export const dictionaries: Record<Language, Dictionary> = {
         footer_terms: "Ketentuan",
         footer_cookies: "Cookies",
         footer_copyright: "© 2024 Smash & Serve. Dibuat dengan 🏸",
-        footer_designed_in: "Didesain di Metaverse"
+        footer_designed_in: "Didesain di Metaverse",
+
+        // Booking Section
+        lock_it_in: "Amankan Slot",
+        details_header: "Detail"
     },
     jv: {
         home: "GRIYA",
@@ -410,7 +422,11 @@ export const dictionaries: Record<Language, Dictionary> = {
         footer_terms: "Ketentuan",
         footer_cookies: "Cookies",
         footer_copyright: "© 2024 Smash & Serve. Didamel kaliyan 🏸",
-        footer_designed_in: "Didesain wonten Metaverse"
+        footer_designed_in: "Didesain wonten Metaverse",
+
+        // Booking Section
+        lock_it_in: "Pesthekake Slot",
+        details_header: "Katerangan"
     }
 }
 
