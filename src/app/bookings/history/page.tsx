@@ -16,11 +16,26 @@ export default function BookingHistoryPage() {
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'completed' | 'cancelled'>('completed')
 
+    const [searchParams] = useState(new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''));
+
     useEffect(() => {
         const loadData = async () => {
             try {
                 const userData = await getCurrentUser()
                 setUser(userData)
+
+                // Check for payment confirmation
+                const paymentStatus = searchParams.get('payment')
+                const bookingId = searchParams.get('booking_id')
+
+                if (paymentStatus === 'success' && bookingId) {
+                    setLoading(true)
+                    // Import dynamically to avoid server-action issues if not direct
+                    const { confirmBookingPayment } = await import('@/lib/api/actions')
+                    await confirmBookingPayment(bookingId)
+                    // Clear params to avoid loop/re-check
+                    window.history.replaceState({}, '', '/bookings/history')
+                }
 
                 const { data } = await getUserBookingHistory()
                 setBookings(data || [])
@@ -31,7 +46,7 @@ export default function BookingHistoryPage() {
             }
         }
         loadData()
-    }, [])
+    }, [searchParams])
 
     const filteredBookings = bookings.filter(b => {
         if (activeTab === 'completed') return b.status === 'completed'

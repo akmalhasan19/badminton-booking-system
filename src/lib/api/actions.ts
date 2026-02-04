@@ -7,6 +7,8 @@ import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/sm
 import { getCurrentUser } from '@/lib/auth/actions'
 import { createInvoice } from '@/lib/xendit/client'
 
+const SERVICE_FEE = 2000
+
 /**
  * Server action to fetch courts (Local DB)
  * @deprecated Use fetchVenues for external API
@@ -89,7 +91,8 @@ export async function createBooking(data: {
     const venueDetails = await smashApi.getVenueDetails(data.courtId)
     const selectedCourt = venueDetails?.courts.find(c => c.id === data.courtUuid)
     const hourlyRate = selectedCourt?.hourly_rate || 50000
-    const amount = hourlyRate * data.durationHours
+    const subtotal = hourlyRate * data.durationHours
+    const amount = subtotal + SERVICE_FEE
 
     // 3. Create Xendit Invoice
     const appUrl = process.env.NODE_ENV === 'development'
@@ -101,7 +104,7 @@ export async function createBooking(data: {
             externalId: bookingId,
             amount: amount,
             payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (incl. Service Fee)`,
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
         })
@@ -126,6 +129,57 @@ export async function createBooking(data: {
             data: apiResult.data,
             warning: `Payment link failed: ${errorMessage}. Booking saved as Pending.`
         }
+    }
+}
+
+export async function confirmBookingPayment(bookingId: string) {
+    const user = await getCurrentUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    // 1. Get current booking to get bookingId
+    // In a real app we might store external_id = booking_id
+
+    // 2. Fetch invoice from Xendit using the booking ID (which we set as external_id)
+    try {
+        // We need to fetch ALL invoices with this external_id because createInvoice doesn't return ID immediately easily accessible here 
+        // OR we just use getInvoice if we had the invoice ID. 
+        // But we set external_id = bookingId. 
+        // The getInvoice endpoint requires Invoice ID, not External ID.
+        // HOWEVER, Xendit's "Get Invoices" list endpoint allows filtering by external_id.
+        // For simplicity in this "fix", we will assume the webhook handles it OR we implement a direct check if we can.
+
+        // Actually, for immediate feedback on localhost without webhooks, we can try to fetch the invoice by ID if we saved it?
+        // We didn't save the invoice ID in the booking table, which makes this hard.
+        // Wait, the webhook uses external_id == bookingId. 
+
+        // Let's use the Xendit List Invoices API to find it by external_id
+        const authString = Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64');
+        const response = await fetch(`https://api.xendit.co/v2/invoices?external_id=${bookingId}`, {
+            headers: {
+                'Authorization': `Basic ${authString}`
+            }
+        });
+
+        if (!response.ok) return { success: false, error: 'Failed to fetch invoice' }
+
+        const data = await response.json()
+        const invoice = data[0] // Get the latest one
+
+        if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
+            await updateBookingStatus(bookingId, 'confirmed', invoice.amount)
+            revalidatePath('/bookings/history')
+            return { success: true, status: 'confirmed' }
+        } else if (invoice && invoice.status === 'EXPIRED') {
+            await updateBookingStatus(bookingId, 'cancelled')
+            revalidatePath('/bookings/history')
+            return { success: true, status: 'cancelled' }
+        }
+
+        return { success: false, status: invoice?.status || 'pending' }
+
+    } catch (e) {
+        console.error("Manual payment check failed", e)
+        return { success: false, error: 'Check failed' }
     }
 }
 
