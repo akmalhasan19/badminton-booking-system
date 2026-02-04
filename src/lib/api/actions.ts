@@ -116,14 +116,15 @@ export async function createBooking(data: {
             paymentUrl: invoice.invoice_url
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to create payment invoice:', error)
         // Return success but with warning/no payment URL
         // User will see booking in "Pending" state in their history
+        const errorMessage = error?.message || 'Unknown error';
         return {
             success: true,
             data: apiResult.data,
-            warning: 'Booking created but payment link generation failed. Please check your bookings page.'
+            warning: `Payment link failed: ${errorMessage}. Booking saved as Pending.`
         }
     }
 }
