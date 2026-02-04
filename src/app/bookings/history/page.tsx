@@ -49,7 +49,7 @@ export default function BookingHistoryPage() {
     }, [searchParams])
 
     const filteredBookings = bookings.filter(b => {
-        if (activeTab === 'completed') return b.status === 'completed'
+        if (activeTab === 'completed') return b.status === 'completed' || b.status === 'confirmed'
         if (activeTab === 'cancelled') return b.status === 'cancelled'
         return false
     })
@@ -155,11 +155,11 @@ export default function BookingHistoryPage() {
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'completed'
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'completed' || booking.status === 'confirmed'
                                                         ? 'bg-green-100 text-green-700 border-green-200'
                                                         : 'bg-red-100 text-red-700 border-red-200'
                                                         }`}>
-                                                        {booking.status === 'completed' ? 'Selesai' : 'Dibatalkan'}
+                                                        {booking.status === 'completed' ? 'Selesai' : (booking.status === 'confirmed' ? 'Lunas' : 'Dibatalkan')}
                                                     </span>
                                                     <span className="text-sm font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
                                                 </div>
@@ -179,7 +179,7 @@ export default function BookingHistoryPage() {
                                                     {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.price)}
                                                 </span>
 
-                                                {booking.status === 'completed' ? (
+                                                {booking.status === 'completed' || booking.status === 'confirmed' ? (
                                                     <button className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors">
                                                         Beli Lagi
                                                     </button>
