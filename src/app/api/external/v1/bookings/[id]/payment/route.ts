@@ -37,7 +37,8 @@ export async function PATCH(
                 internalStatus = 'cancelled'
                 break
             case 'pending':
-            case 'BELUM_BAYAR':
+                internalStatus = 'pending'
+                break
             case 'DP': // Treating DP as pending or confirmed? Usually DP confirms the slot.
                 internalStatus = 'confirmed'
                 break

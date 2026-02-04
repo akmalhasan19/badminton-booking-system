@@ -122,9 +122,9 @@ export function BookingTable({ bookings }: { bookings: any[] }) {
 
 function StatusBadge({ status }: { status: string }) {
     const styles = {
-        pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+        pending: 'bg-red-100 text-red-800 border-red-300', // Unpaid/Pending matches "BELUM BAYAR" red style
         confirmed: 'bg-neo-green text-black border-neo-black',
-        cancelled: 'bg-red-100 text-red-800 border-red-300',
+        cancelled: 'bg-gray-100 text-gray-800 border-gray-300', // Cancelled can be gray or red, but user wants Pending to be RED.
         completed: 'bg-gray-100 text-gray-800 border-gray-300',
     }
     const style = styles[status as keyof typeof styles] || styles.completed
