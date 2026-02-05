@@ -7,13 +7,17 @@ import { UserSidebar } from "@/components/UserSidebar"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { getUserActiveBookings } from "./actions"
 import { SmashLogo } from "@/components/SmashLogo"
+
 import { useRouter } from "next/navigation"
+import { TicketModal } from "@/components/TicketModal"
 
 export default function BookingSayaPage() {
     const router = useRouter()
     const [user, setUser] = useState<any>(null)
     const [bookings, setBookings] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [selectedBooking, setSelectedBooking] = useState<any>(null)
+    const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 
     useEffect(() => {
         const loadData = async () => {
@@ -120,7 +124,13 @@ export default function BookingSayaPage() {
                                             </div>
 
                                             <div className="flex flex-col items-end gap-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t-2 md:border-t-0 border-gray-100 md:pl-6 md:border-l-2">
-                                                <button className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedBooking(booking)
+                                                        setIsTicketModalOpen(true)
+                                                    }}
+                                                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm"
+                                                >
                                                     Lihat E-Ticket
                                                     <ArrowRight className="w-4 h-4" />
                                                 </button>
@@ -154,6 +164,12 @@ export default function BookingSayaPage() {
                     </div>
                 </div>
             </div>
+            <TicketModal
+                isOpen={isTicketModalOpen}
+                onClose={() => setIsTicketModalOpen(false)}
+                booking={selectedBooking}
+                user={user}
+            />
         </main>
     )
 }
