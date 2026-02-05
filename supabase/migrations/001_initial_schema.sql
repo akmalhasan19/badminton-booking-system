@@ -107,9 +107,6 @@ CREATE TRIGGER set_updated_at_operational_hours BEFORE UPDATE ON public.operatio
 CREATE TRIGGER set_updated_at_pricing BEFORE UPDATE ON public.pricing
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- =============================================
--- FUNCTION TO SYNC AUTH.USERS WITH PUBLIC.USERS
--- =============================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -124,16 +121,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to auto-create user profile when auth user is created
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- =============================================
--- ROW LEVEL SECURITY POLICIES
--- =============================================
-
--- Enable RLS on all tables
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
@@ -141,7 +132,6 @@ ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.operational_hours ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pricing ENABLE ROW LEVEL SECURITY;
 
--- USERS POLICIES
 CREATE POLICY "Users can view their own profile" ON public.users
   FOR SELECT USING (auth.uid() = id);
 
@@ -154,7 +144,6 @@ CREATE POLICY "Admins can view all users" ON public.users
 CREATE POLICY "Admins can update all users" ON public.users
   FOR UPDATE USING (is_admin());
 
--- COURTS POLICIES
 CREATE POLICY "Anyone can view active courts" ON public.courts
   FOR SELECT USING (is_active = true OR is_admin());
 
@@ -167,7 +156,6 @@ CREATE POLICY "Admins can update courts" ON public.courts
 CREATE POLICY "Admins can delete courts" ON public.courts
   FOR DELETE USING (is_admin());
 
--- BOOKINGS POLICIES
 CREATE POLICY "Users can view their own bookings" ON public.bookings
   FOR SELECT USING (auth.uid() = user_id OR is_admin());
 
@@ -186,43 +174,34 @@ CREATE POLICY "Users can cancel their own bookings" ON public.bookings
 CREATE POLICY "Admins can delete any booking" ON public.bookings
   FOR DELETE USING (is_admin());
 
--- SETTINGS POLICIES
 CREATE POLICY "Anyone can view settings" ON public.settings
   FOR SELECT USING (true);
 
 CREATE POLICY "Admins can manage settings" ON public.settings
   FOR ALL USING (is_admin());
 
--- OPERATIONAL HOURS POLICIES
 CREATE POLICY "Anyone can view operational hours" ON public.operational_hours
   FOR SELECT USING (true);
 
 CREATE POLICY "Admins can manage operational hours" ON public.operational_hours
   FOR ALL USING (is_admin());
 
--- PRICING POLICIES
 CREATE POLICY "Anyone can view pricing" ON public.pricing
   FOR SELECT USING (true);
 
 CREATE POLICY "Admins can manage pricing" ON public.pricing
   FOR ALL USING (is_admin());
 
--- =============================================
--- SEED DATA (Optional - Default operational hours & pricing)
--- =============================================
-
--- Default operational hours (8 AM to 10 PM, all days)
 INSERT INTO public.operational_hours (day_of_week, open_time, close_time) VALUES
-  (0, '08:00', '22:00'), -- Sunday
-  (1, '08:00', '22:00'), -- Monday
-  (2, '08:00', '22:00'), -- Tuesday
-  (3, '08:00', '22:00'), -- Wednesday
-  (4, '08:00', '22:00'), -- Thursday
-  (5, '08:00', '22:00'), -- Friday
-  (6, '08:00', '22:00')  -- Saturday
+  (0, '08:00', '22:00'),
+  (1, '08:00', '22:00'),
+  (2, '08:00', '22:00'),
+  (3, '08:00', '22:00'),
+  (4, '08:00', '22:00'),
+  (5, '08:00', '22:00'),
+  (6, '08:00', '22:00')
 ON CONFLICT (day_of_week) DO NOTHING;
 
--- Default pricing (NULL court_id means applies to all courts)
 INSERT INTO public.pricing (court_id, day_type, price_per_hour) VALUES
   (NULL, 'weekday', 50.00),
   (NULL, 'weekend', 75.00)
