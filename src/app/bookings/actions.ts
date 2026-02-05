@@ -84,7 +84,7 @@ export async function getUserBookingHistory() {
             )
         `)
         .eq('user_id', user.id)
-        .in('status', ['completed', 'cancelled', 'confirmed'])
+        .in('status', ['completed', 'cancelled', 'confirmed', 'pending'])
         .order('booking_date', { ascending: false })
 
     if (error) {

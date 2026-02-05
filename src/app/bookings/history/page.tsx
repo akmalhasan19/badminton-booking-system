@@ -14,7 +14,7 @@ export default function BookingHistoryPage() {
     const [user, setUser] = useState<any>(null)
     const [bookings, setBookings] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState<'completed' | 'cancelled'>('completed')
+    const [activeTab, setActiveTab] = useState<'completed' | 'cancelled' | 'pending'>('pending')
 
     const [searchParams] = useState(new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''));
 
@@ -51,6 +51,7 @@ export default function BookingHistoryPage() {
     const filteredBookings = bookings.filter(b => {
         if (activeTab === 'completed') return b.status === 'completed' || b.status === 'confirmed'
         if (activeTab === 'cancelled') return b.status === 'cancelled'
+        if (activeTab === 'pending') return b.status === 'pending'
         return false
     })
 
@@ -104,10 +105,19 @@ export default function BookingHistoryPage() {
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-b border-gray-200">
+                        <div className="flex border-b border-gray-200 overflow-x-auto">
+                            <button
+                                onClick={() => setActiveTab('pending')}
+                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pending'
+                                    ? 'border-yellow-500 text-yellow-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                Menunggu Pembayaran
+                            </button>
                             <button
                                 onClick={() => setActiveTab('completed')}
-                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'completed'
+                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'completed'
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
@@ -116,7 +126,7 @@ export default function BookingHistoryPage() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('cancelled')}
-                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'cancelled'
+                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'cancelled'
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
@@ -157,9 +167,11 @@ export default function BookingHistoryPage() {
                                                 <div className="flex items-center gap-3">
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'completed' || booking.status === 'confirmed'
                                                         ? 'bg-green-100 text-green-700 border-green-200'
-                                                        : 'bg-red-100 text-red-700 border-red-200'
+                                                        : booking.status === 'pending'
+                                                            ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                                            : 'bg-red-100 text-red-700 border-red-200'
                                                         }`}>
-                                                        {booking.status === 'completed' ? 'Selesai' : (booking.status === 'confirmed' ? 'Lunas' : 'Dibatalkan')}
+                                                        {booking.status === 'completed' ? 'Selesai' : (booking.status === 'confirmed' ? 'Lunas' : (booking.status === 'pending' ? 'Menunggu Pembayaran' : 'Dibatalkan'))}
                                                     </span>
                                                     <span className="text-sm font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
                                                 </div>
@@ -183,6 +195,13 @@ export default function BookingHistoryPage() {
                                                     <button className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors">
                                                         Beli Lagi
                                                     </button>
+                                                ) : booking.status === 'pending' ? (
+                                                    <a
+                                                        href={`/bookings/history?payment=success&booking_id=${booking.id}`}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors"
+                                                    >
+                                                        Cek Status
+                                                    </a>
                                                 ) : (
                                                     <div className="flex items-center gap-1 text-xs text-gray-500">
                                                         <AlertTriangle className="w-3 h-3" />
@@ -204,10 +223,10 @@ export default function BookingHistoryPage() {
                                     />
                                 </div>
                                 <h3 className="text-xl font-bold font-display text-gray-900 mb-2">
-                                    {activeTab === 'completed' ? 'Belum ada pesanan selesai' : 'Tidak ada pesanan dibatalkan'}
+                                    {activeTab === 'completed' ? 'Belum ada pesanan selesai' : (activeTab === 'pending' ? 'Tidak ada tagihan' : 'Tidak ada pesanan dibatalkan')}
                                 </h3>
                                 <p className="text-gray-500 max-w-xs text-center mb-8">
-                                    {activeTab === 'completed' ? 'Kamu belum menyelesaikan pesanan apapun dalam 90 hari terakhir.' : 'Riwayat pembatalanmu kosong.'}
+                                    {activeTab === 'completed' ? 'Kamu belum menyelesaikan pesanan apapun dalam 90 hari terakhir.' : (activeTab === 'pending' ? 'Semua pesananmu sudah lunas!' : 'Riwayat pembatalanmu kosong.')}
                                 </p>
                             </div>
                         )}
