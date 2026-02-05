@@ -1,9 +1,5 @@
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- =============================================
--- USERS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
@@ -15,9 +11,6 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- =============================================
--- COURTS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS public.courts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -29,9 +22,6 @@ CREATE TABLE IF NOT EXISTS public.courts (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- =============================================
--- BOOKINGS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS public.bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   court_id UUID NOT NULL REFERENCES public.courts(id) ON DELETE CASCADE,
@@ -47,13 +37,9 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   
-  -- Prevent double booking
   CONSTRAINT unique_booking UNIQUE (court_id, booking_date, start_time)
 );
 
--- =============================================
--- SETTINGS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS public.settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   key TEXT UNIQUE NOT NULL,
@@ -62,12 +48,9 @@ CREATE TABLE IF NOT EXISTS public.settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- =============================================
--- OPERATIONAL HOURS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS public.operational_hours (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0 = Sunday, 6 = Saturday
+  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
   open_time TIME NOT NULL,
   close_time TIME NOT NULL,
   is_active BOOLEAN DEFAULT true NOT NULL,
@@ -77,26 +60,17 @@ CREATE TABLE IF NOT EXISTS public.operational_hours (
   CONSTRAINT unique_day_hours UNIQUE (day_of_week)
 );
 
--- =============================================
--- PRICING TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS public.pricing (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  court_id UUID REFERENCES public.courts(id) ON DELETE CASCADE, -- NULL means default pricing
+  court_id UUID REFERENCES public.courts(id) ON DELETE CASCADE,
   day_type TEXT NOT NULL CHECK (day_type IN ('weekday', 'weekend')),
   price_per_hour DECIMAL(10, 2) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  
-  -- Either court-specific or default pricing, but not both for same day_type
+
   CONSTRAINT unique_pricing UNIQUE (court_id, day_type)
 );
 
--- =============================================
--- HELPER FUNCTIONS
--- =============================================
-
--- Function to check if current user is admin
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -107,7 +81,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to handle updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -116,9 +89,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- =============================================
--- TRIGGERS FOR UPDATED_AT
--- =============================================
 CREATE TRIGGER set_updated_at_users BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
