@@ -212,7 +212,7 @@ export default function ProfilePage() {
 
             <MobileHeader title="Edit Profile" backPath="/account" />
 
-            <div className="max-w-7xl mx-auto px-4 relative z-10 pt-6 md:pt-0">
+            <div className="max-w-7xl mx-auto px-3 md:px-4 relative z-10 pt-6 md:pt-0">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
 
                     {/* Left Sidebar - Hidden on mobile */}
@@ -308,10 +308,10 @@ export default function ProfilePage() {
                         {/* Main Content Area */}
                         {activeTab === 'info' ? (
                             <>
-                                <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
+                                <div className="bg-white border-2 border-black rounded-xl shadow-hard p-3 md:p-8 overflow-hidden">
                                     <h2 className="font-bold text-lg mb-6 border-b border-gray-100 pb-4">Data Pribadi</h2>
 
-                                    <form onSubmit={handleSave} className="space-y-6">
+                                    <form onSubmit={handleSave} className="space-y-6 min-w-0">
                                         <div className="space-y-2">
                                             <label className="text-sm font-bold text-gray-500">Nama Lengkap</label>
                                             <input
@@ -399,10 +399,10 @@ export default function ProfilePage() {
                                             <div className="grid md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-bold text-gray-500">Email</label>
-                                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200 cursor-not-allowed opacity-80">
-                                                        <Mail className="w-5 h-5 text-gray-400" />
-                                                        <span className="font-medium text-gray-600 truncate">{profile.email}</span>
-                                                        <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded shrink-0">Verified</span>
+                                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200 cursor-not-allowed opacity-80 max-w-xs">
+                                                        <Mail className="w-5 h-5 text-gray-400 shrink-0" />
+                                                        <span className="font-medium text-gray-600 truncate min-w-0">{profile.email}</span>
+                                                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded shrink-0">Verified</span>
                                                     </div>
                                                     <p className="text-xs text-gray-400">Email tidak dapat diubah.</p>
                                                 </div>
@@ -438,7 +438,7 @@ export default function ProfilePage() {
                                 </div>
                             </>
                         ) : (
-                            <div className="bg-white border-2 border-black rounded-xl shadow-hard p-8">
+                            <div className="bg-white border-2 border-black rounded-xl shadow-hard p-3 md:p-8">
                                 <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
                                     <h2 className="font-bold text-lg">Ubah Password</h2>
                                     {/* Step indicator */}
