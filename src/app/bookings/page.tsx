@@ -14,27 +14,20 @@ import { TicketModal } from "@/components/TicketModal"
 export default function BookingSayaPage() {
     const router = useRouter()
     const [user, setUser] = useState<any>(null)
-    const [bookings, setBookings] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
-    const [selectedBooking, setSelectedBooking] = useState<any>(null)
-    const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const ITEMS_PER_PAGE = 5
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const userData = await getCurrentUser()
-                setUser(userData)
+    // Pagination Logic
+    const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE)
+    const paginatedBookings = bookings.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    )
 
-                const { data } = await getUserActiveBookings()
-                setBookings(data || [])
-            } catch (error) {
-                console.error("Failed to load data", error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        loadData()
-    }, [])
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
 
     return (
         <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
@@ -90,54 +83,89 @@ export default function BookingSayaPage() {
                                 <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                             </div>
                         ) : bookings.length > 0 ? (
-                            <div className="grid gap-4">
-                                {bookings.map((booking, index) => (
-                                    <motion.div
-                                        key={booking.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        className="bg-white border-2 border-black rounded-xl p-6 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg group relative overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 bg-pastel-mint text-xs font-bold px-3 py-1 border-l-2 border-b-2 border-black rounded-bl-xl">
-                                            MENUNGGU TANGGAL MAIN
-                                        </div>
-
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
-                                                </div>
-
-                                                <h3 className="text-2xl font-display font-bold">{booking.court_name}</h3>
-
-                                                <div className="flex flex-col sm:flex-row gap-4 text-sm font-medium text-gray-600">
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar className="w-4 h-4" />
-                                                        {new Date(booking.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Clock className="w-4 h-4" />
-                                                        {booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}
-                                                    </div>
-                                                </div>
+                            <div className="space-y-6">
+                                <div className="grid gap-3">
+                                    {paginatedBookings.map((booking, index) => (
+                                        <motion.div
+                                            key={booking.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            className="bg-white border-2 border-black rounded-xl p-4 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg group relative overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 bg-pastel-mint text-[10px] font-bold px-3 py-1 border-l-2 border-b-2 border-black rounded-bl-xl">
+                                                MENUNGGU TANGGAL MAIN
                                             </div>
 
-                                            <div className="flex flex-col items-end gap-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t-2 md:border-t-0 border-gray-100 md:pl-6 md:border-l-2">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mt-1">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
+                                                    </div>
+
+                                                    <h3 className="text-lg font-display font-bold">{booking.court_name}</h3>
+
+                                                    <div className="flex flex-col sm:flex-row gap-3 text-xs font-medium text-gray-600">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Calendar className="w-3.5 h-3.5" />
+                                                            {new Date(booking.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Clock className="w-3.5 h-3.5" />
+                                                            {booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col items-end gap-3 mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 md:pl-6 md:border-l-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedBooking(booking)
+                                                            setIsTicketModalOpen(true)
+                                                        }}
+                                                        className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm"
+                                                    >
+                                                        Lihat E-Ticket
+                                                        <ArrowRight className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 pt-4 border-t border-dashed border-gray-300">
+                                        <button
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1.5 rounded-lg border-2 border-black font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex gap-1">
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                                 <button
-                                                    onClick={() => {
-                                                        setSelectedBooking(booking)
-                                                        setIsTicketModalOpen(true)
-                                                    }}
-                                                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm"
+                                                    key={page}
+                                                    onClick={() => handlePageChange(page)}
+                                                    className={`w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black font-bold text-xs transition-colors
+                                                        ${currentPage === page ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}
+                                                    `}
                                                 >
-                                                    Lihat E-Ticket
-                                                    <ArrowRight className="w-4 h-4" />
+                                                    {page}
                                                 </button>
-                                            </div>
+                                            ))}
                                         </div>
-                                    </motion.div>
-                                ))}
+                                        <button
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            disabled={currentPage === totalPages}
+                                            className="px-3 py-1.5 rounded-lg border-2 border-black font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-20 bg-white border-2 border-dashed border-gray-300 rounded-xl">
