@@ -221,8 +221,10 @@ export async function confirmBookingPayment(bookingId: string) {
 
         // Fetch Venue Details to get Xendit Account ID
         let partnerXenditId: string | undefined = undefined
+        let venueDetails: any = null
+
         if (booking.venue_id) {
-            const venueDetails = await fetchVenueDetails(booking.venue_id)
+            venueDetails = await fetchVenueDetails(booking.venue_id)
             if (venueDetails?.xendit_account_id) {
                 partnerXenditId = venueDetails.xendit_account_id
                 console.log(`[ManualCheck] Checking invoice for Partner: ${partnerXenditId}`)
@@ -230,13 +232,22 @@ export async function confirmBookingPayment(bookingId: string) {
         }
 
         // 2. Fetch invoice from Xendit
-        // Pass partnerXenditId if it exists
-        const invoice = await getInvoice(bookingId, partnerXenditId) // Updated client call
+        // Use getInvoicesByExternalId because we only have bookingId (external_id)
+        const { getInvoicesByExternalId } = await import('@/lib/xendit/client')
+        const invoices = await getInvoicesByExternalId(bookingId, partnerXenditId)
+
+        // Take the latest invoice
+        const invoice = invoices && invoices.length > 0 ? invoices[0] : null
 
         // 3. Check Invoice Status
         if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
             console.log('[ManualCheck] Invoice PAID!')
-            await updateBookingStatus(bookingId, 'confirmed', invoice.amount)
+
+            // Calculate Net Revenue (deduct platform fee for split payments)
+            const netRevenue = partnerXenditId ? invoice.amount - PLATFORM_FEE : invoice.amount
+            console.log(`[ManualCheck] Syncing to Partner - Gross: ${invoice.amount}, Net: ${netRevenue}`)
+
+            await updateBookingStatus(bookingId, 'confirmed', netRevenue)
 
             // Force update local DB
             await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
@@ -253,7 +264,10 @@ export async function confirmBookingPayment(bookingId: string) {
             return { success: true, status: 'cancelled' }
         }
 
-        return { success: false, status: invoice?.status || 'pending' }
+        return {
+            success: false,
+            status: invoice?.status || 'pending'
+        }
 
     } catch (e: any) {
         console.error("Manual payment check failed", e)

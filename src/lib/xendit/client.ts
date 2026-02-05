@@ -112,3 +112,32 @@ export async function getInvoice(id: string, forUserId?: string): Promise<Invoic
 
     return response.json();
 }
+
+/**
+ * Fetch invoices by External ID (Our Booking ID)
+ * Needed because we don't store Xendit's Invoice ID in our DB
+ */
+export async function getInvoicesByExternalId(externalId: string, forUserId?: string): Promise<InvoiceResponse[]> {
+    const authString = Buffer.from(XENDIT_SECRET_KEY + ':').toString('base64');
+
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${authString}`,
+    };
+
+    if (forUserId) {
+        headers['for-user-id'] = forUserId;
+    }
+
+    // Pass external_id as query param
+    const response = await fetch(`${XENDIT_API_URL}/v2/invoices?external_id=${externalId}`, {
+        method: 'GET',
+        headers: headers,
+    });
+
+    if (!response.ok) {
+        throw new Error(`Xendit API Error: ${response.status}`);
+    }
+
+    return response.json();
+}

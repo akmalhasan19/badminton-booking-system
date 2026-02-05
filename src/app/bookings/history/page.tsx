@@ -183,12 +183,41 @@ export default function BookingHistoryPage() {
                                                         Booking Lagi
                                                     </button>
                                                 ) : booking.status === 'pending' ? (
-                                                    <a
-                                                        href={booking.payment_url || `/bookings/history?payment=success&booking_id=${booking.id}`}
-                                                        className="px-3 py-1.5 bg-black text-white border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:bg-gray-800 transition-all"
-                                                    >
-                                                        Bayar Sekarang
-                                                    </a>
+                                                    <div className="flex gap-2">
+                                                        <a
+                                                            href={booking.payment_url || `/bookings/history?payment=success&booking_id=${booking.id}`}
+                                                            className="px-3 py-1.5 bg-black text-white border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:bg-gray-800 transition-all"
+                                                        >
+                                                            Bayar Sekarang
+                                                        </a>
+                                                        <button
+                                                            onClick={async () => {
+                                                                try {
+                                                                    setLoading(true)
+                                                                    const { confirmBookingPayment } = await import('@/lib/api/actions')
+                                                                    const res = await confirmBookingPayment(booking.id)
+
+                                                                    if (res?.success) {
+                                                                        const { data } = await getUserBookingHistory()
+                                                                        setBookings(data || [])
+                                                                        alert("Status pembayaran berhasil diperbarui!")
+                                                                    } else {
+                                                                        alert("Pembayaran belum diterima / belum lunas.")
+                                                                    }
+                                                                } catch (err) {
+                                                                    console.error(err)
+                                                                    alert("Gagal melakukan pengecekan manual.")
+                                                                } finally {
+                                                                    setLoading(false)
+                                                                }
+                                                            }}
+                                                            className="px-3 py-1.5 bg-white text-black border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:bg-gray-100 transition-all flex items-center gap-1"
+                                                        >
+                                                            <Loader2 className="w-3 h-3" />
+                                                            Cek Status
+                                                        </button>
+                                                    </div>
+
                                                 ) : (
                                                     <div className="flex items-center gap-1 text-[10px] md:text-xs text-gray-400 font-medium">
                                                         <AlertTriangle className="w-3 h-3" />
@@ -220,6 +249,6 @@ export default function BookingHistoryPage() {
                     </div>
                 </div>
             </div>
-        </main>
+        </main >
     )
 }
