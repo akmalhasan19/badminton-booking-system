@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Calendar, Clock, MapPin, ArrowRight, Loader2, ArrowLeft, Filter, ArrowUpDown, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
+import { motion } from "framer-motion"
+import { Calendar, Loader2, AlertTriangle } from "lucide-react"
 import { UserSidebar } from "@/components/UserSidebar"
+import { MobileHeader } from "@/components/MobileHeader"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { getUserBookingHistory } from "../actions"
 import { SmashLogo } from "@/components/SmashLogo"
@@ -30,10 +31,8 @@ export default function BookingHistoryPage() {
 
                 if (paymentStatus === 'success' && bookingId) {
                     setLoading(true)
-                    // Import dynamically to avoid server-action issues if not direct
                     const { confirmBookingPayment } = await import('@/lib/api/actions')
                     await confirmBookingPayment(bookingId)
-                    // Clear params to avoid loop/re-check
                     window.history.replaceState({}, '', '/bookings/history')
                 }
 
@@ -56,7 +55,7 @@ export default function BookingHistoryPage() {
     })
 
     return (
-        <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
+        <main className="min-h-screen bg-white pt-0 md:pt-6 pb-12 relative overflow-hidden">
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 w-full h-full pointer-events-none"
@@ -66,84 +65,65 @@ export default function BookingHistoryPage() {
                 }}
             />
 
-            {/* Logo Link - Absolute Top Right */}
+            {/* Logo Link - Hidden on Mobile */}
             <div
                 onClick={() => router.push('/')}
-                className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+                className="absolute top-6 right-8 hidden md:flex items-center gap-2 cursor-pointer group z-20"
                 title="Kembali ke Beranda"
             >
                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
                     <SmashLogo className="w-full h-full bg-black" />
                 </div>
                 <span className="text-xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
-                {/* Tooltip */}
                 <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-black text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
                     Kembali ke Beranda
                     <div className="absolute -top-1 right-4 w-2 h-2 bg-black transform rotate-45"></div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 relative z-10">
+            {/* Mobile Header */}
+            <MobileHeader title="Riwayat Pemesanan" backPath="/bookings" />
+
+            <div className="max-w-7xl mx-auto px-3 md:px-4 relative z-10 pt-4 md:pt-0">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
-                    {/* Sidebar */}
-                    <div className="md:block">
+                    {/* Sidebar - Hidden on Mobile */}
+                    <div className="hidden md:block">
                         <UserSidebar user={user} />
                     </div>
 
                     {/* Main Content */}
-                    <div className="space-y-6">
-                        {/* Header with Back Button */}
-                        <div className="flex flex-col gap-4">
-                            <button
-                                onClick={() => router.push('/bookings')}
-                                className="flex items-center gap-2 text-blue-600 font-bold text-sm hover:underline w-fit"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Kembali
-                            </button>
-                            <h1 className="text-3xl font-display font-black">Riwayat</h1>
-                        </div>
+                    <div className="space-y-4 md:space-y-6">
+                        {/* Desktop Title */}
+                        <h1 className="hidden md:block text-3xl font-display font-black">Riwayat Pemesanan</h1>
 
-                        {/* Tabs */}
-                        <div className="flex border-b border-gray-200 overflow-x-auto">
+                        {/* Tabs - Full Width on Mobile */}
+                        <div className="flex border-b-2 border-gray-100 -mx-3 md:mx-0">
                             <button
                                 onClick={() => setActiveTab('pending')}
-                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pending'
+                                className={`flex-1 px-2 py-3 text-xs md:text-sm font-bold border-b-2 transition-colors whitespace-nowrap text-center ${activeTab === 'pending'
                                     ? 'border-yellow-500 text-yellow-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    : 'border-transparent text-gray-400 hover:text-gray-700'
                                     }`}
                             >
-                                Menunggu Pembayaran
+                                Menunggu
                             </button>
                             <button
                                 onClick={() => setActiveTab('completed')}
-                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'completed'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                className={`flex-1 px-2 py-3 text-xs md:text-sm font-bold border-b-2 transition-colors whitespace-nowrap text-center ${activeTab === 'completed'
+                                    ? 'border-green-500 text-green-600'
+                                    : 'border-transparent text-gray-400 hover:text-gray-700'
                                     }`}
                             >
-                                Pesanan Selesai
+                                Selesai
                             </button>
                             <button
                                 onClick={() => setActiveTab('cancelled')}
-                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'cancelled'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                className={`flex-1 px-2 py-3 text-xs md:text-sm font-bold border-b-2 transition-colors whitespace-nowrap text-center ${activeTab === 'cancelled'
+                                    ? 'border-red-500 text-red-600'
+                                    : 'border-transparent text-gray-400 hover:text-gray-700'
                                     }`}
                             >
-                                Dibatalkan/Refund
-                            </button>
-                        </div>
-
-                        {/* Filters & Sorting (Visual only for now matching UI) */}
-                        <div className="flex gap-3">
-                            <button className="px-4 py-2 border border-gray-300 rounded-full text-sm font-bold text-gray-600 flex items-center gap-2 hover:bg-gray-50">
-                                <Filter className="w-4 h-4" />
-                                Filter
-                            </button>
-                            <button className="px-4 py-2 border border-gray-300 rounded-full text-sm font-bold text-gray-600 flex items-center gap-2 hover:bg-gray-50">
-                                <ArrowUpDown className="w-4 h-4" />
-                                Urutkan
+                                Dibatalkan
                             </button>
                         </div>
 
@@ -153,59 +133,66 @@ export default function BookingHistoryPage() {
                                 <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                             </div>
                         ) : filteredBookings.length > 0 ? (
-                            <div className="grid gap-4">
+                            <div className="grid gap-3">
                                 {filteredBookings.map((booking, index) => (
                                     <motion.div
                                         key={booking.id}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:border-black transition-all group"
+                                        transition={{ delay: index * 0.05 }}
+                                        className="bg-white border-2 border-black rounded-xl p-3 md:p-5 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg relative overflow-hidden"
                                     >
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'completed' || booking.status === 'confirmed'
-                                                        ? 'bg-green-100 text-green-700 border-green-200'
-                                                        : booking.status === 'pending'
-                                                            ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
-                                                            : 'bg-red-100 text-red-700 border-red-200'
-                                                        }`}>
-                                                        {booking.status === 'completed' ? 'Selesai' : (booking.status === 'confirmed' ? 'Lunas' : (booking.status === 'pending' ? 'Menunggu Pembayaran' : 'Dibatalkan'))}
-                                                    </span>
-                                                    <span className="text-sm font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
-                                                </div>
+                                        {/* Status Badge */}
+                                        <div className={`absolute top-0 right-0 text-[9px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 border-l-2 border-b-2 border-black rounded-bl-xl ${booking.status === 'completed' || booking.status === 'confirmed'
+                                            ? 'bg-green-300'
+                                            : booking.status === 'pending'
+                                                ? 'bg-yellow-300'
+                                                : 'bg-red-300'
+                                            }`}>
+                                            {booking.status === 'completed' ? 'SELESAI' : (booking.status === 'confirmed' ? 'LUNAS' : (booking.status === 'pending' ? 'BELUM BAYAR' : 'DIBATALKAN'))}
+                                        </div>
 
-                                                <h3 className="text-xl font-bold font-display">{booking.court_name}</h3>
+                                        <div className="flex flex-col gap-2 mt-1">
+                                            {/* Booking ID */}
+                                            <span className="text-[10px] md:text-xs font-mono text-gray-400">
+                                                #{booking.id.slice(0, 8).toUpperCase()}
+                                            </span>
 
-                                                <div className="flex flex-col sm:flex-row gap-4 text-sm font-medium text-gray-500">
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar className="w-4 h-4" />
-                                                        {new Date(booking.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                                    </div>
-                                                </div>
+                                            {/* Court Name */}
+                                            <h3 className="text-base md:text-lg font-display font-bold leading-tight">
+                                                {booking.court_name}
+                                            </h3>
+
+                                            {/* Date & Time */}
+                                            <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-gray-500 font-medium">
+                                                <Calendar className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                                {new Date(booking.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                                             </div>
 
-                                            <div className="flex flex-col items-end gap-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100 md:pl-6 md:border-l">
-                                                <span className="text-lg font-bold">
-                                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.price)}
+                                            {/* Price & Action Row */}
+                                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-dashed border-gray-200">
+                                                <span className="text-sm md:text-base font-bold">
+                                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(booking.price)}
                                                 </span>
 
                                                 {booking.status === 'completed' || booking.status === 'confirmed' ? (
-                                                    <button className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors">
-                                                        Beli Lagi
+                                                    <button
+                                                        onClick={() => router.push('/booking')}
+                                                        className="px-3 py-1.5 bg-pastel-acid text-black border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                                                    >
+                                                        Booking Lagi
                                                     </button>
                                                 ) : booking.status === 'pending' ? (
                                                     <a
-                                                        href={`/bookings/history?payment=success&booking_id=${booking.id}`}
-                                                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors"
+                                                        href={booking.payment_url || `/bookings/history?payment=success&booking_id=${booking.id}`}
+                                                        className="px-3 py-1.5 bg-black text-white border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:bg-gray-800 transition-all"
                                                     >
-                                                        Cek Status
+                                                        Bayar Sekarang
                                                     </a>
                                                 ) : (
-                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                    <div className="flex items-center gap-1 text-[10px] md:text-xs text-gray-400 font-medium">
                                                         <AlertTriangle className="w-3 h-3" />
-                                                        Dana dikembalikan
+                                                        Refunded
                                                     </div>
                                                 )}
                                             </div>
@@ -214,19 +201,19 @@ export default function BookingHistoryPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-20">
-                                <div className="w-48 h-48 mb-6 relative grayscale opacity-70">
+                            <div className="flex flex-col items-center justify-center py-16 md:py-20 bg-white border-2 border-dashed border-gray-300 rounded-xl">
+                                <div className="w-32 h-32 md:w-48 md:h-48 mb-4 md:mb-6 relative grayscale opacity-60">
                                     <img
                                         src="/tidak-ada-booking.webp"
                                         alt="Belum ada riwayat"
                                         className="w-full h-full object-contain"
                                     />
                                 </div>
-                                <h3 className="text-xl font-bold font-display text-gray-900 mb-2">
+                                <h3 className="text-lg md:text-xl font-bold font-display text-gray-900 mb-2 text-center">
                                     {activeTab === 'completed' ? 'Belum ada pesanan selesai' : (activeTab === 'pending' ? 'Tidak ada tagihan' : 'Tidak ada pesanan dibatalkan')}
                                 </h3>
-                                <p className="text-gray-500 max-w-xs text-center mb-8">
-                                    {activeTab === 'completed' ? 'Kamu belum menyelesaikan pesanan apapun dalam 90 hari terakhir.' : (activeTab === 'pending' ? 'Semua pesananmu sudah lunas!' : 'Riwayat pembatalanmu kosong.')}
+                                <p className="text-gray-500 text-sm max-w-xs text-center px-4">
+                                    {activeTab === 'completed' ? 'Kamu belum menyelesaikan pesanan apapun.' : (activeTab === 'pending' ? 'Semua pesananmu sudah lunas!' : 'Riwayat pembatalanmu kosong.')}
                                 </p>
                             </div>
                         )}
