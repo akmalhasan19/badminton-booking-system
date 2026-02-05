@@ -222,8 +222,17 @@ export const smashApi = {
     },
 
     /**
+     * @deprecated This endpoint uses PATCH which doesn't create transaction records.
+     * Use webhook sync instead: syncBookingToPartner() in partner-sync.ts
+     * 
      * Update Booking Status (Payment Confirmation)
      * Endpoint: PATCH /bookings/:id
+     * 
+     * WARNING: This PATCH endpoint only updates booking status but does NOT:
+     * - Create transaction records (required for revenue dashboard)
+     * - Create transaction_items (required for proper revenue tracking)
+     * 
+     * For PWA payment sync, always use /api/webhooks/pwa-sync instead.
      */
     updateBookingStatus: async (bookingId: string, status: string, paidAmount?: number) => {
         try {

@@ -8,13 +8,21 @@ interface SyncPayload {
     event: 'booking.paid';
     booking_id: string;
     venue_id: string;
+    status: 'LUNAS' | 'DP' | 'BELUM_BAYAR';  // CRITICAL: Partner requires this
     payment_status: 'PAID';
     total_amount: number;
     paid_amount: number;
     payment_method: string;
     customer_name: string;
     customer_phone?: string;
-    timestamp?: string;
+    items?: Array<{ name: string }>;
+    payment_details?: {
+        xendit_transaction_id?: string;
+        xendit_fee?: number;
+        platform_fee?: number;
+        total_fees?: number;
+    };
+    timestamp?: string;  // ALWAYS included for audit trail
 }
 
 function generateSignature(payload: string): string {
@@ -32,15 +40,15 @@ export async function syncBookingToPartner(data: Omit<SyncPayload, 'timestamp'>)
     try {
         const payload: SyncPayload = {
             ...data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString()  // ALWAYS include for audit trail
         };
 
         const payloadString = JSON.stringify(payload);
         const signature = generateSignature(payloadString);
 
         console.log(`[Partner Sync] Initiating sync to: ${SYNC_URL}`);
-        console.log(`[Partner Sync] Venue ID: ${data.venue_id}, Booking ID: ${data.booking_id}`);
-        // console.log('[Partner Sync] Full Payload:', payloadString); // Uncomment if needed deeply
+        console.log(`[Partner Sync] Booking: ${data.booking_id}, Venue: ${data.venue_id}, Status: ${data.status}`);
+        console.log(`[Partner Sync] Amount: ${data.paid_amount}, Timestamp: ${payload.timestamp}`);
 
         const response = await fetch(SYNC_URL, {
             method: 'POST',
