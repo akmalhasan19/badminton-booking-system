@@ -64,7 +64,7 @@ export function TicketModal({ isOpen, onClose, booking, user }: TicketModalProps
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] flex items-center justify-center px-4 bg-black/60 backdrop-blur-md"
+                className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-md"
                 onClick={onClose}
             >
                 <motion.div
@@ -72,15 +72,21 @@ export function TicketModal({ isOpen, onClose, booking, user }: TicketModalProps
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-md relative"
+                    className="w-full max-w-[380px] relative max-h-[85vh] overflow-y-auto scrollbar-hide rounded-3xl"
                 >
-                    {/* Close Button */}
-                    <button
-                        onClick={onClose}
-                        className="absolute -top-12 right-0 p-2 bg-white rounded-full hover:bg-gray-200 transition-colors z-[80]"
-                    >
-                        <X className="w-6 h-6 text-black" />
-                    </button>
+                    {/* Close Button - Sticky or Fixed? Fixed relative to modal if possible, but inside scroll it might move. 
+                        Better to put it sticky or outside the scroll view? 
+                        The user asked for scroll *in* the modal.
+                        If I put overflow on this div, the close button needs to be inside or sticky.
+                    */}
+                    <div className="sticky top-0 right-0 z-[90] flex justify-end p-4 pointer-events-none">
+                        <button
+                            onClick={onClose}
+                            className="bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all shadow-sm border border-gray-200 pointer-events-auto"
+                        >
+                            <X className="w-5 h-5 text-black" />
+                        </button>
+                    </div>
 
                     {/* Ticket Container for Capture */}
                     <div ref={ticketRef} className="bg-white rounded-3xl overflow-hidden border-4 border-black shadow-2xl">
