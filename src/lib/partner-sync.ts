@@ -38,6 +38,10 @@ export async function syncBookingToPartner(data: Omit<SyncPayload, 'timestamp'>)
         const payloadString = JSON.stringify(payload);
         const signature = generateSignature(payloadString);
 
+        console.log(`[Partner Sync] Initiating sync to: ${SYNC_URL}`);
+        console.log(`[Partner Sync] Venue ID: ${data.venue_id}, Booking ID: ${data.booking_id}`);
+        // console.log('[Partner Sync] Full Payload:', payloadString); // Uncomment if needed deeply
+
         const response = await fetch(SYNC_URL, {
             method: 'POST',
             headers: {
@@ -48,12 +52,14 @@ export async function syncBookingToPartner(data: Omit<SyncPayload, 'timestamp'>)
         });
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-            console.error('[Partner Sync] Failed:', error);
+            const errorText = await response.text();
+            console.error(`[Partner Sync] Failed! Status: ${response.status} ${response.statusText}`);
+            console.error(`[Partner Sync] Response Body: ${errorText}`);
             return false;
         }
 
-        console.log('[Partner Sync] Success for booking:', data.booking_id);
+        const responseData = await response.json();
+        console.log('[Partner Sync] Success! Partner response:', responseData);
         return true;
 
     } catch (error) {

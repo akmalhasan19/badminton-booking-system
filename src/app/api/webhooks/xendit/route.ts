@@ -63,6 +63,8 @@ export async function POST(req: Request) {
                 const customerName = bookingData.users?.full_name || 'PWA User'
                 const customerPhone = bookingData.users?.phone
 
+                console.log(`[Webhook] Preparing to sync booking ${external_id}. Venue ID: ${bookingData.venue_id}`);
+
                 await syncBookingToPartner({
                     event: 'booking.paid',
                     booking_id: external_id,
