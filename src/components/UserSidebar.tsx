@@ -23,7 +23,7 @@ export function UserSidebar({ user }: UserSidebarProps) {
         { label: "Metode Pembayaran", icon: CreditCard, path: "/payment-methods" },
         { label: "Notifikasi", icon: Bell, path: "/notifications" },
         { label: "Pengaturan", icon: Settings, path: "/settings" },
-        { label: "Pusat Bantuan", icon: HelpCircle, path: "/help" },
+        { label: "Bantuan & Support", icon: HelpCircle, path: "/help" },
     ]
 
     const handleLogout = async () => {
@@ -82,7 +82,7 @@ export function UserSidebar({ user }: UserSidebarProps) {
             {/* Navigation Menu */}
             <div className="bg-white border-2 border-black rounded-xl shadow-hard overflow-hidden">
                 {menuItems.map((item, index) => {
-                    const isActive = pathname === item.path || (item.path === '/profile' && pathname === '/settings');
+                    const isActive = pathname === item.path;
 
                     return (
                         <button

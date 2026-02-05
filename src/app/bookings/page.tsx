@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Calendar, Clock, MapPin, ArrowRight, Loader2 } from "lucide-react"
 import { UserSidebar } from "@/components/UserSidebar"
+import { MobileHeader } from "@/components/MobileHeader"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { getUserActiveBookings } from "./actions"
 import { SmashLogo } from "@/components/SmashLogo"
@@ -21,6 +22,29 @@ export default function BookingSayaPage() {
     const [currentPage, setCurrentPage] = useState(1)
     const ITEMS_PER_PAGE = 5
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [userData, bookingsData] = await Promise.all([
+                    getCurrentUser(),
+                    getUserActiveBookings()
+                ])
+
+                setUser(userData)
+
+                if (bookingsData.data) {
+                    setBookings(bookingsData.data)
+                }
+            } catch (error) {
+                console.error("Failed to fetch data", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
     // Pagination Logic
     const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE)
     const paginatedBookings = bookings.slice(
@@ -34,7 +58,7 @@ export default function BookingSayaPage() {
     }
 
     return (
-        <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
+        <main className="min-h-screen bg-white pt-0 md:pt-6 pb-12 relative overflow-hidden">
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 w-full h-full pointer-events-none"
@@ -47,7 +71,7 @@ export default function BookingSayaPage() {
             {/* Logo Link - Absolute Top Right */}
             <div
                 onClick={() => router.push('/')}
-                className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+                className="absolute top-6 right-8 hidden md:flex items-center gap-2 cursor-pointer group z-20"
                 title="Kembali ke Beranda"
             >
                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
@@ -61,21 +85,23 @@ export default function BookingSayaPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 relative z-10">
+            <MobileHeader title="Booking Saya" backPath="/account" />
+
+            <div className="max-w-7xl mx-auto px-4 relative z-10 pt-6 md:pt-0">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
-                    {/* Sidebar */}
-                    <div className="md:block">
+                    {/* Sidebar - Hidden on mobile */}
+                    <div className="hidden md:block">
                         <UserSidebar user={user} />
                     </div>
 
                     {/* Main Content */}
                     <div className="space-y-6">
-                        <div className="flex flex-wrap items-center gap-4 sm:gap-6 pb-2">
-                            <h1 className="text-3xl font-display font-black">Booking Saya</h1>
+                        <div className="flex flex-row items-center justify-between md:justify-start gap-2 md:gap-6 pb-2">
+                            <h1 className="text-xl md:text-3xl font-display font-black">Booking Saya</h1>
                             <div className="h-8 w-[2px] bg-gray-200 hidden sm:block"></div>
                             <button
                                 onClick={() => router.push('/bookings/history')}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-black rounded-full text-xs font-bold border-2 border-transparent hover:border-gray-200 transition-all"
+                                className="flex items-center gap-2 px-3 py-2 md:px-5 md:py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-black rounded-full text-xs font-bold border-2 border-transparent hover:border-gray-200 transition-all"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-history"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12" /><path d="M3 3v9h9" /><path d="M12 7v5l4 2" /></svg>
                                 Riwayat Pemesanan
@@ -95,42 +121,42 @@ export default function BookingSayaPage() {
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.1 }}
-                                            className="bg-white border-2 border-black rounded-xl p-4 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg group relative overflow-hidden"
+                                            className="bg-white border-2 border-black rounded-xl p-3 md:p-4 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg group relative overflow-hidden"
                                         >
-                                            <div className="absolute top-0 right-0 bg-pastel-mint text-[10px] font-bold px-3 py-1 border-l-2 border-b-2 border-black rounded-bl-xl">
+                                            <div className="absolute top-0 right-0 bg-pastel-mint text-[9px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 border-l-2 border-b-2 border-black rounded-bl-xl">
                                                 MENUNGGU TANGGAL MAIN
                                             </div>
 
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mt-1">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-xs font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3 mt-1">
+                                                <div className="space-y-0.5 md:space-y-1">
+                                                    <div className="flex items-center gap-2 md:gap-3">
+                                                        <span className="text-[10px] md:text-xs font-mono text-gray-500">#{booking.id.slice(0, 8).toUpperCase()}</span>
                                                     </div>
 
-                                                    <h3 className="text-lg font-display font-bold">{booking.court_name}</h3>
+                                                    <h3 className="text-base md:text-lg font-display font-bold">{booking.court_name}</h3>
 
-                                                    <div className="flex flex-col sm:flex-row gap-3 text-xs font-medium text-gray-600">
+                                                    <div className="flex flex-col sm:flex-row gap-1 md:gap-3 text-[10px] md:text-xs font-medium text-gray-600">
                                                         <div className="flex items-center gap-1.5">
-                                                            <Calendar className="w-3.5 h-3.5" />
+                                                            <Calendar className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                                             {new Date(booking.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                                         </div>
                                                         <div className="flex items-center gap-1.5">
-                                                            <Clock className="w-3.5 h-3.5" />
+                                                            <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                                             {booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex flex-col items-end gap-3 mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 md:pl-6 md:border-l-2">
+                                                <div className="flex flex-col items-end gap-2 mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 md:pl-6 md:border-l-2">
                                                     <button
                                                         onClick={() => {
                                                             setSelectedBooking(booking)
                                                             setIsTicketModalOpen(true)
                                                         }}
-                                                        className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm"
+                                                        className="w-full md:w-auto justify-center flex items-center gap-2 bg-black text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-xs hover:bg-gray-800 transition-all border-2 border-transparent hover:border-black hover:bg-white hover:text-black shadow-hard-sm"
                                                     >
                                                         Lihat E-Ticket
-                                                        <ArrowRight className="w-3.5 h-3.5" />
+                                                        <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                                     </button>
                                                 </div>
                                             </div>

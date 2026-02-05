@@ -461,12 +461,13 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 {t.join_us}
                             </motion.button>
 
-                            {/* Show user info or login based on auth state */}
+                            {/* Show user profile card or login based on auth state */}
                             {isLoggedIn && user ? (
                                 <>
                                     <motion.div
                                         variants={itemVariants}
-                                        className="flex flex-col items-center gap-2 py-4 px-6 bg-gray-50 rounded-xl border-2 border-black"
+                                        onClick={() => { setMobileMenuOpen(false); router.push('/account'); }}
+                                        className="flex flex-col items-center gap-2 py-4 px-6 bg-gray-50 rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-colors"
                                     >
                                         <div className="w-16 h-16 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
                                             {user.avatar_url ? (

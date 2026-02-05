@@ -1,6 +1,7 @@
 "use client"
 
 import { UserSidebar } from "@/components/UserSidebar"
+import { MobileHeader } from "@/components/MobileHeader"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { fetchNotifications, markAllNotificationsAsRead, markNotificationAsRead, Notification, NotificationType } from "@/lib/api/actions"
@@ -118,7 +119,7 @@ export default function NotificationsPage() {
     const unreadCount = notifications.filter(n => !n.read).length
 
     return (
-        <main className="min-h-screen bg-white pt-6 pb-12 relative overflow-hidden">
+        <main className="min-h-screen bg-white pt-0 md:pt-6 pb-12 relative overflow-hidden">
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 w-full h-full pointer-events-none"
@@ -131,7 +132,7 @@ export default function NotificationsPage() {
             {/* Logo Link */}
             <div
                 onClick={() => router.push('/')}
-                className="absolute top-6 right-8 flex items-center gap-2 cursor-pointer group z-20"
+                className="absolute top-6 right-8 hidden md:flex items-center gap-2 cursor-pointer group z-20"
                 title="Kembali ke Beranda"
             >
                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110">
@@ -145,10 +146,12 @@ export default function NotificationsPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 relative z-10">
+            <MobileHeader title="Notifikasi" backPath="/account" />
+
+            <div className="max-w-7xl mx-auto px-4 relative z-10 pt-8 md:pt-0">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
-                    {/* Left Sidebar */}
-                    <div className="space-y-6">
+                    {/* Left Sidebar - Hidden on mobile */}
+                    <div className="hidden md:block space-y-6">
                         <UserSidebar user={user} />
                     </div>
 
