@@ -5,7 +5,7 @@ import { getAvailableSlots, createBooking as createBookingApi } from './bookings
 import { revalidatePath } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 import { getCurrentUser } from '@/lib/auth/actions'
-import { createInvoice } from '@/lib/xendit/client'
+import { createInvoice, getInvoice } from '@/lib/xendit/client'
 
 const SERVICE_FEE = 2000
 const PLATFORM_FEE = 5000 // Platform fee (Rp 5,000)
@@ -198,40 +198,55 @@ export async function confirmBookingPayment(bookingId: string) {
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
-    // 1. Get current booking to get bookingId
-    // In a real app we might store external_id = booking_id
-
-    // 2. Fetch invoice from Xendit using the booking ID (which we set as external_id)
+    // 1. Get current booking to retrieve Venue ID -> Partner ID
     try {
-        // Use Xendit List Invoices API to find it by external_id
-        const authString = Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64');
-        const response = await fetch(`https://api.xendit.co/v2/invoices?external_id=${bookingId}`, {
-            headers: {
-                'Authorization': `Basic ${authString}`
-            },
-            cache: 'no-store'
-        });
+        const { createServiceClient } = await import('@/lib/supabase/server')
+        const supabase = createServiceClient()
 
-        if (!response.ok) return { success: false, error: 'Failed to fetch invoice' }
+        const { data: booking, error: bookingError } = await supabase
+            .from('bookings')
+            .select('venue_id, status')
+            .eq('id', bookingId)
+            .single()
 
-        const data = await response.json()
-        const invoice = data[0] // Get the latest one
+        if (bookingError || !booking) {
+            console.error('[ManualCheck] Booking not found locally:', bookingError)
+            return { success: false, error: 'Booking not found' }
+        }
 
+        // If already confirmed, return early
+        if (booking.status === 'confirmed') {
+            return { success: true, status: 'confirmed' }
+        }
+
+        // Fetch Venue Details to get Xendit Account ID
+        let partnerXenditId: string | undefined = undefined
+        if (booking.venue_id) {
+            const venueDetails = await fetchVenueDetails(booking.venue_id)
+            if (venueDetails?.xendit_account_id) {
+                partnerXenditId = venueDetails.xendit_account_id
+                console.log(`[ManualCheck] Checking invoice for Partner: ${partnerXenditId}`)
+            }
+        }
+
+        // 2. Fetch invoice from Xendit
+        // Pass partnerXenditId if it exists
+        const invoice = await getInvoice(bookingId, partnerXenditId) // Updated client call
+
+        // 3. Check Invoice Status
         if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
+            console.log('[ManualCheck] Invoice PAID!')
             await updateBookingStatus(bookingId, 'confirmed', invoice.amount)
 
             // Force update local DB
-            const { createServiceClient } = await import('@/lib/supabase/server')
-            const supabase = createServiceClient()
             await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'confirmed' }
-        } else if (invoice && invoice.status === 'EXPIRED') {
-            await updateBookingStatus(bookingId, 'cancelled')
 
-            const { createServiceClient } = await import('@/lib/supabase/server')
-            const supabase = createServiceClient()
+        } else if (invoice && invoice.status === 'EXPIRED') {
+            console.log('[ManualCheck] Invoice EXPIRED')
+            await updateBookingStatus(bookingId, 'cancelled')
             await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
 
             revalidatePath('/bookings/history')
@@ -240,9 +255,10 @@ export async function confirmBookingPayment(bookingId: string) {
 
         return { success: false, status: invoice?.status || 'pending' }
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Manual payment check failed", e)
-        return { success: false, error: 'Check failed' }
+        // If 404, it might mean we looked in the wrong account or ID is wrong
+        return { success: false, error: e.message || 'Check failed' }
     }
 }
 

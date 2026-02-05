@@ -89,15 +89,21 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
     return response.json();
 }
 
-export async function getInvoice(id: string): Promise<InvoiceResponse> {
+export async function getInvoice(id: string, forUserId?: string): Promise<InvoiceResponse> {
     const authString = Buffer.from(XENDIT_SECRET_KEY + ':').toString('base64');
+
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${authString}`,
+    };
+
+    if (forUserId) {
+        headers['for-user-id'] = forUserId;
+    }
 
     const response = await fetch(`${XENDIT_API_URL}/v2/invoices/${id}`, {
         method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${authString}`,
-        },
+        headers: headers,
     });
 
     if (!response.ok) {
