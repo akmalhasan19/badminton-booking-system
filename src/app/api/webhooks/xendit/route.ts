@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { smashApi } from '@/lib/smash-api'
+import { syncBookingToPartner } from '@/lib/partner-sync'
 
 export async function POST(req: Request) {
     try {
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json()
-        const { external_id, status, paid_amount } = body
+        const { external_id, status, paid_amount, payment_method, id: invoice_id } = body
 
         console.log(`Received webhook for booking ${external_id}: ${status}, paid_amount: ${paid_amount}`)
 
@@ -40,20 +41,30 @@ export async function POST(req: Request) {
 
             console.log(`Booking ${external_id} confirmed in local database.`)
 
-            // 4. Sync to PWA Smash API with LUNAS status and paid_amount
+            // 4. Sync to PWA Smash API (Legacy/Direct) - Optional if replacement is fully working
             const pwaResult = await smashApi.updateBookingStatus(
                 external_id,
                 'LUNAS',
-                paid_amount  // This ensures daily revenue is recorded in PWA Smash
+                paid_amount
             )
 
             if (pwaResult.error) {
-                console.error('Failed to sync to PWA Smash:', pwaResult.error)
-                // Don't fail the webhook - local DB is already updated
-                // PWA sync failure should be logged but not block the flow
+                console.error('Failed to sync to PWA Smash (Direct):', pwaResult.error)
             } else {
-                console.log(`Booking ${external_id} synced to PWA Smash with status LUNAS and paid_amount: ${paid_amount}`)
+                console.log(`Booking ${external_id} synced to PWA Smash (Direct)`)
             }
+
+            // 5. Sync to Partner API (New Webhook Methodology)
+            await syncBookingToPartner({
+                event: 'booking.paid',
+                booking_id: external_id,
+                status: 'LUNAS',
+                paid_amount: paid_amount,
+                payment_method: payment_method || 'XENDIT',
+                payment_details: {
+                    invoice_id: invoice_id || 'unknown'
+                }
+            })
         }
 
         return NextResponse.json({ message: 'Webhook received' }, { status: 200 })
