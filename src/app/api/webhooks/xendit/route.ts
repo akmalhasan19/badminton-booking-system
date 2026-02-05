@@ -63,7 +63,14 @@ export async function POST(req: Request) {
                 payment_method: payment_method || 'XENDIT',
                 payment_details: {
                     invoice_id: invoice_id || 'unknown'
-                }
+                },
+                transactions: [{
+                    external_id: invoice_id || 'unknown',
+                    amount: paid_amount,
+                    payment_method: payment_method || 'XENDIT',
+                    status: 'PAID',
+                    paid_at: new Date().toISOString()
+                }]
             })
         }
 

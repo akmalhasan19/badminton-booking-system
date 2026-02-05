@@ -183,23 +183,13 @@ export async function confirmBookingPayment(bookingId: string) {
 
     // 2. Fetch invoice from Xendit using the booking ID (which we set as external_id)
     try {
-        // We need to fetch ALL invoices with this external_id because createInvoice doesn't return ID immediately easily accessible here 
-        // OR we just use getInvoice if we had the invoice ID. 
-        // But we set external_id = bookingId. 
-        // The getInvoice endpoint requires Invoice ID, not External ID.
-        // HOWEVER, Xendit's "Get Invoices" list endpoint allows filtering by external_id.
-        // For simplicity in this "fix", we will assume the webhook handles it OR we implement a direct check if we can.
-
-        // Actually, for immediate feedback on localhost without webhooks, we can try to fetch the invoice by ID if we saved it?
-        // We didn't save the invoice ID in the booking table, which makes this hard.
-        // Wait, the webhook uses external_id == bookingId. 
-
-        // Let's use the Xendit List Invoices API to find it by external_id
+        // Use Xendit List Invoices API to find it by external_id
         const authString = Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64');
         const response = await fetch(`https://api.xendit.co/v2/invoices?external_id=${bookingId}`, {
             headers: {
                 'Authorization': `Basic ${authString}`
-            }
+            },
+            cache: 'no-store'
         });
 
         if (!response.ok) return { success: false, error: 'Failed to fetch invoice' }
@@ -209,10 +199,21 @@ export async function confirmBookingPayment(bookingId: string) {
 
         if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
             await updateBookingStatus(bookingId, 'confirmed', invoice.amount)
+
+            // Force update local DB
+            const { createServiceClient } = await import('@/lib/supabase/server')
+            const supabase = createServiceClient()
+            await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+
             revalidatePath('/bookings/history')
             return { success: true, status: 'confirmed' }
         } else if (invoice && invoice.status === 'EXPIRED') {
             await updateBookingStatus(bookingId, 'cancelled')
+
+            const { createServiceClient } = await import('@/lib/supabase/server')
+            const supabase = createServiceClient()
+            await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+
             revalidatePath('/bookings/history')
             return { success: true, status: 'cancelled' }
         }

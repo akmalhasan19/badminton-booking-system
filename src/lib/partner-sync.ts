@@ -11,6 +11,7 @@ interface SyncPayload {
     paid_amount: number;
     payment_method?: string;
     payment_details?: Record<string, any>;
+    transactions?: Record<string, any>[];
     timestamp?: string;
 }
 

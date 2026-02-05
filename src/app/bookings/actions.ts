@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth/actions'
+import { revalidatePath } from 'next/cache' // Added import
+import { smashApi } from '@/lib/smash-api' // Added import for updateBookingStatus
 
 export interface Booking {
     id: string
@@ -104,4 +106,83 @@ export async function getUserBookingHistory() {
     }))
 
     return { data: bookings }
+}
+
+// Re-implement updateBookingStatus as it is used in confirmBookingPayment
+export async function updateBookingStatus(bookingId: string, status: string, paidAmount?: number) {
+    return await smashApi.updateBookingStatus(bookingId, status, paidAmount)
+}
+
+export async function confirmBookingPayment(bookingId: string) {
+    console.log(`[ManualCheck] Starting check for booking: ${bookingId}`)
+    const user = await getCurrentUser()
+
+    if (!user) {
+        console.error('[ManualCheck] Unauthorized')
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    // 1. Get current booking to get bookingId
+    // In a real app we might store external_id = booking_id
+
+    // 2. Fetch invoice from Xendit using the booking ID (which we set as external_id)
+    try {
+        console.log(`[ManualCheck] Fetching Xendit invoice for external_id: ${bookingId}`)
+
+        // Use Xendit List Invoices API to find it by external_id
+        const authString = Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64');
+        const response = await fetch(`https://api.xendit.co/v2/invoices?external_id=${bookingId}`, {
+            headers: {
+                'Authorization': `Basic ${authString}`
+            },
+            cache: 'no-store'
+        });
+
+        console.log(`[ManualCheck] Xendit Response Status: ${response.status}`)
+
+        if (!response.ok) {
+            console.error('[ManualCheck] Xendit fetch failed')
+            return { success: false, error: 'Failed to fetch invoice' }
+        }
+
+        const data = await response.json()
+        console.log(`[ManualCheck] Invoices found: ${data.length}`)
+
+        const invoice = data[0] // Get the latest one
+
+        if (invoice) {
+            console.log(`[ManualCheck] Invoice status: ${invoice.status}`)
+        } else {
+            console.log('[ManualCheck] No invoice found for this ID')
+        }
+
+        if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
+            console.log('[ManualCheck] Invoice is PAID. Updating booking...')
+            await updateBookingStatus(bookingId, 'confirmed', invoice.amount)
+
+            // Force update local DB
+            const { createServiceClient } = await import('@/lib/supabase/server')
+            const supabase = createServiceClient()
+            await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+
+            revalidatePath('/bookings/history')
+            return { success: true, status: 'confirmed' }
+        } else if (invoice && invoice.status === 'EXPIRED') {
+            console.log('[ManualCheck] Invoice is EXPIRED. Cancelling...')
+            await updateBookingStatus(bookingId, 'cancelled')
+
+            const { createServiceClient } = await import('@/lib/supabase/server')
+            const supabase = createServiceClient()
+            await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+
+            revalidatePath('/bookings/history')
+            return { success: true, status: 'cancelled' }
+        }
+
+        return { success: false, status: invoice?.status || 'pending' }
+
+    } catch (e) {
+        console.error("Manual payment check failed", e)
+        return { success: false, error: 'Check failed' }
+    }
 }
