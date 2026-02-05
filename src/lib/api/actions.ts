@@ -8,6 +8,9 @@ import { getCurrentUser } from '@/lib/auth/actions'
 import { createInvoice } from '@/lib/xendit/client'
 
 const SERVICE_FEE = 2000
+const PLATFORM_FEE = 5000 // Platform fee (Rp 5,000)
+
+
 
 /**
  * Server action to fetch courts (Local DB)
@@ -99,14 +102,30 @@ export async function createBooking(data: {
 
     // 3. Create Xendit Invoice
     try {
-        const invoice = await createInvoice({
+        // --- xenPlatform Logic ---
+        const partnerXenditId = venueDetails?.xendit_account_id
+
+        let invoiceParams: any = {
             externalId: bookingId,
             amount: amount,
             payerEmail: user.email,
             description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (incl. Service Fee)`,
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
-        })
+        }
+
+        // If Partner ID exists, use Split Payment
+        if (partnerXenditId) {
+            console.log(`[Xendit] Creating Split Payment for Partner: ${partnerXenditId}`)
+            invoiceParams.forUserId = partnerXenditId
+            invoiceParams.withFeeRule = {
+                type: 'FLAT',
+                value: PLATFORM_FEE
+            }
+        }
+        // -------------------------
+
+        const invoice = await createInvoice(invoiceParams)
 
         // 4. Save to Local Database (Dual Write)
         const { createServiceClient } = await import('@/lib/supabase/server')

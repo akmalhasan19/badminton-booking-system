@@ -13,6 +13,11 @@ type CreateInvoiceParams = {
     description: string;
     successRedirectUrl?: string;
     failureRedirectUrl?: string;
+    forUserId?: string; // Xendit Sub-Account ID (e.g., "xenplatform_...")
+    withFeeRule?: {
+        type: 'FLAT' | 'PERCENTAGE';
+        value: number;
+    };
 };
 
 type InvoiceResponse = {
@@ -41,20 +46,39 @@ type InvoiceResponse = {
 export async function createInvoice(params: CreateInvoiceParams): Promise<InvoiceResponse> {
     const authString = Buffer.from(XENDIT_SECRET_KEY + ':').toString('base64');
 
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${authString}`,
+    };
+
+    // If booking is for a Partner (Sub-Account), add the header
+    if (params.forUserId) {
+        headers['for-user-id'] = params.forUserId;
+    }
+
+    const body: any = {
+        external_id: params.externalId,
+        amount: params.amount,
+        payer_email: params.payerEmail,
+        description: params.description,
+        success_redirect_url: params.successRedirectUrl,
+        failure_redirect_url: params.failureRedirectUrl,
+    };
+
+    // Add Platform Fee if applicable
+    if (params.withFeeRule) {
+        body.fees = [
+            {
+                type: params.withFeeRule.type,
+                value: params.withFeeRule.value,
+            }
+        ];
+    }
+
     const response = await fetch(`${XENDIT_API_URL}/v2/invoices`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${authString}`,
-        },
-        body: JSON.stringify({
-            external_id: params.externalId,
-            amount: params.amount,
-            payer_email: params.payerEmail,
-            description: params.description,
-            success_redirect_url: params.successRedirectUrl,
-            failure_redirect_url: params.failureRedirectUrl,
-        }),
+        headers: headers,
+        body: JSON.stringify(body),
     });
 
     if (!response.ok) {

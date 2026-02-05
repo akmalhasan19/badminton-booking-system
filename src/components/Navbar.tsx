@@ -154,7 +154,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
     return (
         <>
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${scrolled ? 'bg-white/90 backdrop-blur-md border-black py-3' : 'bg-transparent border-transparent py-6'}`}>
+            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${scrolled ? 'bg-white/90 backdrop-blur-md border-black pt-5 pb-3' : 'bg-transparent border-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
                     <div
                         className="flex items-center space-x-2 cursor-pointer group"
