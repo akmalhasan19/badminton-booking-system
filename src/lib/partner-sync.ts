@@ -5,13 +5,15 @@ const SYNC_URL = process.env.SMASHPARTNER_SYNC_URL || 'https://smashpartner.onli
 const SECRET = process.env.PWA_WEBHOOK_SECRET || '';
 
 interface SyncPayload {
-    event: 'booking.paid' | 'booking.updated';
+    event: 'booking.paid';
     booking_id: string;
-    status: string;
+    venue_id: string;
+    payment_status: 'PAID';
+    total_amount: number;
     paid_amount: number;
-    payment_method?: string;
-    payment_details?: Record<string, any>;
-    transactions?: Record<string, any>[];
+    payment_method: string;
+    customer_name: string;
+    customer_phone?: string;
     timestamp?: string;
 }
 

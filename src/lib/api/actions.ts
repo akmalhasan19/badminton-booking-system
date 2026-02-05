@@ -144,6 +144,7 @@ export async function createBooking(data: {
             total_price: amount,
             status: 'pending',
             duration_hours: data.durationHours,
+            venue_id: data.courtId // Save Venue ID for Partner Sync
         })
 
         if (dbError) {
