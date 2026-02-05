@@ -14,6 +14,10 @@ import { TicketModal } from "@/components/TicketModal"
 export default function BookingSayaPage() {
     const router = useRouter()
     const [user, setUser] = useState<any>(null)
+    const [bookings, setBookings] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [selectedBooking, setSelectedBooking] = useState<any>(null)
+    const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const ITEMS_PER_PAGE = 5
 
