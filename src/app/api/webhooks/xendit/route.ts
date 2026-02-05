@@ -63,15 +63,21 @@ export async function POST(req: Request) {
                 const customerName = bookingData.users?.full_name || 'PWA User'
                 const customerPhone = bookingData.users?.phone
 
+                // Calculate Net Revenue
+                const SERVICE_FEE = 2000;
+                const totalPaid = paid_amount;
+                const netRevenue = totalPaid - SERVICE_FEE;
+
                 console.log(`[Webhook] Preparing to sync booking ${external_id}. Venue ID: ${bookingData.venue_id}`);
+                console.log(`[Webhook] Financials: Gross (Paid): ${totalPaid}, Service Fee: ${SERVICE_FEE}, Net Sync: ${netRevenue}`);
 
                 await syncBookingToPartner({
                     event: 'booking.paid',
                     booking_id: external_id,
-                    venue_id: bookingData.venue_id || 'unknown', // Critical field
+                    venue_id: bookingData.venue_id || 'unknown',
                     payment_status: 'PAID',
-                    total_amount: paid_amount,
-                    paid_amount: paid_amount,
+                    total_amount: totalPaid, // Still send total for record if needed, but Partner mostly uses paid_amount
+                    paid_amount: netRevenue, // CRITICAL: Send Net Revenue as 'paid_amount' for Dashboard
                     payment_method: payment_method || 'XENDIT',
                     customer_name: customerName,
                     customer_phone: customerPhone
