@@ -60,12 +60,12 @@ export function Hero({ setActiveTab }: HeroProps) {
                                     {t.book_now} <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </span>
                             </button>
-                            <button
+                            {/* <button
                                 onClick={() => setActiveTab(Tab.SHOP)}
                                 className="px-8 py-4 bg-white text-dark font-bold text-xl rounded-xl border-2 border-black shadow-hard hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
                             >
                                 {t.shop_gear}
-                            </button>
+                            </button> */}
                         </div>
                     </div>
 
