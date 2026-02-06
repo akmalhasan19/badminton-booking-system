@@ -973,18 +973,13 @@ export function BookingSection() {
                                                 >
                                                     {/* Court Image */}
                                                     <div className="w-full h-32 bg-gray-100 relative overflow-hidden border-b-2 border-inherit">
-                                                        {/* Debug info - remove in production */}
-                                                        {/* {console.log(`Court ${court.court_number} photo:`, court.photo_url)} */}
-
                                                         {court.photo_url ? (
                                                             <img
                                                                 src={court.photo_url}
                                                                 alt={displayName}
                                                                 onError={(e) => {
                                                                     console.error(`Failed to load image for ${displayName}:`, court.photo_url);
-                                                                    e.currentTarget.style.display = 'none'; // Hide broken image so fallback shows (if structure allows)
-                                                                    // Since fallback is in "else", hiding this img won't show fallback automatically without state.
-                                                                    // For now just logging error is enough to debug.
+                                                                    e.currentTarget.style.display = 'none';
                                                                 }}
                                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                             />
@@ -998,22 +993,25 @@ export function BookingSection() {
                                                             </div>
                                                         )}
 
+                                                        {/* Number Overlay - Bottom Left of Image */}
+                                                        <div className="absolute bottom-2 left-2 bg-white border-2 border-black rounded-lg px-3 py-1 shadow-sm z-10">
+                                                            <span className="text-xl font-display font-black text-black">
+                                                                {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
+                                                            </span>
+                                                        </div>
                                                     </div>
 
                                                     {/* Content */}
-                                                    <div className="p-4 flex flex-col justify-between flex-grow w-full">
-                                                        <div>
-                                                            <span className={`text-xl font-display font-black uppercase whitespace-nowrap overflow-hidden text-ellipsis w-full text-left block ${isSelected ? 'text-white' : 'text-black'}`}>
-                                                                {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
-                                                            </span>
-                                                            <span className={`text-xs font-medium mt-1 block ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    <div className="p-3 flex items-end justify-between flex-grow w-full">
+                                                        <div className="text-left">
+                                                            <span className={`text-xs font-bold block ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
                                                                 {court.name.toLowerCase().includes('karpet') ? 'Karpet Vinyl' :
                                                                     court.name.toLowerCase().includes('parkit') ? 'Lantai Kayu' :
                                                                         court.name.toLowerCase().includes('beton') ? 'Lantai Semen' : 'Standard Court'}
                                                             </span>
                                                         </div>
 
-                                                        <div className="mt-4 text-right">
+                                                        <div className="text-right">
                                                             <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-300' : 'text-gray-400 group-hover:text-black'}`}>
                                                                 Rp {court.hourly_rate?.toLocaleString()}/HR
                                                             </span>
