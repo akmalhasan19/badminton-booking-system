@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { Calendar, Loader2, AlertTriangle } from "lucide-react"
 import { UserSidebar } from "@/components/UserSidebar"
@@ -17,7 +17,19 @@ export default function BookingHistoryPage() {
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'completed' | 'cancelled' | 'pending'>('pending')
 
-    const [searchParams] = useState(new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''));
+    // Use ref to track if payment check has been performed
+    const paymentCheckRef = useRef(false)
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+    // Load bookings data
+    const loadBookings = async () => {
+        try {
+            const { data } = await getUserBookingHistory()
+            setBookings(data || [])
+        } catch (error) {
+            console.error("Failed to load bookings", error)
+        }
+    }
 
     useEffect(() => {
         const loadData = async () => {
@@ -25,19 +37,51 @@ export default function BookingHistoryPage() {
                 const userData = await getCurrentUser()
                 setUser(userData)
 
-                // Check for payment confirmation
-                const paymentStatus = searchParams.get('payment')
-                const bookingId = searchParams.get('booking_id')
+                // Check for payment confirmation (only once)
+                if (typeof window !== 'undefined' && !paymentCheckRef.current) {
+                    const params = new URLSearchParams(window.location.search)
+                    const paymentStatus = params.get('payment')
+                    const bookingId = params.get('booking_id')
 
-                if (paymentStatus === 'success' && bookingId) {
-                    setLoading(true)
-                    const { confirmBookingPayment } = await import('@/lib/api/actions')
-                    await confirmBookingPayment(bookingId)
-                    window.history.replaceState({}, '', '/bookings/history')
+                    if (paymentStatus === 'success' && bookingId) {
+                        paymentCheckRef.current = true
+                        setLoading(true)
+
+                        const { confirmBookingPayment } = await import('@/lib/api/actions')
+                        const result = await confirmBookingPayment(bookingId)
+
+                        // Load bookings first
+                        await loadBookings()
+
+                        // Smart tab routing based on actual booking status
+                        if (result?.success) {
+                            // Fetch the updated booking status
+                            const { createClient } = await import('@/lib/supabase/client')
+                            const supabase = createClient()
+                            const { data: booking } = await supabase
+                                .from('bookings')
+                                .select('status')
+                                .eq('id', bookingId)
+                                .single()
+
+                            if (booking?.status === 'confirmed') {
+                                setActiveTab('completed')
+                            } else {
+                                setActiveTab('pending')
+                            }
+                        } else {
+                            // Payment not confirmed yet, show pending tab
+                            setActiveTab('pending')
+                        }
+
+                        // Clean up URL
+                        window.history.replaceState({}, '', '/bookings/history')
+                        setLoading(false)
+                        return
+                    }
                 }
 
-                const { data } = await getUserBookingHistory()
-                setBookings(data || [])
+                await loadBookings()
             } catch (error) {
                 console.error("Failed to load data", error)
             } finally {
@@ -45,7 +89,33 @@ export default function BookingHistoryPage() {
             }
         }
         loadData()
-    }, [searchParams])
+    }, []) // Empty dependency array - only run once
+
+    // Auto-refresh for pending bookings
+    useEffect(() => {
+        // Only poll when on pending tab
+        if (activeTab !== 'pending') {
+            // Clear any existing interval when switching away from pending tab
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current)
+                pollingIntervalRef.current = null
+            }
+            return
+        }
+
+        // Poll every 5 seconds to check for payment updates
+        pollingIntervalRef.current = setInterval(async () => {
+            await loadBookings()
+        }, 5000)
+
+        // Cleanup on unmount or tab change
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current)
+                pollingIntervalRef.current = null
+            }
+        }
+    }, [activeTab])
 
     const filteredBookings = bookings.filter(b => {
         if (activeTab === 'completed') return b.status === 'completed' || b.status === 'confirmed'
@@ -198,9 +268,18 @@ export default function BookingHistoryPage() {
                                                                     const res = await confirmBookingPayment(booking.id)
 
                                                                     if (res?.success) {
-                                                                        const { data } = await getUserBookingHistory()
-                                                                        setBookings(data || [])
-                                                                        alert("Status pembayaran berhasil diperbarui!")
+                                                                        await loadBookings()
+
+                                                                        // If confirmed, switch to completed tab
+                                                                        if (res.status === 'confirmed') {
+                                                                            setActiveTab('completed')
+                                                                            alert("Pembayaran berhasil! Booking Anda telah dikonfirmasi.")
+                                                                        } else if (res.status === 'cancelled') {
+                                                                            setActiveTab('cancelled')
+                                                                            alert("Invoice sudah expired. Booking dibatalkan.")
+                                                                        } else {
+                                                                            alert("Pembayaran belum diterima / belum lunas.")
+                                                                        }
                                                                     } else {
                                                                         alert("Pembayaran belum diterima / belum lunas.")
                                                                     }

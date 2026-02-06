@@ -81,6 +81,7 @@ export async function getUserBookingHistory() {
             end_time,
             total_price,
             status,
+            payment_url,
             courts (
                 name
             )
@@ -103,6 +104,7 @@ export async function getUserBookingHistory() {
         end_time: booking.end_time,
         price: booking.total_price,
         status: booking.status,
+        payment_url: booking.payment_url,
     }))
 
     return { data: bookings }
