@@ -656,7 +656,7 @@ export function BookingSection() {
                                 }, 4000);
                             }}
                         />
-
+                    )}
 
                     {showPhoneModal && (
                         <PhoneVerificationModal
