@@ -6,6 +6,7 @@ import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, 
 import { motion, AnimatePresence } from "framer-motion"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
+import { PhoneVerificationModal } from "@/components/PhoneVerificationModal"
 import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
@@ -69,7 +70,8 @@ export function BookingSection() {
     // Authentication State
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [user, setUser] = useState<{ name: string; email: string; phone?: string } | null>(null);
     const [isAddressExpanded, setIsAddressExpanded] = useState(false);
 
     // Sync state with URL params (search, date, venueId)
@@ -152,7 +154,11 @@ export function BookingSection() {
             const currentUser = await getCurrentUser();
             if (currentUser) {
                 setIsLoggedIn(true);
-                setUser({ name: currentUser.name, email: currentUser.email });
+                setUser({
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    phone: currentUser.phone
+                });
             }
         }
         checkAuth();
@@ -400,6 +406,12 @@ export function BookingSection() {
             return;
         }
 
+        // Validate Phone Number
+        if (!user?.phone || user.phone.length < 10) {
+            setShowPhoneModal(true)
+            return
+        }
+
         // Calculate duration and price
         const durationHours = selectedTimes.length;
         const pricePerHour = selectedHall.pricePerHour || 50;
@@ -642,6 +654,22 @@ export function BookingSection() {
                                     setSelectedCourt(null);
                                     setSelectedHall(null);
                                 }, 4000);
+                            }}
+                        />
+
+
+                    {showPhoneModal && (
+                        <PhoneVerificationModal
+                            isOpen={showPhoneModal}
+                            onClose={() => setShowPhoneModal(false)}
+                            currentPhone={user?.phone}
+                            onSuccess={(newPhone) => {
+                                // Update local user state
+                                if (user) {
+                                    setUser({ ...user, phone: newPhone })
+                                }
+                                // Auto-trigger booking after phone update?
+                                // Let's just user click "Book" again to be safe and explicit
                             }}
                         />
                     )}

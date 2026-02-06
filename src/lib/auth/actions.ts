@@ -164,6 +164,36 @@ export async function updateProfile(data: ProfileData) {
     return { success: true }
 }
 
+export async function updatePhoneNumber(phone: string) {
+    const supabase = await createClient()
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    // Basic validation
+    if (!phone || phone.length < 10) {
+        return { error: 'Nomor HP minimal 10 digit' }
+    }
+
+    const { error } = await supabase
+        .from('users')
+        .update({
+            phone: phone,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+    if (error) {
+        console.error('Update Phone Error:', error)
+        return { error: 'Gagal memperbarui nomor HP' }
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}
+
 /**
  * Check if current user is admin
  */
