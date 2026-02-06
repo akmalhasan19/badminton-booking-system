@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/actions'
 import { revalidatePath } from 'next/cache'
 
-export async function getAllBookings() {
+export async function getAllBookings(page: number = 1, limit: number = 10) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { error: 'Unauthorized' }
@@ -12,7 +12,11 @@ export async function getAllBookings() {
 
     const supabase = await createClient()
 
-    const { data, error } = await supabase
+    // Calculate range
+    const from = (page - 1) * limit
+    const to = from + limit - 1
+
+    const { data, count, error } = await supabase
         .from('bookings')
         .select(`
             id,
@@ -32,15 +36,16 @@ export async function getAllBookings() {
                 name
             ),
             venue_id
-        `)
+        `, { count: 'exact' })
         .order('booking_date', { ascending: false })
+        .range(from, to)
 
     if (error) {
         console.error('Error fetching admin bookings:', error)
         return { error: 'Failed to fetch bookings' }
     }
 
-    return { data }
+    return { data, totalCount: count || 0 }
 }
 
 export async function updateBookingStatus(bookingId: string, status: 'confirmed' | 'cancelled' | 'completed') {
