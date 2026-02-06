@@ -301,7 +301,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
 
                                         <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-3">
                                             <p className="text-xs text-amber-700 font-medium">
-                                                📧 Didn't receive the email? Check your spam folder or try again in {countdown > 0 ? countdown : '60'} seconds.
+                                                Didn't receive the email? Check your spam folder or try again in {countdown > 0 ? countdown : '60'} seconds.
                                             </p>
                                         </div>
 

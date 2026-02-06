@@ -30,6 +30,10 @@ export async function getAllBookings() {
             ),
             courts (
                 name
+            ),
+            venue_id,
+            venues (
+                name
             )
         `)
         .order('booking_date', { ascending: false })
