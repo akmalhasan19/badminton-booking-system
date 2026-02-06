@@ -41,6 +41,7 @@ export interface SmashVenue {
     latitude?: number;
     longitude?: number;
     city?: string;
+    facilities?: string[];
 }
 
 export interface SmashCourt {

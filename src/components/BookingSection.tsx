@@ -206,6 +206,7 @@ export function BookingSection() {
                                     },
                                     operating_hours_start: venue.operating_hours_start,
                                     operating_hours_end: venue.operating_hours_end,
+                                    facilities: venue.facilities || [],
                                 };
                             } catch (err) {
                                 // Fallback if details fetch fails
@@ -228,6 +229,7 @@ export function BookingSection() {
                                     },
                                     operating_hours_start: venue.operating_hours_start,
                                     operating_hours_end: venue.operating_hours_end,
+                                    facilities: venue.facilities || [],
                                 };
                             }
                         })
@@ -938,7 +940,11 @@ export function BookingSection() {
                                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                                         <span className="text-xs font-bold text-gray-400 uppercase">{t.facilities_label}</span>
                                         <p className="font-bold text-black">{selectedHall.totalCourts} {t.courts}</p>
-                                        <p className="text-xs text-gray-500">Shower, Parking, Cafe</p>
+                                        <p className="text-xs text-gray-500">
+                                            {selectedHall.facilities && selectedHall.facilities.length > 0
+                                                ? selectedHall.facilities.join(', ')
+                                                : 'Standard Facilities'}
+                                        </p>
                                     </div>
                                 </div>
 
