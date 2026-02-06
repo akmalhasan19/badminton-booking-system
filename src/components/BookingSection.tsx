@@ -25,6 +25,66 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
     return R * c; // Distance in km
 }
 
+const FacilityIcon = ({ name }: { name: string }) => {
+    const [imgError, setImgError] = useState(false);
+
+    const getIconDetails = (text: string) => {
+        const lower = text.toLowerCase();
+
+        let filename = 'default.svg';
+        let FallbackIcon = CheckCircle;
+
+        if (lower.includes('parkir') || lower.includes('parking')) {
+            filename = 'parking.svg';
+            FallbackIcon = Car;
+        } else if (lower.includes('wifi') || lower.includes('internet')) {
+            filename = 'wifi.svg';
+            FallbackIcon = Wifi;
+        } else if (lower.includes('makan') || lower.includes('kantin') || lower.includes('cafe') || lower.includes('food')) {
+            filename = 'cutlery.svg';
+            FallbackIcon = Utensils;
+        } else if (lower.includes('ac') || lower.includes('air con') || lower.includes('pendingin')) {
+            filename = 'air-conditioner.svg';
+            FallbackIcon = Wind;
+        } else if (lower.includes('shower') || lower.includes('mandi')) {
+            filename = 'shower.svg';
+            FallbackIcon = Droplets;
+        } else if (lower.includes('toilet') || lower.includes('wc')) {
+            filename = 'toilet.svg';
+            FallbackIcon = Accessibility; // or create a Toilet icon import if available in newer lucide, using generic for now
+        } else if (lower.includes('musholla') || lower.includes('prayer')) {
+            filename = 'prayer.svg';
+            FallbackIcon = Star;
+        } else if (lower.includes('cctv')) {
+            filename = 'cctv.svg';
+            FallbackIcon = CheckCircle;
+        } else if (lower.includes('loker') || lower.includes('locker')) {
+            filename = 'locker.svg';
+            FallbackIcon = CheckCircle;
+        }
+
+        return { filename, FallbackIcon };
+    };
+
+    const { filename, FallbackIcon } = getIconDetails(name);
+
+    return (
+        <div className="flex items-center gap-1.5 bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-sm">
+            {!imgError ? (
+                <img
+                    src={`/icons/facilities/${filename}`}
+                    alt={name}
+                    className="w-3 h-3 object-contain"
+                    onError={() => setImgError(true)}
+                />
+            ) : (
+                <FallbackIcon className="w-3 h-3 text-gray-700" />
+            )}
+            <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">{name}</span>
+        </div>
+    );
+};
+
 export function BookingSection() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -941,25 +1001,9 @@ export function BookingSection() {
                                         <span className="text-xs font-bold text-gray-400 uppercase mb-2 block">{t.facilities_label}</span>
                                         {selectedHall.facilities && selectedHall.facilities.length > 0 ? (
                                             <div className="flex flex-wrap gap-2">
-                                                {selectedHall.facilities.map((facility: string, idx: number) => {
-                                                    const getFacilityIcon = (text: string) => {
-                                                        const lower = text.toLowerCase();
-                                                        if (lower.includes('parkir') || lower.includes('parking')) return <Car className="w-3 h-3" />;
-                                                        if (lower.includes('wifi') || lower.includes('internet')) return <Wifi className="w-3 h-3" />;
-                                                        if (lower.includes('makan') || lower.includes('kantin') || lower.includes('cafe') || lower.includes('food')) return <Utensils className="w-3 h-3" />;
-                                                        if (lower.includes('ac') || lower.includes('air con') || lower.includes('pendingin')) return <Wind className="w-3 h-3" />;
-                                                        if (lower.includes('shower') || lower.includes('mandi') || lower.includes('toilet') || lower.includes('wc')) return <Droplets className="w-3 h-3" />;
-                                                        if (lower.includes('musholla') || lower.includes('prayer')) return <Star className="w-3 h-3" />;
-                                                        return <CheckCircle className="w-3 h-3" />;
-                                                    };
-
-                                                    return (
-                                                        <div key={idx} className="flex items-center gap-1.5 bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-sm">
-                                                            {getFacilityIcon(facility)}
-                                                            <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">{facility}</span>
-                                                        </div>
-                                                    )
-                                                })}
+                                                {selectedHall.facilities.map((facility: string, idx: number) => (
+                                                    <FacilityIcon key={idx} name={facility} />
+                                                ))}
                                             </div>
                                         ) : (
                                             <p className="text-xs text-gray-400 italic">Standard Facilities</p>
