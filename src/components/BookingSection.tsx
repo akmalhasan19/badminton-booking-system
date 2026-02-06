@@ -1071,9 +1071,9 @@ export function BookingSection() {
                                                     </div>
 
                                                     {/* Content */}
-                                                    <div className="p-3 flex items-end justify-between flex-grow w-full">
+                                                    <div className="p-3 flex flex-col justify-between flex-grow w-full gap-2">
                                                         <div className="text-left">
-                                                            <span className={`text-xs font-bold block ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                            <span className={`text-[10px] font-bold block uppercase tracking-wider mb-0.5 ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
                                                                 {(() => {
                                                                     const lowerName = court.name.toLowerCase();
                                                                     if (lowerName.includes('karpet')) return t.court_type_vinyl;
@@ -1084,10 +1084,13 @@ export function BookingSection() {
                                                             </span>
                                                         </div>
 
-                                                        <div className="text-right">
-                                                            <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-300' : 'text-gray-400 group-hover:text-black'}`}>
-                                                                Rp {court.hourly_rate?.toLocaleString()}/HR
-                                                            </span>
+                                                        <div className="text-left">
+                                                            <div className="flex items-baseline gap-0.5">
+                                                                <span className={`text-sm font-black uppercase tracking-tight ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                                    Rp {court.hourly_rate?.toLocaleString()}
+                                                                </span>
+                                                                <span className={`text-[10px] font-bold ${isSelected ? 'text-gray-400' : 'text-gray-400'}`}>/HR</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </button>
