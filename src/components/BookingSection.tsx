@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown, Loader2, MapPinOff, AlertCircle } from "lucide-react"
+import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown, Loader2, MapPinOff, AlertCircle, Car, Wifi, Utensils, Wind, Droplets, Accessibility, Star } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
@@ -938,13 +938,32 @@ export function BookingSection() {
                                         </p>
                                     </div>
                                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <span className="text-xs font-bold text-gray-400 uppercase">{t.facilities_label}</span>
-                                        <p className="font-bold text-black">{selectedHall.totalCourts} {t.courts}</p>
-                                        <p className="text-xs text-gray-500">
-                                            {selectedHall.facilities && selectedHall.facilities.length > 0
-                                                ? selectedHall.facilities.join(', ')
-                                                : 'Standard Facilities'}
-                                        </p>
+                                        <span className="text-xs font-bold text-gray-400 uppercase mb-2 block">{t.facilities_label}</span>
+                                        {selectedHall.facilities && selectedHall.facilities.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedHall.facilities.map((facility: string, idx: number) => {
+                                                    const getFacilityIcon = (text: string) => {
+                                                        const lower = text.toLowerCase();
+                                                        if (lower.includes('parkir') || lower.includes('parking')) return <Car className="w-3 h-3" />;
+                                                        if (lower.includes('wifi') || lower.includes('internet')) return <Wifi className="w-3 h-3" />;
+                                                        if (lower.includes('makan') || lower.includes('kantin') || lower.includes('cafe') || lower.includes('food')) return <Utensils className="w-3 h-3" />;
+                                                        if (lower.includes('ac') || lower.includes('air con') || lower.includes('pendingin')) return <Wind className="w-3 h-3" />;
+                                                        if (lower.includes('shower') || lower.includes('mandi') || lower.includes('toilet') || lower.includes('wc')) return <Droplets className="w-3 h-3" />;
+                                                        if (lower.includes('musholla') || lower.includes('prayer')) return <Star className="w-3 h-3" />;
+                                                        return <CheckCircle className="w-3 h-3" />;
+                                                    };
+
+                                                    return (
+                                                        <div key={idx} className="flex items-center gap-1.5 bg-white border border-gray-200 px-2 py-1 rounded-lg shadow-sm">
+                                                            {getFacilityIcon(facility)}
+                                                            <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">{facility}</span>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic">Standard Facilities</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1011,9 +1030,13 @@ export function BookingSection() {
                                                     <div className="p-3 flex items-end justify-between flex-grow w-full">
                                                         <div className="text-left">
                                                             <span className={`text-xs font-bold block ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                                {court.name.toLowerCase().includes('karpet') ? 'Karpet Vinyl' :
-                                                                    court.name.toLowerCase().includes('parkit') ? 'Lantai Kayu' :
-                                                                        court.name.toLowerCase().includes('beton') ? 'Lantai Semen' : 'Standard Court'}
+                                                                {(() => {
+                                                                    const lowerName = court.name.toLowerCase();
+                                                                    if (lowerName.includes('karpet')) return t.court_type_vinyl;
+                                                                    if (lowerName.includes('parkit')) return t.court_type_wood;
+                                                                    if (lowerName.includes('beton')) return t.court_type_cement;
+                                                                    return t.court_type_standard;
+                                                                })()}
                                                             </span>
                                                         </div>
 

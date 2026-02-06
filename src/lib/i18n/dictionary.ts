@@ -124,6 +124,10 @@ export type Dictionary = {
     venue_label: string;
     court_label: string;
     address_label: string;
+    court_type_standard: string;
+    court_type_vinyl: string;
+    court_type_wood: string;
+    court_type_cement: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -248,7 +252,11 @@ export const dictionaries: Record<Language, Dictionary> = {
         floor: "Floor",
         venue_label: "Venue",
         court_label: "Court",
-        address_label: "Address"
+        address_label: "Address",
+        court_type_standard: "Standard Court",
+        court_type_vinyl: "Vinyl Court",
+        court_type_wood: "Wood Court",
+        court_type_cement: "Cement Court"
     },
     id: {
         home: "BERANDA",
@@ -371,7 +379,11 @@ export const dictionaries: Record<Language, Dictionary> = {
         floor: "Lantai",
         venue_label: "Venue",
         court_label: "Lapangan",
-        address_label: "Alamat"
+        address_label: "Alamat",
+        court_type_standard: "Lapangan Standar",
+        court_type_vinyl: "Lapangan Karpet",
+        court_type_wood: "Lapangan Kayu",
+        court_type_cement: "Lapangan Semen"
     },
     jv: {
         home: "GRIYA",
@@ -494,7 +506,11 @@ export const dictionaries: Record<Language, Dictionary> = {
         floor: "Lantai",
         venue_label: "Panggenan",
         court_label: "Lapangan",
-        address_label: "Alamat"
+        address_label: "Alamat",
+        court_type_standard: "Lapangan Standar",
+        court_type_vinyl: "Lapangan Karpet",
+        court_type_wood: "Lapangan Kajeng",
+        court_type_cement: "Lapangan Semen"
     }
 }
 
