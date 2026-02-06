@@ -9,7 +9,6 @@ import { AuthModal } from "@/components/AuthModal"
 import { PhoneVerificationModal } from "@/components/PhoneVerificationModal"
 import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
-import { CourtCard } from "@/components/court/CourtCard"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
@@ -1027,16 +1026,73 @@ export function BookingSection() {
                                             <div className="col-span-full text-center py-8 text-gray-500">
                                                 No courts available for this venue
                                             </div>
-                                        ) : venueCourts.map((court, idx) => (
-                                            <div key={court.id} className="h-full">
-                                                <CourtCard
-                                                    court={court}
-                                                    isSelected={selectedCourt?.id === court.id}
-                                                    onSelect={setSelectedCourt}
-                                                    t={t}
-                                                />
-                                            </div>
-                                        ))}
+                                        ) : venueCourts.map((court, idx) => {
+                                            const isSelected = selectedCourt?.id === court.id;
+                                            const displayName = court.name || `Court ${idx + 1}`;
+
+                                            return (
+                                                <button
+                                                    key={court.id}
+                                                    onClick={() => setSelectedCourt(court)}
+                                                    className={`relative rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between overflow-hidden
+                                                    ${isSelected
+                                                            ? 'bg-black border-black text-white shadow-hard scale-[1.02]'
+                                                            : 'bg-white border-gray-200 hover:border-black hover:shadow-hard-sm'
+                                                        }`}
+                                                >
+                                                    {/* Court Image */}
+                                                    <div className="w-full h-32 bg-gray-100 relative overflow-hidden border-b-2 border-inherit">
+                                                        {court.photo_url ? (
+                                                            <img
+                                                                src={court.photo_url}
+                                                                alt={displayName}
+                                                                onError={(e) => {
+                                                                    console.error(`Failed to load image for ${displayName}:`, court.photo_url);
+                                                                    e.currentTarget.style.display = 'none';
+                                                                }}
+                                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                            />
+                                                        ) : (
+                                                            // Fallback Visual
+                                                            <div className="w-full h-full flex items-center justify-center relative opacity-20">
+                                                                <div className="w-16 h-10 border border-current rounded-sm relative">
+                                                                    <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
+                                                                    <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Number Overlay - Bottom Left of Image */}
+                                                        <div className="absolute bottom-2 left-2 bg-white border-2 border-black rounded-lg px-3 py-1 shadow-sm z-10">
+                                                            <span className="text-xl font-display font-black text-black">
+                                                                {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="p-3 flex items-end justify-between flex-grow w-full">
+                                                        <div className="text-left">
+                                                            <span className={`text-xs font-bold block ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                                {(() => {
+                                                                    const lowerName = court.name.toLowerCase();
+                                                                    if (lowerName.includes('karpet')) return t.court_type_vinyl;
+                                                                    if (lowerName.includes('parkit')) return t.court_type_wood;
+                                                                    if (lowerName.includes('beton')) return t.court_type_cement;
+                                                                    return t.court_type_standard;
+                                                                })()}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="text-right">
+                                                            <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-300' : 'text-gray-400 group-hover:text-black'}`}>
+                                                                Rp {court.hourly_rate?.toLocaleString()}/HR
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             </motion.div>
