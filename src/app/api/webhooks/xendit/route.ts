@@ -13,25 +13,43 @@ export async function POST(req: Request) {
         const callbackToken = req.headers.get('x-callback-token')
         const webhookToken = process.env.XENDIT_CALLBACK_TOKEN
 
-        // 1. Security Check: Verify the request is actually from Xendit
-        if (!callbackToken || callbackToken !== webhookToken) {
-            console.error('Unauthorized webhook attempt')
+        body = await req.json()
+        external_id = body.external_id
+        status = body.status
+        const { paid_amount, payment_method, id: invoice_id, user_id } = body
+
+        // 1. Fetch Dynamic Token Strategy
+        let validToken = webhookToken;
+
+        // If it's a sub-account (has user_id), try to find its specific token in DB
+        if (user_id) {
+            const { data: config } = await supabase
+                .from('webhook_configs')
+                .select('verification_token')
+                .eq('provider', 'xendit')
+                .eq('account_id', user_id)
+                .single();
+
+            if (config?.verification_token) {
+                validToken = config.verification_token;
+                console.log(`[Webhook] Using dynamic token/config for account: ${user_id}`);
+            }
+        }
+
+        // 2. Security Check: Verify with the identified valid token
+        if (!callbackToken || callbackToken !== validToken) {
+            console.error('Unauthorized webhook attempt. Token mismatch.')
 
             // Log unauthorized attempt
             await supabase.from('webhook_logs').insert({
                 source: 'xendit',
                 status: 'unauthorized',
                 response_code: 401,
-                error_message: 'Invalid callback token'
+                error_message: `Invalid callback token: ${callbackToken?.slice(0, 5)}... expected for ${user_id}`
             })
 
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
         }
-
-        body = await req.json()
-        external_id = body.external_id
-        status = body.status
-        const { paid_amount, payment_method, id: invoice_id } = body
 
         // Log incoming webhook
         console.log('========== XENDIT WEBHOOK DEBUG ==========')

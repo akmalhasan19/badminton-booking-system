@@ -256,3 +256,16 @@ curl --request GET \
   --header 'api-version: 2024-11-11' \
   --header 'authorization: Basic dW5kZWZpbmVkOnBhc3N3b3Jk'
 **h**
+
+13. Set Sub-Account Webhook URL
+**Codes**
+curl --request POST \
+  --url https://api.xendit.co/callback_urls/%7Btype%7D \
+  --header 'accept: application/json' \
+  --header 'authorization: Basic dW5kZWZpbmVkOnBhc3N3b3Jk' \
+  --header 'content-type: application/json' \
+  --header 'for-user-id: <sub_account_id>' \
+  --data '{
+  "url": "https://www.yourdomain.com/api/webhooks/xendit"
+}'
+**h**
