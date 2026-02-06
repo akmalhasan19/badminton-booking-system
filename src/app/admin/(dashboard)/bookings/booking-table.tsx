@@ -143,7 +143,9 @@ function BookingDetailsModal({ booking, isOpen, onClose, onUpdateStatus, isUpdat
                                     <h3 className="font-black uppercase text-sm mb-3 text-neo-blue flex items-center gap-2">
                                         <MapPin className="w-4 h-4" /> Venue & Court
                                     </h3>
-                                    <p className="text-lg font-black">{booking.venues?.name || 'Unknown Venue'}</p>
+                                    <p className="text-lg font-black">
+                                        {booking.venue_id || booking.courts?.name?.split('(')[0]?.trim() || 'Unknown Venue'}
+                                    </p>
                                     <p className="font-medium text-gray-600">{booking.courts?.name}</p>
                                 </div>
 
