@@ -172,5 +172,3 @@ Kita valid memiliki **"Zero-Wait Booking Experience"**.
 *   User offline -> Masih bisa lihat jadwal (karena PWA).
 
 Ini adalah data teknis yang tidak bisa dibantah oleh marketing "murah" kompetitor. Kita menjual **WAKTU** yang dihemat user.
-
-

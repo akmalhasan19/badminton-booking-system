@@ -1192,28 +1192,50 @@ export function BookingSection() {
                                         </div>
                                     </div>
 
-                                    <div className="border-t-2 border-dashed border-gray-300 pt-6 space-y-3">
-                                        <div className="flex justify-between text-sm font-medium text-gray-500">
-                                            <span>{t.court_fee} ({selectedTimes.length}hr)</span>
-                                            <span>Rp {selectedHall ? (selectedHall.pricePerHour * selectedTimes.length).toLocaleString('id-ID') : 0}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm font-medium text-gray-500">
-                                            <span>{t.service_fee}</span>
-                                            <span>Rp 3.000</span>
-                                        </div>
-                                        <div className="flex justify-between text-2xl font-black text-black pt-2">
-                                            <span>{t.total}</span>
-                                            <span>Rp {selectedHall ? ((selectedHall.pricePerHour * selectedTimes.length) + 3000).toLocaleString('id-ID') : 0}</span>
+                                    <div className="border-2 border-black bg-white rounded-xl p-4 space-y-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                                        {/* Receipt Tape Effect */}
+                                        <div className="absolute top-0 left-0 w-full h-2 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,#000_5px,#000_6px)] opacity-10"></div>
+
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-display font-black text-lg uppercase">Payment Breakdown</h4>
+                                            <span className="bg-pastel-mint text-[10px] font-bold px-2 py-1 border border-black rounded-md uppercase">
+                                                Zero Hidden Fees
+                                            </span>
                                         </div>
 
-                                        <button
-                                            disabled={!selectedHall || !selectedCourt || selectedTimes.length === 0}
-                                            onClick={handleBook}
-                                            className="w-full mt-6 bg-black text-white font-display font-black text-xl py-5 rounded-xl border-2 border-transparent hover:bg-pastel-acid hover:text-black hover:border-black shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
-                                        >
-                                            {t.confirm_booking}
-                                        </button>
+                                        <div className="space-y-2 font-mono text-xs">
+                                            <div className="flex justify-between items-center text-gray-600">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-black uppercase">{t.court_fee}</span>
+                                                    <span className="text-[10px] text-gray-400">Direct to Partner ({selectedTimes.length}hr)</span>
+                                                </div>
+                                                <span className="font-bold text-black">Rp {selectedHall ? (selectedHall.pricePerHour * selectedTimes.length).toLocaleString('id-ID') : 0}</span>
+                                            </div>
+
+                                            <div className="border-b border-dashed border-gray-300 my-2"></div>
+
+                                            <div className="flex justify-between items-center text-gray-600">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-black uppercase">{t.service_fee}</span>
+                                                    <span className="text-[10px] text-gray-400">Platform Maintenance</span>
+                                                </div>
+                                                <span className="font-bold text-black">Rp 3.000</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-black text-white p-3 -mx-4 -mb-4 mt-4 flex justify-between items-center">
+                                            <span className="font-display font-black text-xl uppercase tracking-wider">{t.total}</span>
+                                            <span className="font-mono font-bold text-xl">Rp {selectedHall ? ((selectedHall.pricePerHour * selectedTimes.length) + 3000).toLocaleString('id-ID') : 0}</span>
+                                        </div>
                                     </div>
+
+                                    <button
+                                        disabled={!selectedHall || !selectedCourt || selectedTimes.length === 0}
+                                        onClick={handleBook}
+                                        className="w-full mt-6 bg-pastel-acid text-black font-display font-black text-xl py-5 rounded-xl border-2 border-black hover:bg-white hover:shadow-hard transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none transform hover:-translate-y-1 active:translate-y-0"
+                                    >
+                                        {t.confirm_booking}
+                                    </button>
                                 </div>
                             )}
                         </div>
