@@ -14,6 +14,13 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json()
+
+        // 🔍 DEBUG: Log the entire webhook payload to see what Xendit actually sends
+        console.log('========== XENDIT WEBHOOK DEBUG ==========')
+        console.log('Full webhook body:', JSON.stringify(body, null, 2))
+        console.log('Body keys:', Object.keys(body))
+        console.log('==========================================')
+
         const { external_id, status, paid_amount, payment_method, id: invoice_id } = body
 
         console.log(`Received webhook for booking ${external_id}: ${status}, paid_amount: ${paid_amount}`)

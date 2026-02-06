@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { createInvoice } from '@/lib/xendit/client'
 
 export async function getPendingBookings() {
     const supabase = createServiceClient()
@@ -64,5 +65,34 @@ export async function simulateWebhookTrigger(bookingId: string) {
     } catch (error: any) {
         console.error('Simulation failed:', error)
         return { error: error.message }
+    }
+}
+
+export async function testCreateInvoice() {
+    try {
+        const timestamp = Date.now()
+        const externalId = `debug_test_${timestamp}`
+
+        console.log(`[Debug] Testing createInvoice with externalId: ${externalId}`)
+
+        const invoice = await createInvoice({
+            externalId: externalId,
+            amount: 10000, // Rp 10.000
+            description: 'Debug Test Invoice',
+            payerEmail: 'test@example.com',
+            successRedirectUrl: 'https://example.com/success',
+            failureRedirectUrl: 'https://example.com/failure'
+        })
+
+        console.log('[Debug] Invoice created successfully:', invoice)
+        return { success: true, data: invoice }
+
+    } catch (error: any) {
+        console.error('[Debug] Failed to create invoice:', error)
+        return {
+            success: false,
+            error: error.message || 'Unknown error occurred',
+            details: JSON.stringify(error)
+        }
     }
 }

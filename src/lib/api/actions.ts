@@ -100,32 +100,18 @@ export async function createBooking(data: {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
 
-    // 3. Create Xendit Invoice
+    // 3. Create Xendit Invoice (Platform Account)
+    // Note: Removed xenPlatform split payment to fix webhook routing issue
+    // Webhooks now properly received by platform account
     try {
-        // --- xenPlatform Logic ---
-        const partnerXenditId = venueDetails?.xendit_account_id
-
-        let invoiceParams: any = {
+        const invoice = await createInvoice({
             externalId: bookingId,
             amount: amount,
             payerEmail: user.email,
             description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (incl. Service Fee)`,
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
-        }
-
-        // If Partner ID exists, use Split Payment
-        if (partnerXenditId) {
-            console.log(`[Xendit] Creating Split Payment for Partner: ${partnerXenditId}`)
-            invoiceParams.forUserId = partnerXenditId
-            invoiceParams.withFeeRule = {
-                type: 'FLAT',
-                value: PLATFORM_FEE
-            }
-        }
-        // -------------------------
-
-        const invoice = await createInvoice(invoiceParams)
+        })
 
         // 4. Save to Local Database (Dual Write)
         const { createServiceClient } = await import('@/lib/supabase/server')
@@ -219,22 +205,10 @@ export async function confirmBookingPayment(bookingId: string) {
             return { success: true, status: 'confirmed' }
         }
 
-        // Fetch Venue Details to get Xendit Account ID
-        let partnerXenditId: string | undefined = undefined
-        let venueDetails: any = null
-
-        if (booking.venue_id) {
-            venueDetails = await fetchVenueDetails(booking.venue_id)
-            if (venueDetails?.xendit_account_id) {
-                partnerXenditId = venueDetails.xendit_account_id
-                console.log(`[ManualCheck] Checking invoice for Partner: ${partnerXenditId}`)
-            }
-        }
-
-        // 2. Fetch invoice from Xendit
-        // Use getInvoicesByExternalId because we only have bookingId (external_id)
+        // 2. Fetch invoice from Xendit (Platform Account)
+        // Note: Removed partner account lookup as all invoices are in platform account
         const { getInvoicesByExternalId } = await import('@/lib/xendit/client')
-        const invoices = await getInvoicesByExternalId(bookingId, partnerXenditId)
+        const invoices = await getInvoicesByExternalId(bookingId)
 
         // Take the latest invoice
         const invoice = invoices && invoices.length > 0 ? invoices[0] : null
@@ -243,9 +217,11 @@ export async function confirmBookingPayment(bookingId: string) {
         if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
             console.log('[ManualCheck] Invoice PAID!')
 
-            // Calculate Net Revenue (deduct platform fee for split payments)
-            const netRevenue = partnerXenditId ? invoice.amount - PLATFORM_FEE : invoice.amount
-            console.log(`[ManualCheck] Syncing to Partner - Gross: ${invoice.amount}, Net: ${netRevenue}`)
+            // Calculate Net Revenue (deduct fees before syncing to partner)
+            const XENDIT_FEE = 4000
+            const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE
+            const netRevenue = invoice.amount - TOTAL_FEE
+            console.log(`[ManualCheck] Syncing to Partner - Gross: ${invoice.amount}, Fees: ${TOTAL_FEE}, Net: ${netRevenue}`)
 
             await updateBookingStatus(bookingId, 'confirmed', netRevenue)
 
