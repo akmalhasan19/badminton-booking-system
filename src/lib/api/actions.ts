@@ -219,7 +219,7 @@ export async function createBooking(data: {
             booking_date: data.bookingDate,
             start_time: data.startTime,
             end_time: data.endTime,
-            total_price: amount,
+            total_price: invoiceAmount,
             status: 'pending',
             duration_hours: data.durationHours,
             venue_id: data.courtId // Save Venue ID for Partner Sync
