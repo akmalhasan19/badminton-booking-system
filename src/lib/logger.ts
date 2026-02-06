@@ -23,4 +23,7 @@ export const logger = pino({
     base: {
         env: process.env.NODE_ENV,
     },
+    serializers: {
+        error: pino.stdSerializers.err,
+    },
 });

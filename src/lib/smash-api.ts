@@ -7,6 +7,8 @@ const getHeaders = () => {
 
     if (!token) {
         logger.warn("Missing SMASH_API_TOKEN environment variable");
+    } else {
+        logger.debug({ tokenPrefix: token.substring(0, 10) + "..." }, "Token used for request");
     }
 
     return {
