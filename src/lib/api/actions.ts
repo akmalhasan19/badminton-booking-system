@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 import { getCurrentUser } from '@/lib/auth/actions'
 import { createInvoice, getInvoice } from '@/lib/xendit/client'
+import { getSetting } from '@/lib/api/settings'
 
 
 
@@ -92,24 +93,36 @@ export async function createBooking(data: {
     const venueDetails = await smashApi.getVenueDetails(data.courtId)
     const selectedCourt = venueDetails?.courts.find(c => c.id === data.courtUuid)
     const hourlyRate = selectedCourt?.hourly_rate || 50000
-    const courtPrice = hourlyRate * data.durationHours
+    const originalPrice = hourlyRate * data.durationHours
+
+    // FEE CALCULATION
+    const applicationFee = await getSetting('application_fee', 2000)
+    const xenditFee = await getSetting('xendit_fee', 2000)
+
+    // Venue receives: Original - Application Fee
+    const netVenuePrice = originalPrice - applicationFee
+
+    // Buyer pays: NetVenuePrice + Xendit Fee
+    // If AppFee == XenditFee, User pays Original Price.
+    const totalUserBill = netVenuePrice + xenditFee
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
 
     // 3. Create Xendit Invoice (Platform Account Only)
-
+    // We charge the User the totalUserBill
     try {
         console.log('[CreateBooking] Preparing to create Xendit Invoice...')
-        console.log('[CreateBooking] Params:', {
-            externalId: bookingId,
-            courtPrice: courtPrice,
-            payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
+        console.log('[CreateBooking] Price Logic:', {
+            originalPrice,
+            applicationFee,
+            netVenuePrice,
+            xenditFee,
+            totalUserBill
         })
 
         const invoice = await createInvoice({
             externalId: bookingId,
-            amount: courtPrice,
+            amount: totalUserBill,
             payerEmail: user.email,
             description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
             successRedirectUrl: `${appUrl}/bookings?payment=success&booking_id=${bookingId}`,
@@ -191,10 +204,14 @@ export async function createBooking(data: {
             booking_date: data.bookingDate,
             start_time: data.startTime,
             end_time: data.endTime,
-            total_price: courtPrice,
+            total_price: totalUserBill, // This is what user pays
             status: 'pending',
             duration_hours: data.durationHours,
-            venue_id: data.courtId // Save Venue ID for Partner Sync
+            venue_id: data.courtId, // Save Venue ID for Partner Sync
+            // Fee Breakdown columns
+            application_fee: applicationFee,
+            xendit_fee: xenditFee,
+            net_venue_price: netVenuePrice
         })
 
         if (dbError) {

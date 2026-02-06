@@ -80,12 +80,15 @@ export async function POST(req: Request) {
                 const customerName = bookingData.users?.full_name || 'PWA User'
                 const customerPhone = bookingData.users?.phone
 
-                // Revenue = Full court price (no fee deduction)
-                const courtPrice = paid_amount
+                // Revenue = Net Venue Price (from DB) or fallback to paid_amount
+                // User paid: `paid_amount` (Total Bill)
+                // Venue receives: `net_venue_price`
+                const revenue = bookingData.net_venue_price || paid_amount
 
                 logger.info({
                     bookingId: external_id,
-                    courtPrice
+                    paidAmount: paid_amount,
+                    revenue
                 }, `[Webhook] Processing payment for booking ${external_id}`)
 
                 // Fetch court name with robust error handling
@@ -133,8 +136,8 @@ export async function POST(req: Request) {
                         venue_id: bookingData.venue_id,
                         status: 'LUNAS',
                         payment_status: 'PAID',
-                        total_amount: courtPrice,
-                        paid_amount: courtPrice,  // Revenue = full court price
+                        total_amount: paid_amount, // User Total Bill
+                        paid_amount: revenue,      // Venue Net Revenue
                         payment_method: payment_method || 'XENDIT',
                         customer_name: customerName,
                         customer_phone: customerPhone,
