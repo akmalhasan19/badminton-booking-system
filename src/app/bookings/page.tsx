@@ -25,45 +25,67 @@ export default function BookingSayaPage() {
     // Use ref to prevent duplicate payment checks
     const paymentCheckRef = useRef(false)
 
+    const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Check for payment confirmation (only once)
-                if (typeof window !== 'undefined' && !paymentCheckRef.current) {
-                    const params = new URLSearchParams(window.location.search)
-                    const paymentStatus = params.get('payment')
-                    const bookingId = params.get('booking_id')
-
-                    if (paymentStatus === 'success' && bookingId) {
-                        paymentCheckRef.current = true
-                        setLoading(true)
-
-                        const { confirmBookingPayment } = await import('@/lib/api/actions')
-                        await confirmBookingPayment(bookingId)
-
-                        // Clean up URL
-                        window.history.replaceState({}, '', '/bookings')
+        const init = async () => {
+            // 1. Start fetching data immediately (Non-blocking)
+            const fetchPromise = (async () => {
+                try {
+                    const [userData, bookingsData] = await Promise.all([
+                        getCurrentUser(),
+                        getUserActiveBookings()
+                    ])
+                    setUser(userData)
+                    if (bookingsData.data) {
+                        setBookings(bookingsData.data)
                     }
+                } catch (error) {
+                    console.error("Failed to fetch data", error)
+                } finally {
+                    setLoading(false)
                 }
+            })()
 
-                const [userData, bookingsData] = await Promise.all([
-                    getCurrentUser(),
-                    getUserActiveBookings()
-                ])
+            // 2. Check for payment confirmation in background (If URL params exist)
+            if (typeof window !== 'undefined' && !paymentCheckRef.current) {
+                const params = new URLSearchParams(window.location.search)
+                const paymentStatus = params.get('payment')
+                const bookingId = params.get('booking_id')
 
-                setUser(userData)
+                if (paymentStatus === 'success' && bookingId) {
+                    paymentCheckRef.current = true
+                    setIsVerifyingPayment(true) // Show non-blocking indicator
 
-                if (bookingsData.data) {
-                    setBookings(bookingsData.data)
+                    // Run verification independently
+                    const verifyPayment = async () => {
+                        try {
+                            const { confirmBookingPayment } = await import('@/lib/api/actions')
+                            await confirmBookingPayment(bookingId)
+
+                            // Refresh data after verification
+                            const refreshedBookings = await getUserActiveBookings()
+                            if (refreshedBookings.data) {
+                                setBookings(refreshedBookings.data)
+                            }
+
+                            // Clean up URL
+                            window.history.replaceState({}, '', '/bookings')
+                        } catch (err) {
+                            console.error("Payment verification failed", err)
+                        } finally {
+                            setIsVerifyingPayment(false)
+                        }
+                    }
+                    verifyPayment()
                 }
-            } catch (error) {
-                console.error("Failed to fetch data", error)
-            } finally {
-                setLoading(false)
             }
+
+            // Ensure we wait for the initial fetch to clear loading state
+            await fetchPromise
         }
 
-        fetchData()
+        init()
     }, []) // Empty dependency array - only run once
 
     // Pagination Logic
@@ -117,16 +139,33 @@ export default function BookingSayaPage() {
 
                     {/* Main Content */}
                     <div className="space-y-6">
-                        <div className="flex flex-row items-center justify-between md:justify-start gap-2 md:gap-6 pb-2">
-                            <h1 className="text-xl md:text-3xl font-display font-black">Booking Saya</h1>
-                            <div className="h-8 w-[2px] bg-gray-200 hidden sm:block"></div>
-                            <button
-                                onClick={() => router.push('/bookings/history')}
-                                className="flex items-center gap-2 px-3 py-2 md:px-5 md:py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-black rounded-full text-xs font-bold border-2 border-transparent hover:border-gray-200 transition-all"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-history"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12" /><path d="M3 3v9h9" /><path d="M12 7v5l4 2" /></svg>
-                                Riwayat Pemesanan
-                            </button>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-row items-center justify-between md:justify-start gap-2 md:gap-6 pb-2">
+                                <h1 className="text-xl md:text-3xl font-display font-black">Booking Saya</h1>
+                                <div className="h-8 w-[2px] bg-gray-200 hidden sm:block"></div>
+                                <button
+                                    onClick={() => router.push('/bookings/history')}
+                                    className="flex items-center gap-2 px-3 py-2 md:px-5 md:py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-black rounded-full text-xs font-bold border-2 border-transparent hover:border-gray-200 transition-all"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-history"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12" /><path d="M3 3v9h9" /><path d="M12 7v5l4 2" /></svg>
+                                    Riwayat Pemesanan
+                                </button>
+                            </div>
+
+                            {/* Payment Verification Indicator */}
+                            {isVerifyingPayment && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-3"
+                                >
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <div className="text-sm">
+                                        <span className="font-bold block">Memverifikasi Pembayaran...</span>
+                                        <span className="opacity-80">Mohon tunggu sebentar, status booking akan update otomatis.</span>
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
 
                         {loading ? (
