@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request) {
     if (!validateApiKey(request)) {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
         .order('court_number', { ascending: true })
 
     if (error) {
-        console.error('Error fetching courts:', error)
+        logger.error({ error }, 'Error fetching courts')
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 

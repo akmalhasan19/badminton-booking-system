@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export async function PATCH(
     request: Request,
@@ -57,7 +58,7 @@ export async function PATCH(
             .single()
 
         if (error) {
-            console.error('Error updating booking:', error)
+            logger.error({ bookingId: id, error }, 'Error updating booking')
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
@@ -68,7 +69,7 @@ export async function PATCH(
         })
 
     } catch (error) {
-        console.error('API Error:', error)
+        logger.error({ error, bookingId: id }, 'API Error')
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }

@@ -1,5 +1,7 @@
 'use server'
 
+import { withLogging } from '@/lib/safe-action'
+
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -52,7 +54,10 @@ export async function signUp(data: SignUpData) {
 /**
  * Sign in with email and password
  */
-export async function signIn(data: SignInData) {
+/**
+ * Sign in with email and password
+ */
+const signInLogic = async (data: SignInData) => {
     const supabase = await createClient()
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -67,6 +72,8 @@ export async function signIn(data: SignInData) {
     revalidatePath('/', 'layout')
     return { success: true }
 }
+
+export const signIn = withLogging('signIn', signInLogic)
 
 /**
  * Sign out current user

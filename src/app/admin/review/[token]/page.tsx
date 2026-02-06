@@ -56,7 +56,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
             const result = await getApplicationByToken(token)
 
             if (result.error) {
-                console.error('Fetch error:', result.error)
+                // console.error('Fetch error:', result.error)
                 setError('Application not found or invalid token.')
             } else {
                 setApplication(result.data)
@@ -84,7 +84,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                     toast.warning(`Partner approved, but email failed to send! Invite Link: ${result.inviteUrl}`, {
                         duration: 10000,
                     })
-                    console.log("Invite URL:", result.inviteUrl)
+                    // console.log("Invite URL:", result.inviteUrl)
                 } else {
                     toast.success("Partner approved! Registration invite has been sent to their email.", {
                         duration: 5000
@@ -96,7 +96,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                 toast.error(result.error || "Failed to approve application")
             }
         } catch (err) {
-            console.error('Approval error:', err)
+            // console.error('Approval error:', err)
             toast.error("An unexpected error occurred")
         } finally {
             setIsProcessing(false)
@@ -130,7 +130,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                 toast.error(result.error || "Failed to reject application")
             }
         } catch (err) {
-            console.error('Rejection error:', err)
+            // console.error('Rejection error:', err)
             toast.error("An unexpected error occurred")
         } finally {
             setIsProcessing(false)

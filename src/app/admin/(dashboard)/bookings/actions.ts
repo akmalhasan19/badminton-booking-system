@@ -3,8 +3,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/actions'
 import { revalidatePath } from 'next/cache'
+import { withLogging } from '@/lib/safe-action'
 
-export async function getAllBookings(page: number = 1, limit: number = 10) {
+const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
+    const { page, limit } = params
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { error: 'Unauthorized' }
@@ -41,11 +43,25 @@ export async function getAllBookings(page: number = 1, limit: number = 10) {
         .range(from, to)
 
     if (error) {
-        console.error('Error fetching admin bookings:', error)
+        // console.error('Error fetching admin bookings:', error) -> Handled by withLogging
         return { error: 'Failed to fetch bookings' }
     }
 
     return { data, totalCount: count || 0 }
+}
+
+// Adapting the signature to match original (args vs single object)
+// withLogging takes a single argument function. We need to adapt it.
+// Or we can just modify the caller to pass an object, but that breaks signature.
+// Strategy: Create a new exported function that matches signature but calls wrapped logic internally?
+// Ideally withLogging should wrap the logic. If original function took multiple args, we package them.
+// But wait, getAllBookings(page, limit).
+// Using an adapter:
+
+const getAllBookingsWrapped = withLogging('getAllBookings', getAllBookingsLogic)
+
+export async function getAllBookings(page: number = 1, limit: number = 10) {
+    return getAllBookingsWrapped({ page, limit })
 }
 
 export async function updateBookingStatus(bookingId: string, status: 'confirmed' | 'cancelled' | 'completed') {

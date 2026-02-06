@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { syncBookingToPartner } from '@/lib/partner-sync'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: Request) {
     let body: any = {}
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
 
         // Security Check: Verify webhook token (Platform account only)
         if (!callbackToken || callbackToken !== webhookToken) {
-            console.error('Unauthorized webhook attempt. Token mismatch.')
+            logger.error({ auth: { callbackToken } }, 'Unauthorized webhook attempt. Token mismatch.')
 
             // Log unauthorized attempt
             await supabase.from('webhook_logs').insert({
@@ -34,8 +35,11 @@ export async function POST(req: Request) {
         const { paid_amount, payment_method, id: invoice_id } = body
 
         // Log incoming webhook
-        console.log('========== XENDIT WEBHOOK DEBUG ==========')
-        console.log(`Received webhook for booking ${external_id}: ${status}`)
+        logger.info({
+            event: 'xendit_webhook_received',
+            bookingId: external_id,
+            status
+        }, `Received webhook for booking ${external_id}: ${status}`)
 
         // 2. Process only relevant statuses (PAID or SETTLED)
         if (status === 'PAID' || status === 'SETTLED') {
@@ -49,11 +53,11 @@ export async function POST(req: Request) {
                 .eq('id', external_id)
 
             if (error) {
-                console.error('Failed to update local booking status:', error)
+                logger.error({ bookingId: external_id, error }, 'Failed to update local booking status')
                 throw new Error(`Database update failed: ${error.message}`)
             }
 
-            console.log(`Booking ${external_id} confirmed in local database.`)
+            logger.info({ bookingId: external_id }, `Booking ${external_id} confirmed in local database.`)
 
             // 3a. Fetch Booking & User Details for Partner Sync
             const { data: bookingData, error: fetchError } = await supabase
@@ -69,7 +73,7 @@ export async function POST(req: Request) {
                 .single()
 
             if (fetchError || !bookingData) {
-                console.error('[Webhook] Failed to fetch booking details for sync:', fetchError)
+                logger.error({ bookingId: external_id, error: fetchError }, '[Webhook] Failed to fetch booking details for sync')
                 // We don't fail the webhook, but we log the sync failure
             } else {
                 // 4. Sync to Partner API via Webhook (New Methodology)
@@ -79,8 +83,10 @@ export async function POST(req: Request) {
                 // Revenue = Full court price (no fee deduction)
                 const courtPrice = paid_amount
 
-                console.log(`[Webhook] Processing payment for booking ${external_id}`);
-                console.log(`[Webhook] Court price (revenue): ${courtPrice}`);
+                logger.info({
+                    bookingId: external_id,
+                    courtPrice
+                }, `[Webhook] Processing payment for booking ${external_id}`)
 
                 // Fetch court name with robust error handling
                 const { data: courtData } = await supabase
@@ -96,7 +102,7 @@ export async function POST(req: Request) {
 
                 // Validate venue_id before sync (CRITICAL)
                 if (!bookingData.venue_id) {
-                    console.error(`[Webhook] ❌ CRITICAL: venue_id is missing for booking ${external_id}`);
+                    logger.error({ bookingId: external_id }, `[Webhook] ❌ CRITICAL: venue_id is missing for booking ${external_id}`)
 
                     // Log warning to DB
                     await supabase.from('webhook_logs').insert({
@@ -113,7 +119,11 @@ export async function POST(req: Request) {
                     }, { status: 200 })
                 }
 
-                console.log(`[Webhook] Preparing sync - Venue: ${bookingData.venue_id}, Customer: ${customerName}`);
+                logger.info({
+                    bookingId: external_id,
+                    venueId: bookingData.venue_id,
+                    customer: customerName
+                }, `[Webhook] Preparing sync`)
 
                 // Sync to Partner with full court price as revenue
                 try {
@@ -129,9 +139,9 @@ export async function POST(req: Request) {
                         customer_name: customerName,
                         customer_phone: customerPhone,
                     });
-                    console.log(`[Webhook] ✅ Successfully synced booking ${external_id} to Partner dashboard`);
+                    logger.info({ bookingId: external_id }, `[Webhook] ✅ Successfully synced booking ${external_id} to Partner dashboard`)
                 } catch (error) {
-                    console.error(`[Webhook] ❌ Failed to sync booking ${external_id} to Partner:`, error);
+                    logger.error({ bookingId: external_id, error }, `[Webhook] ❌ Failed to sync booking ${external_id} to Partner`)
                     // Don't fail the webhook - local DB is already updated
                 }
             }
@@ -148,7 +158,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: 'Webhook received' }, { status: 200 })
 
     } catch (error: any) {
-        console.error('Webhook Error:', error)
+        logger.error({ error }, 'Webhook Error')
 
         // Log Failure
         await supabase.from('webhook_logs').insert({

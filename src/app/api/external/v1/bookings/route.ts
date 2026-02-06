@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { calculateBookingPrice, validateOperationalHours } from '@/lib/api/bookings'
 
 export async function POST(request: Request) {
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
             .single()
 
         if (error) {
-            console.error('Booking Creation Error:', error)
+            logger.error({ error, payload: bookingPayload }, 'Booking Creation Error')
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
         })
 
     } catch (error) {
-        console.error('API Error:', error)
+        logger.error({ error }, 'API Error')
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }

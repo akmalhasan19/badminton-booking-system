@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
             .lt('created_at', fifteenMinutesAgo);
 
         if (fetchError) {
-            console.error('Error fetching expired bookings:', fetchError);
+            logger.error({ error: fetchError }, 'Error fetching expired bookings');
             return NextResponse.json({ error: fetchError.message }, { status: 500 });
         }
 
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
             .in('id', bookingIds);
 
         if (updateError) {
-            console.error('Error updating expired bookings:', updateError);
+            logger.error({ error: updateError, count: bookingIds.length }, 'Error updating expired bookings');
             return NextResponse.json({ error: updateError.message }, { status: 500 });
         }
 
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
         });
 
     } catch (error) {
-        console.error('Unexpected error in auto-cancel cron:', error);
+        logger.error({ error }, 'Unexpected error in auto-cancel cron');
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
