@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { Calendar, Clock, MapPin, ArrowRight, Loader2 } from "lucide-react"
 import { UserSidebar } from "@/components/UserSidebar"
@@ -22,9 +22,30 @@ export default function BookingSayaPage() {
     const [currentPage, setCurrentPage] = useState(1)
     const ITEMS_PER_PAGE = 5
 
+    // Use ref to prevent duplicate payment checks
+    const paymentCheckRef = useRef(false)
+
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Check for payment confirmation (only once)
+                if (typeof window !== 'undefined' && !paymentCheckRef.current) {
+                    const params = new URLSearchParams(window.location.search)
+                    const paymentStatus = params.get('payment')
+                    const bookingId = params.get('booking_id')
+
+                    if (paymentStatus === 'success' && bookingId) {
+                        paymentCheckRef.current = true
+                        setLoading(true)
+
+                        const { confirmBookingPayment } = await import('@/lib/api/actions')
+                        await confirmBookingPayment(bookingId)
+
+                        // Clean up URL
+                        window.history.replaceState({}, '', '/bookings')
+                    }
+                }
+
                 const [userData, bookingsData] = await Promise.all([
                     getCurrentUser(),
                     getUserActiveBookings()
@@ -43,7 +64,7 @@ export default function BookingSayaPage() {
         }
 
         fetchData()
-    }, [])
+    }, []) // Empty dependency array - only run once
 
     // Pagination Logic
     const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE)

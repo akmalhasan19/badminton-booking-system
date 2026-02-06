@@ -112,7 +112,7 @@ export async function createBooking(data: {
             amount: courtPrice,
             payerEmail: user.email,
             description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
-            successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
+            successRedirectUrl: `${appUrl}/bookings?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
         })
 
