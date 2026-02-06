@@ -140,7 +140,7 @@ export async function createBooking(data: {
             forUserId: xenditAccountId,
             withFeeRule: xenditAccountId ? {
                 type: 'FLAT',
-                value: SERVICE_FEE // Platform takes 2000
+                value: XENDIT_FEE + SERVICE_FEE // Platform takes 6000 (4000 Xendit Fee + 2000 Service Fee)
             } : undefined
         })
 

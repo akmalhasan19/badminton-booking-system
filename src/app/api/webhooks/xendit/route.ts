@@ -3,6 +3,12 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { syncBookingToPartner } from '@/lib/partner-sync'
 
 export async function POST(req: Request) {
+    let body: any = {}
+    let external_id = ''
+    let status = ''
+
+    const supabase = createServiceClient()
+
     try {
         const callbackToken = req.headers.get('x-callback-token')
         const webhookToken = process.env.XENDIT_CALLBACK_TOKEN
@@ -10,24 +16,29 @@ export async function POST(req: Request) {
         // 1. Security Check: Verify the request is actually from Xendit
         if (!callbackToken || callbackToken !== webhookToken) {
             console.error('Unauthorized webhook attempt')
+
+            // Log unauthorized attempt
+            await supabase.from('webhook_logs').insert({
+                source: 'xendit',
+                status: 'unauthorized',
+                response_code: 401,
+                error_message: 'Invalid callback token'
+            })
+
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
         }
 
-        const body = await req.json()
+        body = await req.json()
+        external_id = body.external_id
+        status = body.status
+        const { paid_amount, payment_method, id: invoice_id } = body
 
-        // 🔍 DEBUG: Log the entire webhook payload to see what Xendit actually sends
+        // Log incoming webhook
         console.log('========== XENDIT WEBHOOK DEBUG ==========')
-        console.log('Full webhook body:', JSON.stringify(body, null, 2))
-        console.log('Body keys:', Object.keys(body))
-        console.log('==========================================')
-
-        const { external_id, status, paid_amount, payment_method, id: invoice_id } = body
-
-        console.log(`Received webhook for booking ${external_id}: ${status}, paid_amount: ${paid_amount}`)
+        console.log(`Received webhook for booking ${external_id}: ${status}`)
 
         // 2. Process only relevant statuses (PAID or SETTLED)
         if (status === 'PAID' || status === 'SETTLED') {
-            const supabase = createServiceClient()
 
             // 3. Update local database
             const { error } = await supabase
@@ -39,7 +50,7 @@ export async function POST(req: Request) {
 
             if (error) {
                 console.error('Failed to update local booking status:', error)
-                return NextResponse.json({ message: 'Database update failed' }, { status: 500 })
+                throw new Error(`Database update failed: ${error.message}`)
             }
 
             console.log(`Booking ${external_id} confirmed in local database.`)
@@ -66,22 +77,14 @@ export async function POST(req: Request) {
                 const customerPhone = bookingData.users?.phone
 
                 // Calculate Net Revenue based on Xendit Fee Structure
-                // Xendit Invoice/VA fee: IDR 4,000 (most common banks - BNI, BRI, Mandiri, Permata, BSI, etc.)
-                // Reference: https://www.xendit.co/en-id/pricing/
                 const XENDIT_FEE = 4000;
-                // Fee Strategy (Burden Shift):
-                // - Total Paid by User includes Xendit Fee (4000) + Booking Price
-                // - Platform takes 2000 Service Fee
-                // - Xendit takes 4000
-                // Net to Partner = TotalPaid - 4000 - 2000
                 const PLATFORM_FEE = 2000;
-                const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE; // Total deduction: 6,000
+                const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE;
 
                 const totalPaid = paid_amount;
                 const netRevenue = totalPaid - TOTAL_FEE;
 
                 console.log(`[Webhook] Processing payment for booking ${external_id}`);
-                console.log(`[Webhook] Financials - Gross: Rp ${totalPaid.toLocaleString('id-ID')}, Xendit Fee: Rp ${XENDIT_FEE.toLocaleString('id-ID')}, Platform Fee: Rp ${PLATFORM_FEE.toLocaleString('id-ID')}, Net Revenue: Rp ${netRevenue.toLocaleString('id-ID')}`);
 
                 // Fetch court name with robust error handling
                 const { data: courtData } = await supabase
@@ -98,14 +101,23 @@ export async function POST(req: Request) {
                 // Validate venue_id before sync (CRITICAL)
                 if (!bookingData.venue_id) {
                     console.error(`[Webhook] ❌ CRITICAL: venue_id is missing for booking ${external_id}`);
-                    console.error(`[Webhook] Booking data:`, JSON.stringify(bookingData, null, 2));
+
+                    // Log warning to DB
+                    await supabase.from('webhook_logs').insert({
+                        source: 'xendit',
+                        payload: body,
+                        status: 'warning',
+                        response_code: 200,
+                        error_message: 'Missing venue_id, sync skipped'
+                    })
+
                     return NextResponse.json({
                         message: 'Webhook processed but sync skipped: missing venue_id',
                         warning: 'Revenue will not appear on Partner dashboard'
                     }, { status: 200 })
                 }
 
-                console.log(`[Webhook] Preparing sync - Venue: ${bookingData.venue_id}, Customer: ${customerName}, Phone: ${customerPhone || 'N/A'}, Court: ${courtName}`);
+                console.log(`[Webhook] Preparing sync - Venue: ${bookingData.venue_id}, Customer: ${customerName}`);
 
                 // Sync to Partner with comprehensive error handling
                 try {
@@ -127,23 +139,37 @@ export async function POST(req: Request) {
                             platform_fee: PLATFORM_FEE,
                             total_fees: TOTAL_FEE
                         }
-                        // timestamp will be added automatically in syncBookingToPartner
                     });
                     console.log(`[Webhook] ✅ Successfully synced booking ${external_id} to Partner dashboard`);
-                    console.log(`[Webhook] Expected revenue on Partner dashboard: Rp ${netRevenue.toLocaleString('id-ID')}`);
                 } catch (error) {
                     console.error(`[Webhook] ❌ Failed to sync booking ${external_id} to Partner:`, error);
                     // Don't fail the webhook - local DB is already updated
-                    // This ensures Xendit receives 200 OK even if Partner sync fails
-                    // TODO: Consider implementing retry queue or alerting for failed syncs
                 }
             }
         }
 
+        // Log Success
+        await supabase.from('webhook_logs').insert({
+            source: 'xendit',
+            payload: body,
+            status: 'processed',
+            response_code: 200
+        })
+
         return NextResponse.json({ message: 'Webhook received' }, { status: 200 })
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Webhook Error:', error)
+
+        // Log Failure
+        await supabase.from('webhook_logs').insert({
+            source: 'xendit',
+            payload: body,
+            status: 'failed',
+            response_code: 500,
+            error_message: error.message || 'Unknown error'
+        })
+
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 })
     }
 }
