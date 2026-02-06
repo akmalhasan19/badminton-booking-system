@@ -297,6 +297,23 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                                 </div>
                             )}
 
+                            {/* Forgot Password Link - Only show in login mode */}
+                            {mode === 'login' && (
+                                <div className="text-right">
+                                    <a
+                                        href="/forgot-password"
+                                        className="text-sm font-medium text-gray-500 hover:text-black transition-colors underline underline-offset-2"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            onClose();
+                                            window.location.href = '/forgot-password';
+                                        }}
+                                    >
+                                        Forgot Password?
+                                    </a>
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
                                 disabled={isLoading}
