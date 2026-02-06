@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { verifyResetToken, resetPassword } from '@/lib/auth/forgot-password-actions'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArrowRight, Loader2, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const token = searchParams.get('token')
@@ -186,8 +186,8 @@ export default function ResetPasswordPage() {
                         {strength && (
                             <div className="flex items-center gap-2 text-xs font-mono">
                                 <div className={`h-1 flex-1 rounded ${strength.color === 'red' ? 'bg-red-500' :
-                                        strength.color === 'yellow' ? 'bg-yellow-500' :
-                                            'bg-green-500'
+                                    strength.color === 'yellow' ? 'bg-yellow-500' :
+                                        'bg-green-500'
                                     }`} />
                                 <span className={
                                     strength.color === 'red' ? 'text-red-600' :
@@ -242,5 +242,26 @@ export default function ResetPasswordPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+// Loading fallback component
+function ResetPasswordLoading() {
+    return (
+        <div className="min-h-screen bg-neo-bg flex items-center justify-center p-4">
+            <div className="bg-white border-3 border-neo-black p-12 shadow-hard">
+                <Loader2 className="w-12 h-12 animate-spin mx-auto" />
+                <p className="text-center font-mono mt-4">Loading...</p>
+            </div>
+        </div>
+    )
+}
+
+// Main exported page component with Suspense boundary
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<ResetPasswordLoading />}>
+            <ResetPasswordContent />
+        </Suspense>
     )
 }
