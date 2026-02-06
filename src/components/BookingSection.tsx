@@ -1067,11 +1067,11 @@ export function BookingSection() {
                                         </div>
                                         <div className="flex justify-between text-sm font-medium text-gray-500">
                                             <span>{t.service_fee}</span>
-                                            <span>Rp 2.000</span>
+                                            <span>Rp 3.000</span>
                                         </div>
                                         <div className="flex justify-between text-2xl font-black text-black pt-2">
                                             <span>{t.total}</span>
-                                            <span>Rp {selectedHall ? ((selectedHall.pricePerHour * selectedTimes.length) + 2000).toLocaleString('id-ID') : 0}</span>
+                                            <span>Rp {selectedHall ? ((selectedHall.pricePerHour * selectedTimes.length) + 3000).toLocaleString('id-ID') : 0}</span>
                                         </div>
 
                                         <button

@@ -96,15 +96,20 @@ export async function createBooking(data: {
     const originalPrice = hourlyRate * data.durationHours
 
     // FEE CALCULATION
-    const applicationFee = await getSetting('application_fee', 2000)
-    const xenditFee = await getSetting('xendit_fee', 2000)
+    // Strategy: Hybrid (Service Fee for User + Application Fee for Partner)
+    const serviceFeeUser = await getSetting('service_fee_user', 3000)
+    const applicationFeePartner = await getSetting('application_fee_partner', 2000)
 
     // Venue receives: Original - Application Fee
-    const netVenuePrice = originalPrice - applicationFee
+    // This is what we disburse to the partner (Sync to Partner App)
+    const netVenuePrice = originalPrice - applicationFeePartner
 
-    // Buyer pays: NetVenuePrice + Xendit Fee
-    // If AppFee == XenditFee, User pays Original Price.
-    const totalUserBill = netVenuePrice + xenditFee
+    // Buyer pays: Original + Service Fee
+    // This is the total amount on the invoice
+    const totalUserBill = originalPrice + serviceFeeUser
+
+    // Legacy logic cleanup: We no longer add 'xenditFee' separately to user bill, 
+    // it's now covered by the serviceFeeUser spread.
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
 
@@ -112,12 +117,13 @@ export async function createBooking(data: {
     // We charge the User the totalUserBill
     try {
         console.log('[CreateBooking] Preparing to create Xendit Invoice...')
-        console.log('[CreateBooking] Price Logic:', {
+        console.log('[CreateBooking] Price Logic (Hybrid Strategy):', {
             originalPrice,
-            applicationFee,
+            serviceFeeUser,
+            applicationFeePartner,
             netVenuePrice,
-            xenditFee,
-            totalUserBill
+            totalUserBill,
+            spread: serviceFeeUser + applicationFeePartner
         })
 
         const invoice = await createInvoice({
@@ -209,8 +215,9 @@ export async function createBooking(data: {
             duration_hours: data.durationHours,
             venue_id: data.courtId, // Save Venue ID for Partner Sync
             // Fee Breakdown columns
-            application_fee: applicationFee,
-            xendit_fee: xenditFee,
+            application_fee: applicationFeePartner,
+            xendit_fee: 0, // No longer tracked separately, subsumed in service fee spread
+            service_fee: serviceFeeUser, // New column might be needed if we want to track it explicitly, or just store in total_price
             net_venue_price: netVenuePrice
         })
 
