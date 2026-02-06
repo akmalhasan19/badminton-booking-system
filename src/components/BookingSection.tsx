@@ -260,12 +260,15 @@ export function BookingSection() {
             try {
                 const details = await fetchVenueDetails(selectedHall.id);
                 if (details && details.courts) {
-                    setVenueCourts(details.courts);
+                    // Sort courts by court_number to ensure Court 1 comes first
+                    const sortedCourts = [...details.courts].sort((a, b) => a.court_number - b.court_number);
+                    setVenueCourts(sortedCourts);
+
                     // Update price from first court if available
-                    if (details.courts.length > 0) {
+                    if (sortedCourts.length > 0) {
                         setSelectedHall((prev: any) => ({
                             ...prev,
-                            pricePerHour: details.courts[0].hourly_rate || 50000
+                            pricePerHour: sortedCourts[0].hourly_rate || 50000
                         }));
                     }
                 } else {
@@ -962,28 +965,62 @@ export function BookingSection() {
                                                 <button
                                                     key={court.id}
                                                     onClick={() => setSelectedCourt(court)}
-                                                    className={`relative h-48 rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between p-4
+                                                    className={`relative rounded-2xl border-2 transition-all duration-300 group flex flex-col justify-between overflow-hidden
                                                     ${isSelected
                                                             ? 'bg-black border-black text-white shadow-hard scale-[1.02]'
-                                                            : 'bg-gray-50 border-gray-200 hover:border-black hover:bg-white text-black hover:shadow-hard-sm'
+                                                            : 'bg-white border-gray-200 hover:border-black hover:shadow-hard-sm'
                                                         }`}
                                                 >
-                                                    <div className="flex justify-between items-start">
-                                                        <span className={`text-3xl font-display font-black opacity-20 group-hover:opacity-40 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                    {/* Court Image */}
+                                                    <div className="w-full h-32 bg-gray-100 relative overflow-hidden border-b-2 border-inherit">
+                                                        {/* Debug info - remove in production */}
+                                                        {/* {console.log(`Court ${court.court_number} photo:`, court.photo_url)} */}
+
+                                                        {court.photo_url ? (
+                                                            <img
+                                                                src={court.photo_url}
+                                                                alt={displayName}
+                                                                onError={(e) => {
+                                                                    console.error(`Failed to load image for ${displayName}:`, court.photo_url);
+                                                                    e.currentTarget.style.display = 'none'; // Hide broken image so fallback shows (if structure allows)
+                                                                    // Since fallback is in "else", hiding this img won't show fallback automatically without state.
+                                                                    // For now just logging error is enough to debug.
+                                                                }}
+                                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                            />
+                                                        ) : (
+                                                            // Fallback Visual
+                                                            <div className="w-full h-full flex items-center justify-center relative opacity-20">
+                                                                <div className="w-16 h-10 border border-current rounded-sm relative">
+                                                                    <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
+                                                                    <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Rate Badge */}
+                                                        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md border border-black/10 shadow-sm">
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-black">
+                                                                Rp {court.hourly_rate?.toLocaleString()}
+                                                            </span>
+                                                        </div>
+
+                                                        {isSelected && (
+                                                            <div className="absolute top-2 right-2 bg-pastel-mint text-black p-1 rounded-full shadow-sm border border-black">
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="p-4 flex flex-col items-start w-full">
+                                                        <span className={`text-xl font-display font-black uppercase whitespace-nowrap overflow-hidden text-ellipsis w-full text-left ${isSelected ? 'text-white' : 'text-black'}`}>
                                                             {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
                                                         </span>
-                                                        {isSelected && <CheckCircle className="w-6 h-6 text-pastel-mint shrink-0" />}
-                                                    </div>
-
-                                                    {/* Mini Court Visual */}
-                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-16 border border-current opacity-20 rounded-sm">
-                                                        <div className="absolute top-1/2 left-0 w-full h-[1px] bg-current"></div>
-                                                        <div className="absolute top-0 left-1/2 h-full w-[1px] bg-current"></div>
-                                                    </div>
-
-                                                    <div className="text-right">
-                                                        <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-gray-400 group-hover:text-black'}`}>
-                                                            Rp {court.hourly_rate?.toLocaleString()}/hr
+                                                        <span className={`text-xs font-medium mt-1 ${isSelected ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                            {court.name.toLowerCase().includes('karpet') ? 'Karpet Vinyl' :
+                                                                court.name.toLowerCase().includes('parkit') ? 'Lantai Kayu' :
+                                                                    court.name.toLowerCase().includes('beton') ? 'Lantai Semen' : 'Standard Court'}
                                                         </span>
                                                     </div>
                                                 </button>

@@ -48,6 +48,7 @@ export interface SmashCourt {
     name: string;
     court_number: number;
     hourly_rate: number;
+    photo_url?: string;
     is_active?: boolean;
 }
 
