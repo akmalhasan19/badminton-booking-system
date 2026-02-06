@@ -42,7 +42,7 @@ export default async function AdminLayout({
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Required Email:</span>
-                            <span className="font-bold">{process.env.ADMIN_EMAIL || 'Not Set in .env'}</span>
+                            <span className="font-bold">Not your concern</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Role:</span>
