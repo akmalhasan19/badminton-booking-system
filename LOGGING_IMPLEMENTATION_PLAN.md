@@ -123,6 +123,7 @@ npx tsc --noEmit
     - [x] `src/app/api/external/v1/bookings/route.ts`
     - [x] `src/app/api/cron/auto-cancel/route.ts`
     - [x] Removed/Commented console logs in `src/app/admin/review/[token]/page.tsx`
+- [x] Refactor `src/lib/smash-api.ts` (Fix 401 Error & Logging)
 - [ ] Tambahkan `LOG_LEVEL` ke `.env.example`
 - [ ] Verifikasi logging di development mode
 - [x] Pastikan sensitive data (password, token) tidak di-log (built-in sanitization)

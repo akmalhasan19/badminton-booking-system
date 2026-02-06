@@ -1,18 +1,28 @@
+import { logger } from "@/lib/logger";
+
 const BASE_URL = process.env.NEXT_PUBLIC_SMASH_API_BASE_URL;
-const API_TOKEN = process.env.SMASH_API_TOKEN;
 
-if (!BASE_URL) {
-    console.warn("Missing NEXT_PUBLIC_SMASH_API_BASE_URL environment variable");
-}
+const getHeaders = () => {
+    const token = process.env.SMASH_API_TOKEN?.trim();
 
-if (!API_TOKEN) {
-    console.warn("Missing SMASH_API_TOKEN environment variable");
-}
+    if (!token) {
+        logger.warn("Missing SMASH_API_TOKEN environment variable");
+    }
 
-const headers = {
-    'Authorization': `Bearer ${API_TOKEN}`,
-    'Content-Type': 'application/json',
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
 };
+
+// Validating Base URL once
+if (!BASE_URL) {
+    // We use console.warn directly here because logger might depend on env vars too, 
+    // but better to use logger if available.
+    // logger.warn("Missing NEXT_PUBLIC_SMASH_API_BASE_URL environment variable");
+    // Actually safe to use logger.
+    // But since this is module scope, let's keep it simple or just warn on usage.
+}
 
 // ============== TYPES ==============
 
@@ -83,27 +93,27 @@ export const smashApi = {
     getVenues: async (): Promise<SmashVenue[]> => {
         try {
             const url = `${BASE_URL}/venues?is_active=true&limit=10`;
-            console.log(`[SmashAPI] Fetching venues from: ${url}`);
+            logger.info({ url }, `[SmashAPI] Fetching venues`);
 
             const response = await fetch(url, {
                 method: 'GET',
-                headers,
+                headers: getHeaders(),
                 cache: 'no-store',
             });
 
-            console.log(`[SmashAPI] Response status: ${response.status}`);
+            logger.info({ status: response.status }, `[SmashAPI] Response status`);
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[SmashAPI] Error body: ${errorText}`);
+                logger.error({ status: response.status, body: errorText }, `[SmashAPI] Error fetching venues`);
                 throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
             }
 
             const json = await response.json();
-            console.log(`[SmashAPI] Venues found: ${json.data?.length || 0}`);
+            logger.info({ count: json.data?.length || 0 }, `[SmashAPI] Venues found`);
             return json.data || [];
         } catch (error) {
-            console.error("Smash API Error (getVenues):", error);
+            logger.error({ error }, "Smash API Error (getVenues)");
             return [];
         }
     },
@@ -115,23 +125,23 @@ export const smashApi = {
     getVenueDetails: async (venueId: string): Promise<SmashVenueDetails | null> => {
         try {
             const url = `${BASE_URL}/venues/${venueId}`;
-            console.log(`[SmashAPI] Fetching venue details: ${url}`);
+            logger.info({ url }, `[SmashAPI] Fetching venue details`);
 
             const response = await fetch(url, {
                 method: 'GET',
-                headers,
+                headers: getHeaders(),
                 cache: 'no-store',
             });
 
             if (!response.ok) {
-                console.error(`[SmashAPI] Failed to fetch venue details: ${response.status}`);
+                logger.error({ status: response.status, venueId }, `[SmashAPI] Failed to fetch venue details`);
                 return null;
             }
 
             const json = await response.json();
             return json.data || null;
         } catch (error) {
-            console.error("Smash API Error (getVenueDetails):", error);
+            logger.error({ error, venueId }, "Smash API Error (getVenueDetails)");
             return null;
         }
     },
@@ -143,23 +153,23 @@ export const smashApi = {
     getVenueCourts: async (venueId: string): Promise<SmashCourt[]> => {
         try {
             const url = `${BASE_URL}/venues/${venueId}/courts`;
-            console.log(`[SmashAPI] Fetching venue courts: ${url}`);
+            logger.info({ url }, `[SmashAPI] Fetching venue courts`);
 
             const response = await fetch(url, {
                 method: 'GET',
-                headers,
+                headers: getHeaders(),
                 cache: 'no-store',
             });
 
             if (!response.ok) {
-                console.error(`[SmashAPI] Failed to fetch venue courts: ${response.status}`);
+                logger.error({ status: response.status, venueId }, `[SmashAPI] Failed to fetch venue courts`);
                 return [];
             }
 
             const json = await response.json();
             return json.data || [];
         } catch (error) {
-            console.error("Smash API Error (getVenueCourts):", error);
+            logger.error({ error, venueId }, "Smash API Error (getVenueCourts)");
             return [];
         }
     },
@@ -171,23 +181,23 @@ export const smashApi = {
     checkAvailability: async (venueId: string, date: string): Promise<SmashAvailabilityResponse | null> => {
         try {
             const url = `${BASE_URL}/venues/${venueId}/availability?date=${date}`;
-            console.log(`[SmashAPI] Checking availability: ${url}`);
+            logger.debug({ url }, `[SmashAPI] Checking availability`);
 
             const response = await fetch(url, {
                 method: 'GET',
-                headers,
+                headers: getHeaders(),
                 cache: 'no-store',
             });
 
             if (!response.ok) {
-                console.error(`[SmashAPI] Failed to check availability: ${response.status}`);
+                logger.error({ status: response.status, venueId, date }, `[SmashAPI] Failed to check availability`);
                 return null;
             }
 
             const json = await response.json();
             return json.data || null;
         } catch (error) {
-            console.error("Smash API Error (checkAvailability):", error);
+            logger.error({ error, venueId, date }, "Smash API Error (checkAvailability)");
             return null;
         }
     },
@@ -200,7 +210,7 @@ export const smashApi = {
         try {
             const response = await fetch(`${BASE_URL}/bookings`, {
                 method: 'POST',
-                headers,
+                headers: getHeaders(),
                 body: JSON.stringify(bookingData),
             });
 
@@ -209,13 +219,14 @@ export const smashApi = {
                     return { error: "Slot already booked (Conflict)" };
                 }
                 const errorText = await response.text();
+                logger.error({ status: response.status, body: errorText, bookingData }, "Booking creation failed");
                 return { error: `Booking failed: ${response.status} ${errorText}` };
             }
 
             const json = await response.json();
             return { success: true, data: json.data };
         } catch (error) {
-            console.error("Smash API Error (createBooking):", error);
+            logger.error({ error }, "Smash API Error (createBooking)");
             return { error: "Network error or server unavailable" };
         }
     },
@@ -242,19 +253,20 @@ export const smashApi = {
 
             const response = await fetch(`${BASE_URL}/bookings/${bookingId}`, {
                 method: 'PATCH',
-                headers,
+                headers: getHeaders(),
                 body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
+                logger.error({ status: response.status, body: errorText, bookingId }, "Update booking status failed");
                 return { error: `Update failed: ${response.status} ${errorText}` };
             }
 
             const json = await response.json();
             return { success: true, data: json.data };
         } catch (error) {
-            console.error("Smash API Error (updateBookingStatus):", error);
+            logger.error({ error, bookingId }, "Smash API Error (updateBookingStatus)");
             return { error: "Network error or server unavailable" };
         }
     }
