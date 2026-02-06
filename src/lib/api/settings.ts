@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { revalidateTag, unstable_cache } from 'next/cache'
+import { revalidatePath, unstable_cache } from 'next/cache'
 
 export type Setting = {
     key: string
@@ -73,6 +73,8 @@ export async function updateSetting(key: string, value: string) {
         throw new Error(`Failed to update setting ${key}: ${error.message}`)
     }
 
-    revalidateTag('settings')
+    // Revalidate admin settings page and any other pages using settings
+    revalidatePath('/admin/settings', 'page')
+    revalidatePath('/', 'layout') // Revalidate entire app to ensure settings changes propagate
     return { success: true }
 }
