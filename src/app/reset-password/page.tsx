@@ -68,7 +68,7 @@ function ResetPasswordContent() {
             if (res.success) {
                 toast.success('Password updated successfully!')
                 setTimeout(() => {
-                    router.push('/admin/login')
+                    window.location.href = 'https://smashcourts.online/'
                 }, 1500)
             } else {
                 toast.error(res.error || 'Failed to reset password')
@@ -236,8 +236,8 @@ function ResetPasswordContent() {
                 </form>
 
                 <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-200 text-center">
-                    <Link href="/admin/login" className="text-sm font-bold text-gray-500 hover:text-neo-black hover:underline underline-offset-4">
-                        ← Back to Login
+                    <Link href="/" className="text-sm font-bold text-gray-500 hover:text-neo-black hover:underline underline-offset-4">
+                        ← Back to Home
                     </Link>
                 </div>
             </div>

@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Zap, Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react"
+import { X, Zap, Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff, CheckCircle } from "lucide-react"
 import { signIn, signUp, getGoogleAuthUrl, getCurrentUser } from "@/lib/auth/actions"
+import { requestPasswordReset } from "@/lib/auth/forgot-password-actions"
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -13,7 +14,10 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const [mode, setMode] = useState<'login' | 'register'>('login')
+    const [mode, setMode] = useState<'login' | 'register' | 'forgot-password'>('login')
+    const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+    const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false)
+    const [countdown, setCountdown] = useState(0)
     const [error, setError] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [showPassword, setShowPassword] = useState(false)
@@ -121,6 +125,42 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
         }
     }
 
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!forgotPasswordEmail || countdown > 0) return;
+
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const result = await requestPasswordReset(forgotPasswordEmail);
+
+            if (result.success) {
+                setForgotPasswordSubmitted(true);
+                setSuccessMessage('If that email exists, we sent you a reset link.');
+
+                // Start 60 second countdown
+                setCountdown(60);
+                const interval = setInterval(() => {
+                    setCountdown(prev => {
+                        if (prev <= 1) {
+                            clearInterval(interval);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            } else {
+                setError(result.error || 'Something went wrong');
+            }
+        } catch (err) {
+            setError('Failed to send reset email');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     return (
         <AnimatePresence>
             <motion.div
@@ -149,14 +189,18 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
 
                     {/* Header */}
                     <div className="text-center mb-6 relative z-10">
-                        <div className="w-12 h-12 bg-pastel-acid rounded-2xl border-2 border-black flex items-center justify-center shadow-hard mx-auto mb-4 transform -rotate-3">
-                            <Zap className="w-6 h-6 text-black" />
+                        <div className={`w-12 h-12 rounded-2xl border-2 border-black flex items-center justify-center shadow-hard mx-auto mb-4 transform -rotate-3 ${mode === 'forgot-password' ? 'bg-blue-200' : 'bg-pastel-acid'}`}>
+                            {mode === 'forgot-password' ? (
+                                <Mail className="w-6 h-6 text-black" />
+                            ) : (
+                                <Zap className="w-6 h-6 text-black" />
+                            )}
                         </div>
                         <h3 className="text-2xl font-display font-black text-black uppercase mb-1 tracking-tight">
-                            {mode === 'login' ? 'Welcome Back' : 'Join the Squad'}
+                            {mode === 'login' ? 'Welcome Back' : mode === 'register' ? 'Join the Squad' : 'Forgot Password'}
                         </h3>
                         <p className="text-gray-500 font-medium">
-                            {mode === 'login' ? 'Ready to smash some shuttles?' : 'Create an account to start booking.'}
+                            {mode === 'login' ? 'Ready to smash some shuttles?' : mode === 'register' ? 'Create an account to start booking.' : 'Enter your email to reset your password.'}
                         </p>
 
                         {/* Error Display */}
@@ -208,144 +252,230 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                                 <span className="bg-white px-4 text-gray-500 font-bold uppercase tracking-widest text-xs">Or</span>
                             </div>
                         </div> */}
+                        {/* Forgot Password Form */}
+                        {mode === 'forgot-password' ? (
+                            <div className="space-y-4">
+                                {!forgotPasswordSubmitted ? (
+                                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                                        <div className="relative group">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                            <input
+                                                type="email"
+                                                placeholder="Email Address"
+                                                required
+                                                value={forgotPasswordEmail}
+                                                onChange={e => setForgotPasswordEmail(e.target.value)}
+                                                disabled={isLoading || countdown > 0}
+                                                className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400 disabled:opacity-50"
+                                            />
+                                        </div>
 
-                        {/* Email Form */}
-                        <form onSubmit={handleEmailAuth} className="space-y-4">
-                            {mode === 'register' && (
-                                <>
-                                    <div className="relative group">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
-                                        <input
-                                            type="text"
-                                            placeholder="Full Name"
-                                            required
-                                            value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
-                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading || countdown > 0}
+                                            className="w-full bg-black text-white border-2 border-black rounded-xl px-6 py-3 font-bold text-lg hover:bg-pastel-acid hover:text-black shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            {isLoading ? (
+                                                <>Processing...</>
+                                            ) : countdown > 0 ? (
+                                                `Wait ${countdown}s`
+                                            ) : (
+                                                <>
+                                                    Send Reset Link
+                                                    <ArrowRight className="w-5 h-5" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-start gap-3">
+                                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm text-green-700 font-bold">Check Your Email!</p>
+                                                <p className="text-sm text-green-600 mt-1">
+                                                    If an account exists with <strong>{forgotPasswordEmail}</strong>, we've sent password reset instructions.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-3">
+                                            <p className="text-xs text-amber-700 font-medium">
+                                                📧 Didn't receive the email? Check your spam folder or try again in {countdown > 0 ? countdown : '60'} seconds.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setForgotPasswordSubmitted(false);
+                                                setForgotPasswordEmail('');
+                                                setSuccessMessage(null);
+                                            }}
+                                            disabled={countdown > 0}
+                                            className="w-full bg-gray-100 border-2 border-gray-300 rounded-xl px-6 py-3 font-bold hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Try Different Email
+                                        </button>
                                     </div>
-                                    <div className="relative group">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
-                                        <input
-                                            type="tel"
-                                            placeholder="Phone Number (Optional)"
-                                            value={formData.phone}
-                                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
-                                        />
-                                    </div>
-                                </>
-                            )}
+                                )}
 
-                            <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
-                                <input
-                                    type="email"
-                                    placeholder="Email Address"
-                                    required
-                                    value={formData.email}
-                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
-                                />
-                            </div>
-
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Password"
-                                    required
-                                    value={formData.password}
-                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-12 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors focus:outline-none"
-                                >
-                                    {showPassword ? (
-                                        <EyeOff className="w-5 h-5" />
-                                    ) : (
-                                        <Eye className="w-5 h-5" />
-                                    )}
-                                </button>
-                            </div>
-
-                            {mode === 'register' && (
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        placeholder="Re-enter Password"
-                                        required
-                                        value={formData.confirmPassword}
-                                        onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                        className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-12 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
-                                    />
+                                {/* Back to Login */}
+                                <div className="text-center pt-2">
                                     <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors focus:outline-none"
+                                        onClick={() => {
+                                            setMode('login');
+                                            setError(null);
+                                            setSuccessMessage(null);
+                                            setForgotPasswordSubmitted(false);
+                                            setForgotPasswordEmail('');
+                                        }}
+                                        className="text-sm font-medium text-gray-500 hover:text-black transition-colors"
                                     >
-                                        {showConfirmPassword ? (
-                                            <EyeOff className="w-5 h-5" />
+                                        ← Back to <span className="font-bold underline text-black">Login</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Email Form (Login/Register) */}
+                                <form onSubmit={handleEmailAuth} className="space-y-4">
+                                    {mode === 'register' && (
+                                        <>
+                                            <div className="relative group">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Full Name"
+                                                    required
+                                                    value={formData.name}
+                                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                    className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
+                                                />
+                                            </div>
+                                            <div className="relative group">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                                <input
+                                                    type="tel"
+                                                    placeholder="Phone Number (Optional)"
+                                                    value={formData.phone}
+                                                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                                    className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                        <input
+                                            type="email"
+                                            placeholder="Email Address"
+                                            required
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
+                                        />
+                                    </div>
+
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Password"
+                                            required
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                            className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-12 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors focus:outline-none"
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="w-5 h-5" />
+                                            ) : (
+                                                <Eye className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {mode === 'register' && (
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                placeholder="Re-enter Password"
+                                                required
+                                                value={formData.confirmPassword}
+                                                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                                className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl pl-12 pr-12 py-3 font-bold focus:outline-none focus:border-black focus:bg-white transition-all placeholder:font-medium placeholder:text-gray-400"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors focus:outline-none"
+                                            >
+                                                {showConfirmPassword ? (
+                                                    <EyeOff className="w-5 h-5" />
+                                                ) : (
+                                                    <Eye className="w-5 h-5" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Forgot Password Link - Only show in login mode */}
+                                    {mode === 'login' && (
+                                        <div className="text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setError(null);
+                                                    setSuccessMessage(null);
+                                                    setMode('forgot-password');
+                                                }}
+                                                className="text-sm font-medium text-gray-500 hover:text-black transition-colors underline underline-offset-2"
+                                            >
+                                                Forgot Password?
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full bg-black text-white border-2 border-black rounded-xl px-6 py-3 font-bold text-lg hover:bg-pastel-acid hover:text-black shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {isLoading ? (
+                                            <>Processing...</>
                                         ) : (
-                                            <Eye className="w-5 h-5" />
+                                            <>
+                                                {mode === 'login' ? 'Log In' : 'Create Account'}
+                                                <ArrowRight className="w-5 h-5" />
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+
+                                {/* Toggle Mode */}
+                                <div className="text-center pt-2">
+                                    <button
+                                        onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                                        className="text-sm font-medium text-gray-500 hover:text-black transition-colors"
+                                    >
+                                        {mode === 'login' ? (
+                                            <>Don't have an account? <span className="font-bold underline text-black">Register</span></>
+                                        ) : (
+                                            <>Already have an account? <span className="font-bold underline text-black">Log In</span></>
                                         )}
                                     </button>
                                 </div>
-                            )}
-
-                            {/* Forgot Password Link - Only show in login mode */}
-                            {mode === 'login' && (
-                                <div className="text-right">
-                                    <a
-                                        href="/forgot-password"
-                                        className="text-sm font-medium text-gray-500 hover:text-black transition-colors underline underline-offset-2"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            onClose();
-                                            window.location.href = '/forgot-password';
-                                        }}
-                                    >
-                                        Forgot Password?
-                                    </a>
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full bg-black text-white border-2 border-black rounded-xl px-6 py-3 font-bold text-lg hover:bg-pastel-acid hover:text-black shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {isLoading ? (
-                                    <>Processing...</>
-                                ) : (
-                                    <>
-                                        {mode === 'login' ? 'Log In' : 'Create Account'}
-                                        <ArrowRight className="w-5 h-5" />
-                                    </>
-                                )}
-                            </button>
-                        </form>
-
-                        {/* Toggle Mode */}
-                        <div className="text-center pt-2">
-                            <button
-                                onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                                className="text-sm font-medium text-gray-500 hover:text-black transition-colors"
-                            >
-                                {mode === 'login' ? (
-                                    <>Don't have an account? <span className="font-bold underline text-black">Register</span></>
-                                ) : (
-                                    <>Already have an account? <span className="font-bold underline text-black">Log In</span></>
-                                )}
-                            </button>
-                        </div>
+                            </>
+                        )}
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence >
     )
 }
