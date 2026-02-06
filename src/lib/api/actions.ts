@@ -104,6 +104,14 @@ export async function createBooking(data: {
     // Note: Removed xenPlatform split payment to fix webhook routing issue
     // Webhooks now properly received by platform account
     try {
+        console.log('[CreateBooking] Preparing to create Xendit Invoice...')
+        console.log('[CreateBooking] Params:', {
+            externalId: bookingId,
+            amount: amount,
+            payerEmail: user.email,
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (incl. Service Fee)`
+        })
+
         const invoice = await createInvoice({
             externalId: bookingId,
             amount: amount,
@@ -112,6 +120,8 @@ export async function createBooking(data: {
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
         })
+
+        console.log('[CreateBooking] PWA Invoice created via Platform:', invoice.id)
 
         // 4. Save to Local Database (Dual Write)
         const { createServiceClient } = await import('@/lib/supabase/server')
