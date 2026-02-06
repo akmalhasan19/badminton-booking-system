@@ -3,7 +3,7 @@
 import { updateSetting } from "@/lib/api/settings"
 import { revalidatePath } from "next/cache"
 
-export async function updateFeeSettings(formData: FormData) {
+export async function updateFeeSettings(prevState: any, formData: FormData) {
     const applicationFee = formData.get('application_fee') as string
     const xenditFee = formData.get('xendit_fee') as string
 
