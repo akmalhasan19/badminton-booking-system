@@ -2,8 +2,9 @@ import { getAllBookings } from "./actions";
 import { BookingTable } from "./booking-table";
 import { Pagination } from "./pagination";
 
-export default async function AdminBookingsPage({ searchParams }: { searchParams: { page?: string } }) {
-    const currentPage = Number(searchParams?.page) || 1
+export default async function AdminBookingsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+    const { page } = await searchParams
+    const currentPage = Number(page) || 1
     const limit = 10
     const { data: bookings, totalCount, error } = await getAllBookings(currentPage, limit)
     const totalPages = Math.ceil((totalCount || 0) / limit)
