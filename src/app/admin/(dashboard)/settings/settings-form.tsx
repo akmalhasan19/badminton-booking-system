@@ -1,11 +1,11 @@
 'use client'
 
 import { useActionState } from "react";
-import { updateFeeSettings } from "./actions";
+import { updateFeeSettings, FormState } from "./actions";
 import { Save, DollarSign, Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
-const initialState = {
+const initialState: FormState = {
     message: '',
     error: '',
     success: false

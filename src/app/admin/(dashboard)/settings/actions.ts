@@ -3,7 +3,13 @@
 import { updateSetting } from "@/lib/api/settings"
 import { revalidatePath } from "next/cache"
 
-export async function updateFeeSettings(prevState: any, formData: FormData) {
+export type FormState = {
+    message?: string;
+    error?: string;
+    success?: boolean;
+}
+
+export async function updateFeeSettings(prevState: FormState, formData: FormData): Promise<FormState> {
     const applicationFee = formData.get('application_fee') as string
     const xenditFee = formData.get('xendit_fee') as string
 
@@ -16,7 +22,7 @@ export async function updateFeeSettings(prevState: any, formData: FormData) {
         await updateSetting('xendit_fee', xenditFee)
 
         revalidatePath('/admin/settings')
-        return { success: true }
+        return { success: true, message: 'Settings saved successfully' }
     } catch (error) {
         console.error('Failed to update settings:', error)
         return { error: 'Failed to update settings' }
