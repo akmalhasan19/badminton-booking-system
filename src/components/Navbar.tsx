@@ -46,7 +46,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const menuItems = [
         { tab: Tab.HOME, label: t.home, color: "pastel-acid", path: "/" },
         { tab: Tab.BOOK, label: t.book, color: "pastel-mint", path: "/?tab=book" },
-        { tab: Tab.SHOP, label: t.shop, color: "pastel-pink", path: "/shop" }
+        // { tab: Tab.SHOP, label: t.shop, color: "pastel-pink", path: "/shop" }
     ];
 
     // ... rest of state ...
