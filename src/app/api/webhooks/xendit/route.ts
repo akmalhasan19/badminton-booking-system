@@ -69,8 +69,13 @@ export async function POST(req: Request) {
                 // Xendit Invoice/VA fee: IDR 4,000 (most common banks - BNI, BRI, Mandiri, Permata, BSI, etc.)
                 // Reference: https://www.xendit.co/en-id/pricing/
                 const XENDIT_FEE = 4000;
+                // Fee Strategy (Burden Shift):
+                // - Total Paid by User includes Xendit Fee (4000) + Booking Price
+                // - Platform takes 2000 Service Fee
+                // - Xendit takes 4000
+                // Net to Partner = TotalPaid - 4000 - 2000
                 const PLATFORM_FEE = 2000;
-                const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE; // Total: 6,000
+                const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE; // Total deduction: 6,000
 
                 const totalPaid = paid_amount;
                 const netRevenue = totalPaid - TOTAL_FEE;

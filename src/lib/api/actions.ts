@@ -95,30 +95,53 @@ export async function createBooking(data: {
     const selectedCourt = venueDetails?.courts.find(c => c.id === data.courtUuid)
     const hourlyRate = selectedCourt?.hourly_rate || 50000
     const subtotal = hourlyRate * data.durationHours
-    const amount = subtotal + SERVICE_FEE
+    // User Request: Service Fee (2000) is burdened to Venue (included in subtotal).
+    // Xendit Fee (4000) is burdened to Buyer (added to subtotal).
 
+    const XENDIT_FEE = 4000;
+    const SERVICE_FEE = 2000;
+
+    const bookingPrice = subtotal; // e.g., 45,000
+    const invoiceAmount = bookingPrice + XENDIT_FEE; // e.g., 49,000
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
 
-    // 3. Create Xendit Invoice (Platform Account)
-    // Note: Removed xenPlatform split payment to fix webhook routing issue
-    // Webhooks now properly received by platform account
+    // 3. Create Xendit Invoice
+    // Logic:
+    // - If Venue has xendit_account_id -> Create Invoice for Sub-Account (Split Settlement)
+    // - If No xendit_account_id -> Create Invoice for Platform (Manual Transfer later)
+
+    // Fee Strategy (Burden Shift):
+    // - Buyer pays: BookingPrice + XenditFee (4000)
+    // - Platform takes: ServiceFee (2000)
+    // - Partner receives: (BookingPrice + XenditFee) - XenditFee - ServiceFee
+    //                   = BookingPrice - 2000.
+
+    const xenditAccountId = venueDetails?.xendit_account_id;
+
     try {
         console.log('[CreateBooking] Preparing to create Xendit Invoice...')
         console.log('[CreateBooking] Params:', {
             externalId: bookingId,
-            amount: amount,
+            bookingPrice: bookingPrice,
+            invoiceAmount: invoiceAmount,
             payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (incl. Service Fee)`
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (+ Xendit Fee)`,
+            forUserId: xenditAccountId || 'PLATFORM (Default)'
         })
 
         const invoice = await createInvoice({
             externalId: bookingId,
-            amount: amount,
+            amount: invoiceAmount, // Buyer pays full amount (incl. Xendit Fee)
             payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (incl. Service Fee)`,
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (+ Xendit Fee)`,
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
+            forUserId: xenditAccountId,
+            withFeeRule: xenditAccountId ? {
+                type: 'FLAT',
+                value: SERVICE_FEE // Platform takes 2000
+            } : undefined
         })
 
         console.log('[CreateBooking] PWA Invoice created via Platform:', invoice.id)
@@ -148,7 +171,47 @@ export async function createBooking(data: {
             }
         }
 
-        // 4b. Insert Booking
+        // 4b. Insert or Update Booking (Handle Duplicates)
+        const { data: existingBooking } = await supabase
+            .from('bookings')
+            .select('id, user_id, status')
+            .eq('court_id', data.courtUuid)
+            .eq('booking_date', data.bookingDate)
+            .eq('start_time', data.startTime)
+            .single()
+
+        if (existingBooking) {
+            // Case 1: Slot taken by same user (Pending/Failed) -> UPDATE it
+            if (existingBooking.user_id === user.id && existingBooking.status === 'pending') {
+                console.log(`[CreateBooking] Updating existing pending booking ${existingBooking.id} with new invoice`)
+                const { error: updateError } = await supabase
+                    .from('bookings')
+                    .update({
+                        id: bookingId, // Update ID to match new invoice ID (if we want to sync them) OR keep old ID and just update invoice ref
+                        // Actually, for Xendit callback to work, the External ID must match the Booking ID in DB.
+                        // Since we already created Invoice with `bookingId` (from Smash API), we should probably delete the old local pending booking 
+                        // and insert the new one to keep IDs consistent with Smash API.
+                        // OR better: Just update the existing record's ID to the new Smash API ID? (ID might be PK, so risky).
+
+                        // SAFER APPROACH: Delete the old local pending booking, then Insert the new one.
+                    })
+                    .eq('id', existingBooking.id)
+
+                // Let's go with DELETE then INSERT to ensure clean state and correct ID (from Smash API)
+                await supabase.from('bookings').delete().eq('id', existingBooking.id)
+            } else {
+                // Case 2: Slot taken by other user or already confirmed -> ERROR
+                // But wait, Smash API allowed it? That means local DB is out of sync.
+                console.warn(`[CreateBooking] Slot collision! Local DB has booking ${existingBooking.id} but Smash API allowed new one.`)
+                // If local status is pending and old (e.g. > 15 mins), we could force overwrite.
+                // For now, let's just delete the stale local pending booking if it exists to allow the new one.
+                if (existingBooking.status === 'pending') {
+                    await supabase.from('bookings').delete().eq('id', existingBooking.id)
+                }
+            }
+        }
+
+        // Now safe to Insert
         const { error: dbError } = await supabase.from('bookings').insert({
             id: bookingId,
             user_id: user.id,

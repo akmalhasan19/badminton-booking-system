@@ -40,8 +40,15 @@ export async function syncBookingToPartner(data: Omit<SyncPayload, 'timestamp'>)
     try {
         const payload: SyncPayload = {
             ...data,
+            // TEMPORARY: Commented out to prevent 500 Error (Missing column in Partner DB)
+            // items: data.items,
+            // payment_details: data.payment_details, 
             timestamp: new Date().toISOString()  // ALWAYS include for audit trail
         };
+
+        // Remove these keys explicitly if they exist in `data` to be safe
+        delete payload.payment_details;
+        delete payload.items;
 
         const payloadString = JSON.stringify(payload);
         const signature = generateSignature(payloadString);
