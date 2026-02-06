@@ -998,30 +998,26 @@ export function BookingSection() {
                                                             </div>
                                                         )}
 
-                                                        {/* Rate Badge */}
-                                                        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md border border-black/10 shadow-sm">
-                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-black">
-                                                                Rp {court.hourly_rate?.toLocaleString()}
-                                                            </span>
-                                                        </div>
-
-                                                        {isSelected && (
-                                                            <div className="absolute top-2 right-2 bg-pastel-mint text-black p-1 rounded-full shadow-sm border border-black">
-                                                                <CheckCircle className="w-4 h-4" />
-                                                            </div>
-                                                        )}
                                                     </div>
 
                                                     {/* Content */}
-                                                    <div className="p-4 flex flex-col items-start w-full">
-                                                        <span className={`text-xl font-display font-black uppercase whitespace-nowrap overflow-hidden text-ellipsis w-full text-left ${isSelected ? 'text-white' : 'text-black'}`}>
-                                                            {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
-                                                        </span>
-                                                        <span className={`text-xs font-medium mt-1 ${isSelected ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                            {court.name.toLowerCase().includes('karpet') ? 'Karpet Vinyl' :
-                                                                court.name.toLowerCase().includes('parkit') ? 'Lantai Kayu' :
-                                                                    court.name.toLowerCase().includes('beton') ? 'Lantai Semen' : 'Standard Court'}
-                                                        </span>
+                                                    <div className="p-4 flex flex-col justify-between flex-grow w-full">
+                                                        <div>
+                                                            <span className={`text-xl font-display font-black uppercase whitespace-nowrap overflow-hidden text-ellipsis w-full text-left block ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                                {displayName.replace(/lapangan/i, '').trim() || String(court.court_number)}
+                                                            </span>
+                                                            <span className={`text-xs font-medium mt-1 block ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                                {court.name.toLowerCase().includes('karpet') ? 'Karpet Vinyl' :
+                                                                    court.name.toLowerCase().includes('parkit') ? 'Lantai Kayu' :
+                                                                        court.name.toLowerCase().includes('beton') ? 'Lantai Semen' : 'Standard Court'}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="mt-4 text-right">
+                                                            <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-gray-300' : 'text-gray-400 group-hover:text-black'}`}>
+                                                                Rp {court.hourly_rate?.toLocaleString()}/HR
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </button>
                                             )
