@@ -29,7 +29,6 @@ export interface SmashVenue {
     latitude?: number;
     longitude?: number;
     city?: string;
-    xendit_account_id?: string;
 }
 
 export interface SmashCourt {

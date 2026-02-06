@@ -122,44 +122,9 @@ export async function verifyPaymentExternal(bookingId: string) {
     try {
         console.log(`[ManualVerify] Verifying payment for ${bookingId}`)
 
-        // 0. Fetch Booking Context (to find Sub-Account ID)
-        const { data: booking } = await supabase
-            .from('bookings')
-            .select('venue_id')
-            .eq('id', bookingId)
-            .single()
-
-        let forUserId = undefined;
-        let venueName = 'Unknown Venue';
-
-        if (booking?.venue_id) {
-            console.log(`[ManualVerify] Found venue_id: ${booking.venue_id}`)
-            try {
-                const venue = await smashApi.getVenueDetails(booking.venue_id);
-                console.log(`[ManualVerify] Venue fetch result:`, venue ? `Found: ${venue.name}` : 'Null');
-                if (venue?.xendit_account_id) {
-                    forUserId = venue.xendit_account_id;
-                    venueName = venue.name;
-                    console.log(`[ManualVerify] Venue has Xendit Sub-Account: ${forUserId}`)
-                } else {
-                    console.log(`[ManualVerify] Venue has NO xendit_account_id`)
-                }
-            } catch (err) {
-                console.error('[ManualVerify] Failed to fetch venue details:', err)
-            }
-        } else {
-            console.log(`[ManualVerify] No venue_id found on booking ${bookingId}`)
-        }
-
-        // 1. Fetch from Xendit (Try Sub-Account first if available)
-        console.log(`[ManualVerify] Searching Xendit in: ${forUserId || 'Platform Only'}`)
-        let invoice = await getInvoicesByExternalId(bookingId, forUserId)
-
-        // If not found in Sub-Account, maybe try Platform Account? (Fallback)
-        if ((!invoice || invoice.length === 0) && forUserId) {
-            console.log('[ManualVerify] Not found in Sub-Account, trying Platform Account...')
-            invoice = await getInvoicesByExternalId(bookingId, undefined)
-        }
+        // Fetch invoice from Xendit (Platform Account Only)
+        console.log(`[ManualVerify] Searching Xendit in Platform Account`)
+        const invoice = await getInvoicesByExternalId(bookingId)
 
         // Xendit might return an array if multiple invoices exist with same external_id
         // We usually care about the latest one
@@ -169,9 +134,7 @@ export async function verifyPaymentExternal(bookingId: string) {
             console.log(`[ManualVerify] No invoice found.`)
             return {
                 success: false,
-                message: forUserId
-                    ? `No invoice found in Xendit for this Booking ID (Checked Venue: ${venueName} & Platform).`
-                    : 'No invoice found in Xendit for this Booking ID.'
+                message: 'No invoice found in Xendit for this Booking ID.'
             }
         }
 

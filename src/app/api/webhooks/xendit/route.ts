@@ -13,31 +13,8 @@ export async function POST(req: Request) {
         const callbackToken = req.headers.get('x-callback-token')
         const webhookToken = process.env.XENDIT_CALLBACK_TOKEN
 
-        body = await req.json()
-        external_id = body.external_id
-        status = body.status
-        const { paid_amount, payment_method, id: invoice_id, user_id } = body
-
-        // 1. Fetch Dynamic Token Strategy
-        let validToken = webhookToken;
-
-        // If it's a sub-account (has user_id), try to find its specific token in DB
-        if (user_id) {
-            const { data: config } = await supabase
-                .from('webhook_configs')
-                .select('verification_token')
-                .eq('provider', 'xendit')
-                .eq('account_id', user_id)
-                .single();
-
-            if (config?.verification_token) {
-                validToken = config.verification_token;
-                console.log(`[Webhook] Using dynamic token/config for account: ${user_id}`);
-            }
-        }
-
-        // 2. Security Check: Verify with the identified valid token
-        if (!callbackToken || callbackToken !== validToken) {
+        // Security Check: Verify webhook token (Platform account only)
+        if (!callbackToken || callbackToken !== webhookToken) {
             console.error('Unauthorized webhook attempt. Token mismatch.')
 
             // Log unauthorized attempt
@@ -45,11 +22,16 @@ export async function POST(req: Request) {
                 source: 'xendit',
                 status: 'unauthorized',
                 response_code: 401,
-                error_message: `Invalid callback token: ${callbackToken?.slice(0, 5)}... expected for ${user_id}`
+                error_message: `Invalid callback token`
             })
 
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
         }
+
+        body = await req.json()
+        external_id = body.external_id
+        status = body.status
+        const { paid_amount, payment_method, id: invoice_id } = body
 
         // Log incoming webhook
         console.log('========== XENDIT WEBHOOK DEBUG ==========')
@@ -94,15 +76,11 @@ export async function POST(req: Request) {
                 const customerName = bookingData.users?.full_name || 'PWA User'
                 const customerPhone = bookingData.users?.phone
 
-                // Calculate Net Revenue based on Xendit Fee Structure
-                const XENDIT_FEE = 4000;
-                const PLATFORM_FEE = 2000;
-                const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE;
-
-                const totalPaid = paid_amount;
-                const netRevenue = totalPaid - TOTAL_FEE;
+                // Revenue = Full court price (no fee deduction)
+                const courtPrice = paid_amount
 
                 console.log(`[Webhook] Processing payment for booking ${external_id}`);
+                console.log(`[Webhook] Court price (revenue): ${courtPrice}`);
 
                 // Fetch court name with robust error handling
                 const { data: courtData } = await supabase
@@ -137,26 +115,19 @@ export async function POST(req: Request) {
 
                 console.log(`[Webhook] Preparing sync - Venue: ${bookingData.venue_id}, Customer: ${customerName}`);
 
-                // Sync to Partner with comprehensive error handling
+                // Sync to Partner with full court price as revenue
                 try {
                     await syncBookingToPartner({
                         event: 'booking.paid',
                         booking_id: external_id,
                         venue_id: bookingData.venue_id,
-                        status: 'LUNAS',  // CRITICAL: Partner requires this field for proper status display
+                        status: 'LUNAS',
                         payment_status: 'PAID',
-                        total_amount: totalPaid,
-                        paid_amount: netRevenue,
+                        total_amount: courtPrice,
+                        paid_amount: courtPrice,  // Revenue = full court price
                         payment_method: payment_method || 'XENDIT',
                         customer_name: customerName,
                         customer_phone: customerPhone,
-                        items: [{ name: itemName }],
-                        payment_details: {
-                            xendit_transaction_id: invoice_id,
-                            xendit_fee: XENDIT_FEE,
-                            platform_fee: PLATFORM_FEE,
-                            total_fees: TOTAL_FEE
-                        }
                     });
                     console.log(`[Webhook] ✅ Successfully synced booking ${external_id} to Partner dashboard`);
                 } catch (error) {

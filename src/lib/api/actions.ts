@@ -7,8 +7,6 @@ import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/sm
 import { getCurrentUser } from '@/lib/auth/actions'
 import { createInvoice, getInvoice } from '@/lib/xendit/client'
 
-const SERVICE_FEE = 2000
-const PLATFORM_FEE = 5000 // Platform fee (Rp 5,000)
 
 
 
@@ -94,57 +92,31 @@ export async function createBooking(data: {
     const venueDetails = await smashApi.getVenueDetails(data.courtId)
     const selectedCourt = venueDetails?.courts.find(c => c.id === data.courtUuid)
     const hourlyRate = selectedCourt?.hourly_rate || 50000
-    const subtotal = hourlyRate * data.durationHours
-    // User Request: Service Fee (2000) is burdened to Venue (included in subtotal).
-    // Xendit Fee (4000) is burdened to Buyer (added to subtotal).
-
-    const XENDIT_FEE = 4000;
-    const SERVICE_FEE = 2000;
-
-    const bookingPrice = subtotal; // e.g., 45,000
-    const invoiceAmount = bookingPrice + XENDIT_FEE; // e.g., 49,000
+    const courtPrice = hourlyRate * data.durationHours
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
 
-    // 3. Create Xendit Invoice
-    // Logic:
-    // - If Venue has xendit_account_id -> Create Invoice for Sub-Account (Split Settlement)
-    // - If No xendit_account_id -> Create Invoice for Platform (Manual Transfer later)
-
-    // Fee Strategy (Burden Shift):
-    // - Buyer pays: BookingPrice + XenditFee (4000)
-    // - Platform takes: ServiceFee (2000)
-    // - Partner receives: (BookingPrice + XenditFee) - XenditFee - ServiceFee
-    //                   = BookingPrice - 2000.
-
-    const xenditAccountId = venueDetails?.xendit_account_id;
+    // 3. Create Xendit Invoice (Platform Account Only)
 
     try {
         console.log('[CreateBooking] Preparing to create Xendit Invoice...')
         console.log('[CreateBooking] Params:', {
             externalId: bookingId,
-            bookingPrice: bookingPrice,
-            invoiceAmount: invoiceAmount,
+            courtPrice: courtPrice,
             payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (+ Xendit Fee)`,
-            forUserId: xenditAccountId || 'PLATFORM (Default)'
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
         })
 
         const invoice = await createInvoice({
             externalId: bookingId,
-            amount: invoiceAmount, // Buyer pays full amount (incl. Xendit Fee)
+            amount: courtPrice,
             payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'} (+ Xendit Fee)`,
+            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
             successRedirectUrl: `${appUrl}/bookings/history?payment=success&booking_id=${bookingId}`,
             failureRedirectUrl: `${appUrl}/?status=failed`,
-            forUserId: xenditAccountId,
-            withFeeRule: xenditAccountId ? {
-                type: 'FLAT',
-                value: XENDIT_FEE + SERVICE_FEE // Platform takes 6000 (4000 Xendit Fee + 2000 Service Fee)
-            } : undefined
         })
 
-        console.log('[CreateBooking] PWA Invoice created via Platform:', invoice.id)
+        console.log('[CreateBooking] Invoice created in Platform Account:', invoice.id)
 
         // 4. Save to Local Database (Dual Write)
         const { createServiceClient } = await import('@/lib/supabase/server')
@@ -219,7 +191,7 @@ export async function createBooking(data: {
             booking_date: data.bookingDate,
             start_time: data.startTime,
             end_time: data.endTime,
-            total_price: invoiceAmount,
+            total_price: courtPrice,
             status: 'pending',
             duration_hours: data.durationHours,
             venue_id: data.courtId // Save Venue ID for Partner Sync
@@ -290,13 +262,11 @@ export async function confirmBookingPayment(bookingId: string) {
         if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
             console.log('[ManualCheck] Invoice PAID!')
 
-            // Calculate Net Revenue (deduct fees before syncing to partner)
-            const XENDIT_FEE = 4000
-            const TOTAL_FEE = XENDIT_FEE + PLATFORM_FEE
-            const netRevenue = invoice.amount - TOTAL_FEE
-            console.log(`[ManualCheck] Syncing to Partner - Gross: ${invoice.amount}, Fees: ${TOTAL_FEE}, Net: ${netRevenue}`)
+            // Revenue = Full court price (no fee deduction)
+            const paidAmount = invoice.amount
+            console.log(`[ManualCheck] Syncing to Partner - Amount: ${paidAmount}`)
 
-            await updateBookingStatus(bookingId, 'confirmed', netRevenue)
+            await updateBookingStatus(bookingId, 'confirmed', paidAmount)
 
             // Force update local DB
             await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)

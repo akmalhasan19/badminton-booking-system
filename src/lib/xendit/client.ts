@@ -13,11 +13,6 @@ type CreateInvoiceParams = {
     description: string;
     successRedirectUrl?: string;
     failureRedirectUrl?: string;
-    forUserId?: string; // Xendit Sub-Account ID (e.g., "xenplatform_...")
-    withFeeRule?: {
-        type: 'FLAT' | 'PERCENTAGE';
-        value: number;
-    };
 };
 
 type InvoiceResponse = {
@@ -51,11 +46,6 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
         'Authorization': `Basic ${authString}`,
     };
 
-    // If booking is for a Partner (Sub-Account), add the header
-    if (params.forUserId) {
-        headers['for-user-id'] = params.forUserId;
-    }
-
     const body: any = {
         external_id: params.externalId,
         amount: params.amount,
@@ -64,16 +54,6 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
         success_redirect_url: params.successRedirectUrl,
         failure_redirect_url: params.failureRedirectUrl,
     };
-
-    // Add Platform Fee if applicable
-    if (params.withFeeRule) {
-        body.fees = [
-            {
-                type: params.withFeeRule.type,
-                value: params.withFeeRule.value,
-            }
-        ];
-    }
 
     const response = await fetch(`${XENDIT_API_URL}/v2/invoices`, {
         method: 'POST',
@@ -89,17 +69,13 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
     return response.json();
 }
 
-export async function getInvoice(id: string, forUserId?: string): Promise<InvoiceResponse> {
+export async function getInvoice(id: string): Promise<InvoiceResponse> {
     const authString = Buffer.from(XENDIT_SECRET_KEY + ':').toString('base64');
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${authString}`,
     };
-
-    if (forUserId) {
-        headers['for-user-id'] = forUserId;
-    }
 
     const response = await fetch(`${XENDIT_API_URL}/v2/invoices/${id}`, {
         method: 'GET',
@@ -117,17 +93,13 @@ export async function getInvoice(id: string, forUserId?: string): Promise<Invoic
  * Fetch invoices by External ID (Our Booking ID)
  * Needed because we don't store Xendit's Invoice ID in our DB
  */
-export async function getInvoicesByExternalId(externalId: string, forUserId?: string): Promise<InvoiceResponse[]> {
+export async function getInvoicesByExternalId(externalId: string): Promise<InvoiceResponse[]> {
     const authString = Buffer.from(XENDIT_SECRET_KEY + ':').toString('base64');
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${authString}`,
     };
-
-    if (forUserId) {
-        headers['for-user-id'] = forUserId;
-    }
 
     // Pass external_id as query param
     const response = await fetch(`${XENDIT_API_URL}/v2/invoices?external_id=${externalId}`, {

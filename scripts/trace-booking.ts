@@ -42,49 +42,17 @@ async function main() {
     }
     console.log(`✅ Booking found. Venue ID: ${booking.venue_id}`);
 
-    // 2. Get Sub-Account from Venue
-    let forUserId = undefined;
-    if (booking.venue_id) {
-        try {
-            const venue = await smashApi.getVenueDetails(booking.venue_id);
-            if (venue?.xendit_account_id) {
-                forUserId = venue.xendit_account_id;
-                console.log(`✅ Venue found. Sub-Account ID: ${forUserId}`);
-            } else {
-                console.log('⚠️ Venue found but NO Xendit Sub-Account ID.');
-                console.log('Venue Data:', venue);
-            }
-        } catch (e) {
-            console.error('❌ Failed to fetch venue:', e);
-        }
-    }
-
-    // 3. Search Xendit
-    console.log(`\nSearching Xendit...`);
+    // 2. Search Xendit (Platform Account Only)
+    console.log(`\nSearching Xendit Platform Account...`);
     try {
-        // Try Sub-Account
-        if (forUserId) {
-            console.log(`Checking Sub-Account: ${forUserId}`);
-            const invoicesSub = await getInvoicesByExternalId(bookingId, forUserId);
-            if (invoicesSub && invoicesSub.length > 0) {
-                console.log('✅ FOUND in Sub-Account!');
-                console.log('Invoice Status:', invoicesSub[0].status);
-                console.log('Invoice ID:', invoicesSub[0].id);
-                return;
-            } else {
-                console.log('❌ Not found in Sub-Account.');
-            }
-        }
-
-        // Try Platform
-        console.log(`Checking Platform Account...`);
-        const invoicesPlat = await getInvoicesByExternalId(bookingId);
-        if (invoicesPlat && invoicesPlat.length > 0) {
+        const invoices = await getInvoicesByExternalId(bookingId);
+        if (invoices && invoices.length > 0) {
             console.log('✅ FOUND in Platform Account!');
-            console.log('Invoice Status:', invoicesPlat[0].status);
-            console.log('Invoice ID:', invoicesPlat[0].id);
+            console.log('Invoice Status:', invoices[0].status);
+            console.log('Invoice ID:', invoices[0].id);
+            console.log('Amount:', invoices[0].amount);
         } else {
-            console.log('❌ Not found in Platform Account either.');
+            console.log('❌ Not found in Platform Account.');
         }
 
     } catch (e: any) {
