@@ -1,5 +1,5 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Outfit, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { LoadingProvider } from "@/lib/loading-context";
@@ -24,9 +24,26 @@ const spaceMono = Space_Mono({
 
 import { Toaster } from "sonner";
 
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Makes it feel more like a native app
+};
+
 export const metadata: Metadata = {
   title: "Smash & Serve",
   description: "A next-gen court booking experience",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Smash & Serve",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({

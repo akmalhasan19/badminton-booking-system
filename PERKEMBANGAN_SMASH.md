@@ -115,3 +115,38 @@ Target kita adalah meningkatkan Gross Profit per Booking dari **Rp 2.500** menja
 
 3. **Update UI:**
    Tampilkan "Biaya Layanan" secara transparan di halaman checkout agar fair ke user.
+
+---
+
+## 7. Strategi Diferensiasi (The Undeniable Data)
+*Ditambahkan: 2026-02-07*
+
+Berdasarkan diskusi strategi, kita sepakat untuk membangun "Undeniable Data" yang membuat user memilih SmashCourts selain faktor harga.
+
+### A. "The Frictionless Experience" (Kecepatan & Akses)
+*   **Masalah Kompetitor:** AYO memaksa user download aplikasi (50MB+), install, dan register panjang.
+*   **Solusi Kita:** **Native-Like PWA (Progressive Web App)**.
+    *   **Metric:** "Time to First Booking" < 30 detik.
+    *   **Teknis:** Mengoptimalkan Next.js 16 untuk mencapai **Lighthouse Performance Score 100/100**.
+    *   **Claim:** "Tanpa Download, Langsung Main."
+
+### B. "Transparent & Fairness" (Filosofi Harga)
+*   **Masalah Kompetitor:** Biaya layanan sering tersembunyi atau tidak jelas peruntukannya.
+*   **Solusi Kita:** **Cost Breakdown** di halaman checkout.
+    *   **Metric:** 0% Hidden Fees.
+    *   **UX:** Menampilkan secara eksplisit: Harga Lapangan (ke Partner) + Biaya Layanan (ke Platform).
+
+### C. "Premium Visual Experience" (The 'Wow' Factor)
+*   **Masalah Kompetitor:** Desain marketplace standar yang kaku.
+*   **Solusi Kita:** **Interactive Court Map**.
+    *   **UX:** Denah lapangan visual yang interaktif (bukan sekadar list). User klik lapangan di denah untuk melihat jadwal.
+    *   **Tech:** Integrasi Framer Motion + GSAP untuk transisi yang smooth dan "mahal".
+
+---
+
+## 8. Action Plan Selanjutnya
+
+1.  **Benchmarking:** Mengukur speed load time & booking flow AYO vs SmashCourts saat ini.
+2.  **UX Enhancement:** Implementasi fitur "Transparent Fee" di halaman checkout.
+3.  **Visual Upgrade:** Eksplorasi library mapping untuk denah lapangan interaktif.
+
