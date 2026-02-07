@@ -1001,7 +1001,7 @@ export function BookingSection() {
                                             className="overflow-hidden relative"
                                         >
                                             <p className="font-bold text-black">
-                                                {selectedHall.location.address}
+                                                {selectedHall.location?.address || 'Address not available'}
                                             </p>
 
                                             <AnimatePresence>
@@ -1017,7 +1017,7 @@ export function BookingSection() {
                                         </motion.div>
 
                                         <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                                            {selectedHall.location.subDistrict}, {selectedHall.location.city}
+                                            {selectedHall.location?.subDistrict}{selectedHall.location?.subDistrict && selectedHall.location?.city ? ', ' : ''}{selectedHall.location?.city}
                                         </p>
                                     </div>
                                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -1157,7 +1157,7 @@ export function BookingSection() {
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-gray-200">
                                                 <span className="block font-bold text-gray-500 text-xs uppercase mb-1">{t.address_label}</span>
-                                                <p className="text-xs text-gray-700">{selectedHall.location.address}</p>
+                                                <p className="text-xs text-gray-700">{selectedHall.location?.address || 'Address not available'}</p>
                                             </div>
                                         </div>
                                     )}
