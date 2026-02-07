@@ -41,6 +41,8 @@ module.exports = {
           purple: '#C084FC',
         },
         dark: '#121212',
+        primary: '#FDE047',
+        secondary: '#EF4444',
       },
       boxShadow: {
         'hard': '4px 4px 0px 0px #121212',
@@ -48,6 +50,8 @@ module.exports = {
         'hard-lg': '8px 8px 0px 0px #121212',
         'hard-xl': '12px 12px 0px 0px #000000',
         'hard-hover': '2px 2px 0px 0px #000000',
+        'neobrutalism': '4px 4px 0px 0px #000000',
+        'neobrutalism-sm': '2px 2px 0px 0px #000000',
       },
       borderWidth: {
         '3': '3px',

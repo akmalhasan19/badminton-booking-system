@@ -170,10 +170,10 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                     </div>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-2 bg-white p-1 rounded-xl border-2 border-black shadow-hard-sm relative">
+                    <div className="hidden md:flex items-center p-1 bg-white border-2 border-black rounded-full shadow-hard-sm relative">
                         {/* Sliding Highlight */}
                         <motion.div
-                            className={`absolute top-1 bottom-1 rounded-lg border-2 border-black z-0 ${getBackgroundColor(currentTab)}`}
+                            className={`absolute top-1 bottom-1 rounded-full border-2 border-black z-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${getBackgroundColor(currentTab)}`}
                             initial={false}
                             animate={{
                                 left: highlightStyle.left,
@@ -188,7 +188,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 key={item.tab}
                                 ref={el => { tabsRef.current[index] = el }}
                                 onClick={() => handleTabClick(item.tab, item.path)}
-                                className={`relative px-6 py-2 rounded-lg font-bold text-sm transition-colors z-10 ${currentTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
+                                className={`relative px-8 py-2 rounded-full font-bold text-sm transition-colors z-10 uppercase tracking-wide ${currentTab === item.tab ? "text-black" : "text-gray-500 hover:text-black"}`}
                             >
                                 {item.label}
                             </button>
@@ -211,17 +211,17 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowUserDropdown(!showUserDropdown)}
-                                        className="bg-white text-black px-4 py-2.5 rounded-lg font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
+                                        className="bg-white text-black pl-1 pr-4 py-1 rounded-full font-bold text-sm border-2 border-black shadow-hard-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-3"
                                     >
-                                        <div className="w-8 h-8 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
+                                        <div className="w-8 h-8 bg-gray-100 rounded-full border-2 border-black flex items-center justify-center overflow-hidden shrink-0">
                                             {user.avatar_url ? (
                                                 <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <User className="w-4 h-4" />
+                                                <User className="w-4 h-4 text-gray-400" />
                                             )}
                                         </div>
                                         <span>{user.name}</span>
-                                        <ChevronDown className="w-4 h-4" />
+                                        <ChevronDown className="w-4 h-4 ml-1" />
                                     </button>
 
                                     {/* Traveloka-style Dropdown */}

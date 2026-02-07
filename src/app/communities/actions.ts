@@ -9,8 +9,68 @@ export type Community = {
     description: string | null
     sport: string
     logo_url: string | null
+    cover_url?: string | null
+    city?: string | null
+    privacy?: 'public' | 'private'
     members_count?: number
     role?: string
+}
+
+export async function getCommunityById(id: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    try {
+        // Fetch community details
+        const { data: community, error } = await supabase
+            .from('communities')
+            .select(`
+                id,
+                name,
+                description,
+                sport,
+                logo_url,
+                city,
+                privacy,
+                created_by
+            `)
+            .eq('id', id)
+            .single()
+
+        if (error) throw error
+
+        // Get member count
+        const { count: membersCount } = await supabase
+            .from('community_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('community_id', id)
+
+        // Get user's role if logged in
+        let userRole = null
+        if (user) {
+            const { data: memberData } = await supabase
+                .from('community_members')
+                .select('role')
+                .eq('community_id', id)
+                .eq('user_id', user.id)
+                .single()
+
+            if (memberData) {
+                userRole = memberData.role
+            }
+        }
+
+        return {
+            data: {
+                ...community,
+                members_count: membersCount || 0,
+                role: userRole
+            } as Community
+        }
+    } catch (error) {
+        console.error("Error fetching community:", error)
+        return { error: "Failed to fetch community" }
+    }
 }
 
 export async function getCommunitiesForUser(role?: 'admin' | 'member') {
@@ -93,7 +153,8 @@ export async function createCommunity(formData: FormData) {
     }
 
     try {
-        const { data: community, error } = await supabase
+        // Create the community
+        const { data: community, error: createError } = await supabase
             .from('communities')
             .insert({
                 name,
@@ -106,7 +167,26 @@ export async function createCommunity(formData: FormData) {
             .select()
             .single()
 
-        if (error) throw error
+        if (createError) {
+            console.error("Error creating community:", createError)
+            throw createError
+        }
+
+        // Add creator as admin member (fallback if trigger doesn't work)
+        const { error: memberError } = await supabase
+            .from('community_members')
+            .upsert({
+                community_id: community.id,
+                user_id: user.id,
+                role: 'admin'
+            }, {
+                onConflict: 'community_id,user_id'
+            })
+
+        if (memberError) {
+            console.error("Error adding member:", memberError)
+            // Don't throw here, community was created successfully
+        }
 
         revalidatePath('/communities')
         return { data: community }
@@ -115,3 +195,4 @@ export async function createCommunity(formData: FormData) {
         return { error: "Failed to create community" }
     }
 }
+

@@ -87,7 +87,13 @@ export default function CommunitiesPage() {
                 if (data) {
                     const formattedData = data.map((community: any) => ({
                         ...community,
-                        initials: community.name.substring(0, 2).toUpperCase(),
+                        initials: (() => {
+                            const words = community.name.trim().split(/\s+/);
+                            if (words.length >= 2) {
+                                return (words[0][0] + words[1][0]).toUpperCase();
+                            }
+                            return community.name.substring(0, 2).toUpperCase();
+                        })(),
                         color: ['bg-pastel-mint', 'bg-pastel-lilac', 'bg-pastel-yellow', 'bg-pastel-pink', 'bg-pastel-blue'][community.name.length % 5]
                     }))
                     setCommunities(formattedData)
@@ -132,7 +138,7 @@ export default function CommunitiesPage() {
 
             <MobileHeader title="Komunitas" backPath="/account" />
 
-            <div className="max-w-7xl mx-auto px-4 relative z-10 pt-6 md:pt-0">
+            <div className="max-w-7xl mx-auto px-4 relative z-10 pt-2 md:pt-0">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
                     {/* Sidebar - Hidden on mobile */}
                     <div className="hidden md:block">
@@ -213,21 +219,35 @@ export default function CommunitiesPage() {
                         </div>
 
                         {/* Toggle Switch */}
-                        <div className="flex gap-2 bg-gray-100 p-1.5 rounded-xl border-2 border-black">
+                        <div className="relative flex gap-1 bg-gray-100 p-1.5 rounded-xl border-2 border-black">
+                            {/* Sliding Background Indicator */}
+                            <motion.div
+                                layoutId="activeTab"
+                                className={`absolute top-1.5 bottom-1.5 rounded-lg border-2 border-black shadow-hard-sm ${activeTab === 'player' ? 'bg-pastel-mint' : 'bg-pastel-lilac'}`}
+                                style={{
+                                    width: 'calc(50% - 4px)',
+                                    left: activeTab === 'player' ? '6px' : 'calc(50% + 2px)'
+                                }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30
+                                }}
+                            />
                             <button
                                 onClick={() => setActiveTab('player')}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all border-2 ${activeTab === 'player'
-                                    ? 'bg-pastel-mint text-black border-black shadow-hard-sm'
-                                    : 'bg-transparent text-gray-500 border-transparent hover:text-black'
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors relative z-10 ${activeTab === 'player'
+                                    ? 'text-black'
+                                    : 'text-gray-500 hover:text-black'
                                     }`}
                             >
                                 As Player
                             </button>
                             <button
                                 onClick={() => setActiveTab('admin')}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all border-2 ${activeTab === 'admin'
-                                    ? 'bg-pastel-lilac text-black border-black shadow-hard-sm'
-                                    : 'bg-transparent text-gray-500 border-transparent hover:text-black'
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors relative z-10 ${activeTab === 'admin'
+                                    ? 'text-black'
+                                    : 'text-gray-500 hover:text-black'
                                     }`}
                             >
                                 As Admin
@@ -248,49 +268,43 @@ export default function CommunitiesPage() {
                                         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                                     </div>
                                 ) : communities.length > 0 ? (
-                                    <div className="space-y-4">
+                                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                         {communities.map((community) => (
                                             <motion.div
                                                 key={community.id}
-                                                whileHover={{ scale: 1.02 }}
+                                                whileHover={{ scale: 1.03, y: -2 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                className="flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-black shadow-hard-sm cursor-pointer hover:shadow-hard-md transition-all"
+                                                className="bg-white p-4 rounded-xl border-2 border-black shadow-hard-sm cursor-pointer hover:shadow-hard-md transition-all flex flex-col items-center text-center"
                                                 onClick={() => router.push(`/communities/${community.id}`)}
                                             >
-                                                <div className={`w-16 h-16 ${community.color} rounded-xl border-2 border-black flex items-center justify-center font-bold text-2xl shadow-sm`}>
+                                                <div className={`w-14 h-14 ${community.color} rounded-xl border-2 border-black flex items-center justify-center font-bold text-xl shadow-sm mb-3`}>
                                                     {community.initials}
                                                 </div>
-                                                <div className="flex-1">
-                                                    <div className="flex justify-between items-start">
-                                                        <h3 className="font-bold text-lg text-black leading-tight">{community.name}</h3>
-                                                        {community.role && (
-                                                            <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-full capitalize">
-                                                                {community.role}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs font-bold bg-gray-100 px-2 py-0.5 rounded border border-black text-gray-700">
-                                                            {community.sport}
-                                                        </span>
-                                                        <div className="flex items-center text-xs text-gray-500 font-medium">
-                                                            <Users className="w-3 h-3 mr-1" />
-                                                            {community.members_count || 1} Members
-                                                        </div>
-                                                    </div>
+                                                <h3 className="font-bold text-sm text-black leading-tight line-clamp-2 mb-1">{community.name}</h3>
+                                                {community.role && (
+                                                    <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-full capitalize mb-2">
+                                                        {community.role}
+                                                    </span>
+                                                )}
+                                                <div className="flex items-center text-xs text-gray-500 font-medium">
+                                                    <Users className="w-3 h-3 mr-1" />
+                                                    {community.members_count || 1}
                                                 </div>
                                             </motion.div>
                                         ))}
 
-                                        {/* Join New Community Card */}
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
+                                        {/* Add New Community Card */}
+                                        <motion.div
+                                            whileHover={{ scale: 1.03, y: -2 }}
                                             whileTap={{ scale: 0.98 }}
-                                            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-400 text-gray-500 font-bold hover:border-black hover:text-black hover:bg-gray-50 transition-all"
+                                            onClick={() => router.push('/communities/create')}
+                                            className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-black hover:bg-gray-50 transition-all flex flex-col items-center justify-center text-center min-h-[140px]"
                                         >
-                                            <Plus className="w-5 h-5" />
-                                            Find Communities
-                                        </motion.button>
+                                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                                                <Plus className="w-5 h-5 text-gray-500" />
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-500">Tambah Baru</span>
+                                        </motion.div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-20 bg-white border-2 border-dashed border-gray-300 rounded-xl">
