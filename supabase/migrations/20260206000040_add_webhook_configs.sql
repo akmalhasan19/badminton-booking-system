@@ -10,14 +10,26 @@ CREATE TABLE IF NOT EXISTS public.webhook_configs (
   CONSTRAINT unique_provider_account UNIQUE (provider, account_id)
 );
 
-CREATE TRIGGER set_updated_at_webhook_configs BEFORE UPDATE ON public.webhook_configs
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_webhook_configs') THEN
+        CREATE TRIGGER set_updated_at_webhook_configs BEFORE UPDATE ON public.webhook_configs
+          FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+    END IF;
+END
+$$;
 
 ALTER TABLE public.webhook_configs ENABLE ROW LEVEL SECURITY;
 
 -- Allow admins full access
-CREATE POLICY "Admins can manage webhook configs" ON public.webhook_configs
-  FOR ALL USING (is_admin());
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'webhook_configs' AND policyname = 'Admins can manage webhook configs') THEN
+        CREATE POLICY "Admins can manage webhook configs" ON public.webhook_configs
+          FOR ALL USING (is_admin());
+    END IF;
+END
+$$;
 
 -- Allow read access for service role (webhook handler) - implicitly allowed, but explicit policy for clarity if needed
 -- Actually, service role bypasses RLS, so this is fine.

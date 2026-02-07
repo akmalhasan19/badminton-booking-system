@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client"
 import { updateCommunityCover } from "@/app/communities/actions"
 import { useRouter } from "next/navigation"
 import { CommunityProfileImage } from "@/components/CommunityProfileImage"
+import { joinCommunity, leaveCommunity } from "@/app/communities/actions"
+import { Check, LogOut } from "lucide-react"
 
 interface CommunityHeroProps {
     community: Community;
@@ -20,8 +22,14 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
     const [showOverlay, setShowOverlay] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
+    const [isJoining, setIsJoining] = useState(false)
+    const [isMember, setIsMember] = useState(!!community.role) // 'admin' or 'member' means they are a member
+
+    // Check if user is admin specifically for editing rights
+    const isAdmin = community.role === 'admin'
 
     useEffect(() => {
         setIsMobile(window.matchMedia('(pointer: coarse)').matches)
@@ -104,6 +112,42 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
         }
     }
 
+    const handleJoinLeave = async () => {
+        setIsJoining(true)
+        try {
+            if (isMember) {
+                // If admin, maybe warn or prevent leaving? For now specific check.
+                if (isAdmin) {
+                    toast.error("Admin tidak dapat keluar dari komunitas (saat ini).")
+                    return
+                }
+
+                const result = await leaveCommunity(community.id)
+                if (result.error) {
+                    toast.error(result.error)
+                } else {
+                    setIsMember(false)
+                    toast.success("Berhasil keluar dari komunitas")
+                    router.refresh()
+                }
+            } else {
+                const result = await joinCommunity(community.id)
+                if (result.error) {
+                    toast.error(result.error)
+                } else {
+                    setIsMember(true)
+                    toast.success("Berhasil bergabung ke komunitas!")
+                    router.refresh()
+                }
+            }
+        } catch (error) {
+            console.error("Error joining/leaving:", error)
+            toast.error("Terjadi kesalahan")
+        } finally {
+            setIsJoining(false)
+        }
+    }
+
     return (
         <div className="relative bg-white dark:bg-background-dark shadow-none overflow-hidden pb-4 md:rounded-3xl md:border-3 md:border-black md:shadow-hard transition-all">
             <div className="relative h-64 w-full">
@@ -182,8 +226,26 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                 {/* Action Buttons */}
                 {/* Action Buttons */}
                 <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-20 items-end">
-                    <button className="bg-primary px-6 py-2.5 text-sm font-black border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black uppercase tracking-wider rounded-lg flex items-center gap-2">
-                        Follow <Plus className="w-5 h-5 stroke-[3px]" />
+                    <button
+                        onClick={handleJoinLeave}
+                        disabled={isJoining}
+                        className={`${isMember
+                            ? "bg-white text-black hover:bg-red-50 hover:text-red-600 hover:border-red-600"
+                            : "bg-primary text-black"
+                            } px-6 py-2.5 text-sm font-black border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider rounded-lg flex items-center gap-2`}
+                    >
+                        {isJoining ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : isMember ? (
+                            <>
+                                {isAdmin ? "Admin" : "Anggota"}
+                                {isAdmin ? null : <LogOut className="w-4 h-4 ml-1" />}
+                            </>
+                        ) : (
+                            <>
+                                Gabung <Plus className="w-5 h-5 stroke-[3px]" />
+                            </>
+                        )}
                     </button>
                     <button className="bg-secondary px-8 py-2.5 text-sm font-black text-white border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider rounded-lg">
                         Chat

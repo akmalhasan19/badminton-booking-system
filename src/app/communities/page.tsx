@@ -181,7 +181,7 @@ export default function CommunitiesPage() {
                                                     className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 rounded-lg transition-colors group"
                                                     onClick={() => {
                                                         setIsMenuOpen(false)
-                                                        // router.push('/communities/find') 
+                                                        router.push('/communities/discover')
                                                     }}
                                                 >
                                                     <div className="w-10 h-10 bg-pastel-mint rounded-lg border-2 border-black flex items-center justify-center group-hover:scale-110 transition-transform">

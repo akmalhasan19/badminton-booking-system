@@ -294,3 +294,62 @@ export async function updateCommunityLogo(communityId: string, formData: FormDat
     }
 }
 
+export async function joinCommunity(communityId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Perlu login untuk bergabung ke komunitas" }
+    }
+
+    try {
+        const { error } = await supabase
+            .from('community_members')
+            .insert({
+                community_id: communityId,
+                user_id: user.id,
+                role: 'member'
+            })
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                return { error: "Anda sudah menjadi anggota komunitas ini" }
+            }
+            throw error
+        }
+
+        revalidatePath(`/communities/${communityId}`)
+        return { success: true }
+    } catch (error) {
+        console.error("Error joining community:", error)
+        return { error: "Gagal bergabung ke komunitas" }
+    }
+}
+
+export async function leaveCommunity(communityId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Perlu login untuk aksi ini" }
+    }
+
+    try {
+        // Prevent leaving if admin and only admin? 
+        // For now simple leave.
+
+        const { error } = await supabase
+            .from('community_members')
+            .delete()
+            .eq('community_id', communityId)
+            .eq('user_id', user.id)
+
+        if (error) throw error
+
+        revalidatePath(`/communities/${communityId}`)
+        return { success: true }
+    } catch (error) {
+        console.error("Error leaving community:", error)
+        return { error: "Gagal keluar dari komunitas" }
+    }
+}

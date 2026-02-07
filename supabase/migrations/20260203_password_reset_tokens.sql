@@ -15,6 +15,16 @@ ON password_reset_tokens(expires_at);
 
 ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Service role only" ON password_reset_tokens
-    FOR ALL
-    USING (auth.role() = 'service_role');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'password_reset_tokens' 
+        AND policyname = 'Service role only'
+    ) THEN
+        CREATE POLICY "Service role only" ON password_reset_tokens
+            FOR ALL
+            USING (auth.role() = 'service_role');
+    END IF;
+END
+$$;

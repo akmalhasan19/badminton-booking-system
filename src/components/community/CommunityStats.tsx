@@ -85,10 +85,15 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
     const [totalMembersCount, setTotalMembersCount] = useState(membersCount)
     const [isLoading, setIsLoading] = useState(true)
 
+    // Sync totalMembersCount when prop changes (e.g. after join/leave action)
+    useEffect(() => {
+        setTotalMembersCount(membersCount)
+    }, [membersCount])
+
     useEffect(() => {
         const fetchMembers = async () => {
             try {
-                setIsLoading(true)
+                if (members.length === 0) setIsLoading(true)
 
                 // First, get the total count
                 const { count, error: countError } = await supabase
@@ -99,7 +104,7 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
 
                 if (countError) throw countError
 
-                // Update the total count
+                // Update the total count - keep in sync with DB
                 setTotalMembersCount(count || 0)
 
                 // Then fetch the member details
@@ -136,7 +141,7 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
         }
 
         fetchMembers()
-    }, [community_id, supabase])
+    }, [community_id, supabase, membersCount])
 
     const handleRatingClick = () => {
         router.push(`/communities/${community_id}/reviews`)
