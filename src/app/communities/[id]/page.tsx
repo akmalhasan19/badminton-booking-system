@@ -34,6 +34,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                             <div className="lg:col-span-4 h-full px-4 md:px-0">
                                 <CommunityStats
                                     membersCount={community.members_count || 0}
+                                    community_id={id}
                                 />
                             </div>
                         </div>
