@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { toast } from "sonner"
 import { Camera, Loader2 } from "lucide-react"
 import { updateCommunityLogo } from "@/app/communities/actions"
@@ -20,6 +20,12 @@ export function CommunityProfileImage({ communityId, url, name, canEdit, classNa
     const [showCropper, setShowCropper] = useState(false)
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [showOverlay, setShowOverlay] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        setIsMobile(window.matchMedia('(pointer: coarse)').matches)
+    }, [])
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -76,9 +82,14 @@ export function CommunityProfileImage({ communityId, url, name, canEdit, classNa
     }
 
     const triggerFileInput = () => {
-        if (canEdit && !isUploading) {
-            fileInputRef.current?.click()
+        if (!canEdit || isUploading) return
+
+        if (isMobile && !showOverlay) {
+            setShowOverlay(true)
+            return
         }
+
+        fileInputRef.current?.click()
     }
 
     return (
@@ -101,8 +112,12 @@ export function CommunityProfileImage({ communityId, url, name, canEdit, classNa
 
                 {canEdit && (
                     <>
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div
+                            className={`absolute inset-0 bg-black/60 transition-opacity duration-200 flex flex-col gap-2 items-center justify-center ${showOverlay ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                            onMouseLeave={() => setShowOverlay(false)}
+                        >
                             <Camera className="w-8 h-8 text-white" />
+                            <span className="text-white text-[10px] font-bold uppercase tracking-widest text-center px-2">Upload Photo Here</span>
                         </div>
                         <input
                             type="file"

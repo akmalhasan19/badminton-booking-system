@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { ArrowLeft, Share2, MoreVertical, Plus, Edit, Loader2, Camera, MessageCircle } from "lucide-react"
@@ -20,11 +20,22 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [showOverlay, setShowOverlay] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        setIsMobile(window.matchMedia('(pointer: coarse)').matches)
+    }, [])
 
     const handleImageClick = () => {
-        if (isEditable && !isUploading) {
-            fileInputRef.current?.click()
+        if (!isEditable || isUploading) return
+
+        if (isMobile && !showOverlay) {
+            setShowOverlay(true)
+            return
         }
+
+        fileInputRef.current?.click()
     }
 
     const convertToWebP = (file: File): Promise<Blob> => {
@@ -105,7 +116,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                 />
 
                 <div
-                    className={`w-full h-full relative ${isEditable ? 'cursor-pointer' : ''}`}
+                    className={`group w-full h-full relative ${isEditable ? 'cursor-pointer' : ''}`}
                     onClick={handleImageClick}
                 >
                     {previewUrl || community.cover_url ? (
@@ -123,10 +134,14 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
 
                     {/* Hover Edit Overlay */}
                     {isEditable && (
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div
+                            className={`absolute inset-0 bg-black/60 flex flex-col gap-2 items-center justify-center transition-opacity duration-200 ${showOverlay ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                            onMouseLeave={() => setShowOverlay(false)}
+                        >
                             <div className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white">
-                                {isUploading ? <Loader2 className="animate-spin text-white" /> : <Camera className="text-white" />}
+                                {isUploading ? <Loader2 className="animate-spin text-white w-6 h-6" /> : <Camera className="text-white w-6 h-6" />}
                             </div>
+                            <span className="text-white text-xs font-bold uppercase tracking-widest">Upload Photo Here</span>
                         </div>
                     )}
                 </div>
@@ -159,7 +174,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                             url={community.logo_url}
                             name={community.name}
                             canEdit={isEditable}
-                            className="w-full h-full object-cover"
+                            className="group relative w-full h-full object-cover"
                         />
                     </div>
                 </div>
