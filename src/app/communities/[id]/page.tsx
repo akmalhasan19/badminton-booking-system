@@ -18,9 +18,9 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
             <div className="flex h-screen overflow-hidden">
                 {/* Sidebar would go here - keeping it simple for now or assuming layout wrapper */}
 
-                <div className="flex-1 overflow-y-auto bg-white dark:bg-background-dark relative pb-24">
+                <div className="flex-1 overflow-y-auto bg-white dark:bg-background-dark relative">
 
-                    <div className="p-0 md:p-6 lg:p-10 max-w-[1600px] mx-auto md:space-y-8">
+                    <div className="p-0 md:p-6 lg:p-10 max-w-[1600px] mx-auto md:space-y-8 pb-8">
                         {/* Desktop Header - Hidding on mobile as per design implies a full cover image start */}
 
 
@@ -42,16 +42,6 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                         <div className="px-4 md:px-0">
                             <CommunityActivities />
                         </div>
-
-                        {/* Footer */}
-                        <footer className="mt-8 border-t border-gray-200 dark:border-zinc-700 py-6 flex flex-col md:flex-row justify-between items-center text-sm font-medium text-gray-500 dark:text-gray-400 px-4 md:px-0 pb-24 md:pb-0">
-                            <div>© 2026 BigRaga Badminton Club.</div>
-                            <div className="flex gap-6 mt-4 md:mt-0">
-                                <a className="hover:text-black dark:hover:text-white transition-colors" href="#">Privacy</a>
-                                <a className="hover:text-black dark:hover:text-white transition-colors" href="#">Terms</a>
-                                <a className="hover:text-black dark:hover:text-white transition-colors" href="#">Contact</a>
-                            </div>
-                        </footer>
                     </div>
 
                     {/* Fixed Bottom Navigation - Mobile Only */}
