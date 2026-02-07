@@ -3,8 +3,10 @@
 import { ArrowLeft, Star, Edit, Calendar } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { use } from "react"
 
-export default function CommunityReviewsPage({ params }: { params: { id: string } }) {
+export default function CommunityReviewsPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params)
     const router = useRouter()
 
     // Dummy data - will be replaced with actual data from database
@@ -129,9 +131,9 @@ export default function CommunityReviewsPage({ params }: { params: { id: string 
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-xs font-bold dark:text-gray-200">{criterion.name}</span>
                                     <span className={`text-xs font-black ${criterion.color === 'bg-neo-blue' ? 'text-neo-blue dark:text-blue-400' :
-                                            criterion.color === 'bg-secondary' ? 'text-secondary dark:text-yellow-400' :
-                                                criterion.color === 'bg-green-500' ? 'text-green-500 dark:text-green-400' :
-                                                    'text-primary dark:text-red-400'
+                                        criterion.color === 'bg-secondary' ? 'text-secondary dark:text-yellow-400' :
+                                            criterion.color === 'bg-green-500' ? 'text-green-500 dark:text-green-400' :
+                                                'text-primary dark:text-red-400'
                                         }`}>
                                         {criterion.rating}
                                     </span>
