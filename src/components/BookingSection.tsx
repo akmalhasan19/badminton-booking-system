@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
 import { PhoneVerificationModal } from "@/components/PhoneVerificationModal"
-import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking, fetchPublicCourts } from "@/lib/api/actions"
+import { fetchVenues, fetchVenueDetails, fetchVenueCourts, fetchAvailableSlots, createBooking, fetchPublicCourts } from "@/lib/api/actions"
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
@@ -350,19 +350,18 @@ export function BookingSection() {
             setIsLoadingVenueDetails(true);
             startLoading("Memuat detail lapangan...");
             try {
-                const details = await fetchVenueDetails(selectedHall.id);
-                if (details && details.courts) {
+                // Use fetchVenueCourts to get courts with court_type field
+                const courts = await fetchVenueCourts(selectedHall.id);
+                if (courts && courts.length > 0) {
                     // Sort courts by court_number to ensure Court 1 comes first
-                    const sortedCourts = [...details.courts].sort((a, b) => a.court_number - b.court_number);
+                    const sortedCourts = [...courts].sort((a, b) => a.court_number - b.court_number);
                     setVenueCourts(sortedCourts);
 
                     // Update price from first court if available
-                    if (sortedCourts.length > 0) {
-                        setSelectedHall((prev: any) => ({
-                            ...prev,
-                            pricePerHour: sortedCourts[0].hourly_rate || 50000
-                        }));
-                    }
+                    setSelectedHall((prev: any) => ({
+                        ...prev,
+                        pricePerHour: sortedCourts[0].hourly_rate || 50000
+                    }));
                 } else {
                     setVenueCourts([]);
                 }
@@ -1098,7 +1097,7 @@ export function BookingSection() {
                                                     <div className="p-3 flex flex-col justify-between flex-grow w-full gap-2">
                                                         <div className="text-left">
                                                             <span className={`text-[10px] font-bold block uppercase tracking-wider mb-0.5 ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                                {court.court_type?.name || t.court_type_standard}
+                                                                {court.court_type || t.court_type_standard}
                                                             </span>
                                                         </div>
 

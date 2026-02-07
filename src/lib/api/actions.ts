@@ -46,6 +46,15 @@ export async function fetchVenueDetails(venueId: string): Promise<SmashVenueDeta
 }
 
 /**
+ * Server action to fetch courts for a venue from Smash API
+ * Use this to get courts with court_type and photo_url
+ * Endpoint: GET /venues/{id}/courts
+ */
+export async function fetchVenueCourts(venueId: string) {
+    return await smashApi.getVenueCourts(venueId)
+}
+
+/**
  * Server action to fetch availability for a venue on specific date
  * Returns complete slot availability per court
  */
