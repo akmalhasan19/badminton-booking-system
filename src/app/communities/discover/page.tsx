@@ -178,7 +178,7 @@ export default function DiscoverCommunitiesPage() {
                                 </div>
                             ) : (
                                 communities.map((community) => {
-                                    const styles = getCategoryStyles(community.sport || community.category || 'Other')
+                                    const styles = getCategoryStyles(community.sport || 'Other')
                                     const initials = community.name.substring(0, 2).toUpperCase()
 
                                     return (
@@ -189,9 +189,9 @@ export default function DiscoverCommunitiesPage() {
                                         >
                                             {/* Community Image/Icon */}
                                             <div className="w-16 h-16 shrink-0 relative">
-                                                {community.logo_url || community.image ? (
+                                                {community.logo_url ? (
                                                     <img
-                                                        src={community.logo_url || community.image}
+                                                        src={community.logo_url}
                                                         alt={community.name}
                                                         className="w-full h-full object-cover rounded-md border-2 border-black"
                                                     />
@@ -224,7 +224,7 @@ export default function DiscoverCommunitiesPage() {
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-gray-600 dark:text-gray-300 truncate mt-1">
-                                                    {community.city || community.location}
+                                                    {community.city}
                                                     {community.member_count > 0 && ` • ${community.member_count} members`}
                                                 </p>
                                             </div>
