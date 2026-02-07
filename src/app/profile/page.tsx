@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { SmashLogo } from "@/components/SmashLogo"
 import { MobileHeader } from "@/components/MobileHeader"
 import { ImageCropper } from "@/components/ImageCropper"
+import { UserSidebar } from "@/components/UserSidebar"
 import { uploadAvatar, getCurrentUser, updateProfile } from "@/lib/auth/actions"
 import { sendPasswordResetCode, verifyPasswordResetCode, updatePasswordWithOTP } from "@/lib/auth/password-reset-actions"
 import { useState, useRef, useEffect } from "react"
@@ -31,21 +32,8 @@ export default function ProfilePage() {
         setToast({ message, type, isVisible: true })
     }
 
-    const navItems = [
-        { label: "Overview", path: "/dashboard", active: false },
-        { label: "Bookings", path: "/bookings", active: false },
-        { label: "Schedule", path: "/schedule", active: false },
-        { label: "Profile", path: "/profile", active: true },
-    ]
-
-    const menuItems = [
-        { icon: User, label: "Informasi Akun", path: "/profile" },
-        { icon: Calendar, label: "Booking Saya", path: "/bookings" },
-        // { icon: CreditCard, label: "Metode Pembayaran", path: "/payment-methods" }, // Future
-        // { icon: Bell, label: "Notifikasi", path: "/notifications" }, // Future
-        { icon: Settings, label: "Pengaturan", path: "/settings" },
-        { icon: HelpCircle, label: "Bantuan & Support", path: "/help" }
-    ]
+    // User state for sidebar
+    const [user, setUser] = useState<any>(null)
 
     const [activeTab, setActiveTab] = useState<'info' | 'security' | 'billing'>('info')
 
@@ -122,21 +110,22 @@ export default function ProfilePage() {
     // Fetch user data on mount
     useEffect(() => {
         const fetchUser = async () => {
-            const user = await getCurrentUser()
-            if (user) {
-                if (user.avatar_url) setAvatarUrl(user.avatar_url)
+            const userData = await getCurrentUser()
+            if (userData) {
+                setUser(userData)
+                if (userData.avatar_url) setAvatarUrl(userData.avatar_url)
 
-                const dob = user.date_of_birth ? new Date(user.date_of_birth) : null
+                const dob = userData.date_of_birth ? new Date(userData.date_of_birth) : null
 
                 setProfile({
-                    name: user.name || '',
-                    gender: user.gender || 'Laki-laki',
+                    name: userData.name || '',
+                    gender: userData.gender || 'Laki-laki',
                     day: dob ? dob.getDate().toString() : '1',
                     month: dob ? dob.toLocaleDateString('id-ID', { month: 'short' }) : 'Jan',
                     year: dob ? dob.getFullYear().toString() : '2000',
-                    city: user.city || '',
-                    phone: user.phone || '',
-                    email: user.email || ''
+                    city: userData.city || '',
+                    phone: userData.phone || '',
+                    email: userData.email || ''
                 })
             }
         }
@@ -215,74 +204,9 @@ export default function ProfilePage() {
             <div className="max-w-7xl mx-auto px-3 md:px-4 relative z-10 pt-6 md:pt-0">
                 <div className="grid md:grid-cols-[300px_1fr] gap-8">
 
-                    {/* Left Sidebar - Hidden on mobile */}
-                    <div className="hidden md:block space-y-6">
-                        {/* Profile Summary Card */}
-                        <div className="bg-white border-2 border-black rounded-xl p-6 shadow-hard text-center flex flex-col items-center">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                className="hidden"
-                            />
-                            <div onClick={handleAvatarClick} className="relative mb-4 group cursor-pointer">
-                                <div className="w-20 h-20 bg-gray-100 rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
-                                    {avatarUrl ? (
-                                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="font-display font-bold text-2xl text-gray-400">AH</span>
-                                    )}
-                                </div>
-                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera className="w-6 h-6 text-white" />
-                                </div>
-                            </div>
-                            <h2 className="font-bold text-xl">{profile.name || "User"}</h2>
-                            <p className="text-gray-500 text-sm font-medium">Member</p>
-                        </div>
-
-                        {/* Member Tier Banner */}
-                        <div className="bg-[#C19A6B] border-2 border-black rounded-xl p-4 shadow-hard text-white relative overflow-hidden group cursor-pointer hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all">
-                            <div className="absolute top-0 right-0 w-20 h-20 bg-white/20 rounded-full -mr-10 -mt-10 blur-xl"></div>
-                            <div className="flex justify-between items-center relative z-10">
-                                <div>
-                                    <p className="text-xs font-bold uppercase opacity-80">Member Status</p>
-                                    <p className="font-display font-black text-lg">Bronze Priority</p>
-                                </div>
-                                <ChevronRight className="w-5 h-5" />
-                            </div>
-                        </div>
-
-                        {/* Points Balance */}
-                        <div className="bg-white border-2 border-black rounded-xl p-4 shadow-hard flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-pastel-yellow border-2 border-black flex items-center justify-center">
-                                <Gift className="w-4 h-4 text-black" />
-                            </div>
-                            <div>
-                                <p className="font-display font-black text-lg leading-none">0</p>
-                                <p className="text-xs font-bold text-gray-500">Poin</p>
-                            </div>
-                        </div>
-
-                        {/* Navigation Menu */}
-                        <div className="bg-white border-2 border-black rounded-xl shadow-hard overflow-hidden">
-                            {menuItems.map((item, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => router.push(item.path)}
-                                    className="w-full text-left px-5 py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors flex items-center gap-3 font-bold text-sm text-gray-700"
-                                >
-                                    <item.icon className="w-5 h-5 text-gray-400" />
-                                    {item.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button className="w-full flex items-center justify-center gap-2 text-red-600 font-bold py-3 hover:bg-red-50 rounded-xl transition-colors">
-                            <LogOut className="w-4 h-4" />
-                            Log Out
-                        </button>
+                    {/* Sidebar - Hidden on mobile */}
+                    <div className="hidden md:block">
+                        <UserSidebar user={user} />
                     </div>
 
                     {/* Right Content */}

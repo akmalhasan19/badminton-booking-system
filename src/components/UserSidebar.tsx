@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift } from "lucide-react"
+import { User, Mail, Phone, MapPin, Camera, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift, Users } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 
@@ -19,7 +19,8 @@ export function UserSidebar({ user }: UserSidebarProps) {
 
     const menuItems = [
         { label: "Booking Saya", icon: Calendar, path: "/bookings" },
-        { label: "Ubah Profil", icon: User, path: "/profile" },
+        { label: "Komunitas", icon: Users, path: "/communities" },
+        { label: "Informasi Akun", icon: User, path: "/profile" },
         { label: "Metode Pembayaran", icon: CreditCard, path: "/payment-methods" },
         { label: "Notifikasi", icon: Bell, path: "/notifications" },
         { label: "Pengaturan", icon: Settings, path: "/settings" },
