@@ -38,7 +38,8 @@ export default function BookingHistoryPage() {
                 setUser(userData)
 
                 // Check for payment confirmation (only once)
-                if (typeof window !== 'undefined' && !paymentCheckRef.current) {
+                // Note: useEffect only runs on client, so no need to check typeof window
+                if (!paymentCheckRef.current) {
                     const params = new URLSearchParams(window.location.search)
                     const paymentStatus = params.get('payment')
                     const bookingId = params.get('booking_id')

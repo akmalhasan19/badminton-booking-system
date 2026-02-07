@@ -232,6 +232,7 @@ export async function createBooking(data: {
             status: 'pending',
             duration_hours: data.durationHours,
             venue_id: data.courtId, // Save Venue ID for Partner Sync
+            payment_url: invoice.invoice_url, // Save Xendit payment URL for direct redirect
             // Fee Breakdown columns
             application_fee: applicationFeePartner,
             xendit_fee: 0, // No longer tracked separately, subsumed in service fee spread

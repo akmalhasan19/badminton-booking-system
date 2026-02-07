@@ -20,9 +20,14 @@ export async function getUserActiveBookings() {
     const supabase = await createClient()
     const user = await getCurrentUser()
 
+    console.log('[DEBUG getUserActiveBookings] user:', user?.id)
+
     if (!user) {
         return { error: 'Unauthorized', data: [] }
     }
+
+    const today = new Date().toISOString().split('T')[0]
+    console.log('[DEBUG getUserActiveBookings] today:', today)
 
     // Fetch confirmed bookings
     // We join with courts to get the court name
@@ -41,8 +46,10 @@ export async function getUserActiveBookings() {
         `)
         .eq('user_id', user.id)
         .eq('status', 'confirmed') // Active bookings are usually confirmed
-        .gte('booking_date', new Date().toISOString().split('T')[0]) // Only future or today
+        .gte('booking_date', today) // Only future or today
         .order('booking_date', { ascending: true })
+
+    console.log('[DEBUG getUserActiveBookings] data:', data?.length, 'error:', error)
 
     if (error) {
         console.error('Error fetching bookings:', error)
@@ -67,6 +74,8 @@ export async function getUserBookingHistory() {
     const supabase = await createClient()
     const user = await getCurrentUser()
 
+    console.log('[DEBUG getUserBookingHistory] user:', user?.id)
+
     if (!user) {
         return { error: 'Unauthorized', data: [] }
     }
@@ -89,6 +98,11 @@ export async function getUserBookingHistory() {
         .eq('user_id', user.id)
         .in('status', ['completed', 'cancelled', 'confirmed', 'pending'])
         .order('booking_date', { ascending: false })
+
+    console.log('[DEBUG getUserBookingHistory] data:', data?.length, 'error:', error)
+    if (data && data.length > 0) {
+        console.log('[DEBUG getUserBookingHistory] first booking:', data[0])
+    }
 
     if (error) {
         console.error('Error fetching booking history:', error)
