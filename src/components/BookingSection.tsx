@@ -1098,13 +1098,7 @@ export function BookingSection() {
                                                     <div className="p-3 flex flex-col justify-between flex-grow w-full gap-2">
                                                         <div className="text-left">
                                                             <span className={`text-[10px] font-bold block uppercase tracking-wider mb-0.5 ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                                {(() => {
-                                                                    const lowerName = court.name.toLowerCase();
-                                                                    if (lowerName.includes('karpet')) return t.court_type_vinyl;
-                                                                    if (lowerName.includes('parkit')) return t.court_type_wood;
-                                                                    if (lowerName.includes('beton')) return t.court_type_cement;
-                                                                    return t.court_type_standard;
-                                                                })()}
+                                                                {court.court_type?.name || t.court_type_standard}
                                                             </span>
                                                         </div>
 

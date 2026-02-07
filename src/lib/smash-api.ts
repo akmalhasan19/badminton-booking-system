@@ -44,6 +44,11 @@ export interface SmashVenue {
     facilities?: string[];
 }
 
+export interface SmashCourtType {
+    id: string;
+    name: string;
+}
+
 export interface SmashCourt {
     id: string;
     name: string;
@@ -51,6 +56,7 @@ export interface SmashCourt {
     hourly_rate: number;
     photo_url?: string;
     is_active?: boolean;
+    court_type?: SmashCourtType;
 }
 
 export interface SmashVenueDetails extends SmashVenue {
