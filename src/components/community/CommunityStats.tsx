@@ -11,19 +11,34 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
         <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 mb-8">
             {/* Members Card - Left Column spanning full height of this row */}
             <div className="bg-white border-3 border-black shadow-hard rounded-xl p-5 flex flex-col justify-between relative overflow-hidden h-full min-h-[180px]">
-                <div className="flex justify-between items-start mb-2">
+                {/* Vertical Divider Line - Absolute positioning dari ujung ke ujung */}
+                <div className="absolute top-0 bottom-0 left-[30%] -translate-x-1/2 w-[3px] bg-black"></div>
+
+                <div className="flex justify-between items-start mb-2 relative z-10">
                     <Users className="text-black w-8 h-8" />
                     <span className="bg-black text-white text-[10px] font-black px-2 py-1 uppercase tracking-widest">Members</span>
                 </div>
-                <div className="mt-2">
-                    <span className="text-6xl font-black block tracking-tighter text-black leading-none">{membersCount}</span>
-                    <span className="text-sm font-bold text-green-600 uppercase tracking-tight">+12 this week</span>
-                </div>
-                <div className="flex -space-x-3 mt-auto pt-4 pl-1">
-                    {/* Decorative Avatars */}
-                    <div className="w-8 h-8 rounded-full border-2 border-black bg-gray-200"></div>
-                    <div className="w-8 h-8 rounded-full border-2 border-black bg-gray-300"></div>
-                    <div className="w-8 h-8 rounded-full border-2 border-black bg-gray-400"></div>
+
+                {/* Layout dengan 2 kolom */}
+                <div className="flex gap-4 items-stretch flex-1 relative z-10">
+                    {/* Left Section - Stats */}
+                    <div className="flex flex-col justify-between flex-1">
+                        <div className="mt-2">
+                            <span className="text-6xl font-black block tracking-tighter text-black leading-none">{membersCount}</span>
+                            <span className="text-xs font-bold text-green-600 uppercase tracking-tight -ml-1">+12 this week</span>
+                        </div>
+                        <div className="flex -space-x-3 mt-auto pt-4 pl-1">
+                            {/* Decorative Avatars */}
+                            <div className="w-8 h-8 rounded-full border-2 border-black bg-gray-200"></div>
+                            <div className="w-8 h-8 rounded-full border-2 border-black bg-gray-300"></div>
+                            <div className="w-8 h-8 rounded-full border-2 border-black bg-gray-400"></div>
+                        </div>
+                    </div>
+
+                    {/* Right Section - Placeholder untuk member avatars */}
+                    <div className="flex-1">
+                        {/* Space reserved for future member avatars */}
+                    </div>
                 </div>
             </div>
 
