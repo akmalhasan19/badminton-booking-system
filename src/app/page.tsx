@@ -9,6 +9,7 @@ import { Marquee } from "@/components/Marquee"
 import { BentoGrid } from "@/components/BentoGrid"
 import { BookingSection } from "@/components/BookingSection"
 import { ShopSection } from "@/components/ShopSection"
+import { MatchSection } from "@/components/MatchSection"
 import { Footer } from "@/components/Footer"
 import { AICoach } from "@/components/AICoach"
 import { Tab } from "@/types"
@@ -22,6 +23,7 @@ function HomeContent() {
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam === 'book' && activeTab !== Tab.BOOK) setActiveTabState(Tab.BOOK)
+    else if (tabParam === 'match' && activeTab !== Tab.MATCH) setActiveTabState(Tab.MATCH)
     else if (tabParam === 'shop' && activeTab !== Tab.SHOP) setActiveTabState(Tab.SHOP)
     else if (!tabParam && activeTab !== Tab.HOME) setActiveTabState(Tab.HOME)
   }, [searchParams, activeTab])
@@ -33,6 +35,7 @@ function HomeContent() {
     const params = new URLSearchParams(searchParams.toString())
     if (tab === Tab.HOME) params.delete('tab')
     else if (tab === Tab.BOOK) params.set('tab', 'book')
+    else if (tab === Tab.MATCH) params.set('tab', 'match')
     else if (tab === Tab.SHOP) params.set('tab', 'shop')
 
     // Clean up other params if switching main tabs, except when going deeper
@@ -50,6 +53,8 @@ function HomeContent() {
     switch (activeTab) {
       case Tab.BOOK:
         return <BookingSection />
+      case Tab.MATCH:
+        return <MatchSection />
       case Tab.SHOP:
         return <ShopSection />
       case Tab.HOME:

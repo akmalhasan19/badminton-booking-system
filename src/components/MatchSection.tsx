@@ -1,0 +1,433 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { Plus, Users, Calendar, MapPin, Trophy, ArrowRight, Search, Filter, Clock, DollarSign, Locate, User, X } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { getMatchRooms, createMatchRoom, MatchMode, LevelRequirement, GameFormat, CourtSlot } from "@/lib/api/matchmaking"
+import { VisualCourtSelector } from "@/components/matchmaking/VisualCourtSelector"
+import { cn } from "@/lib/utils"
+
+export function MatchSection() {
+    const [view, setView] = useState<'LOBBY' | 'ROOM'>('LOBBY')
+    const [rooms, setRooms] = useState<any[]>([])
+    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
+    const [currentUser, setCurrentUser] = useState<any>(null)
+
+    // Filters
+    const [searchQuery, setSearchQuery] = useState("")
+    const [cityFilter, setCityFilter] = useState("")
+
+    // Create Room Form State
+    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [formData, setFormData] = useState({
+        title: '',
+        courtName: '',
+        matchDate: new Date().toISOString().split('T')[0],
+        startTime: '18:00',
+        endTime: '20:00',
+        price: 0,
+        city: 'Jakarta',
+        mode: 'CASUAL' as MatchMode,
+        levelRequirement: 'BEGINNER' as LevelRequirement,
+        gameFormat: 'DOUBLE' as GameFormat,
+        mySlot: 'A_BACK' as CourtSlot
+    })
+    const [isCreating, setIsCreating] = useState(false)
+
+    // Load rooms and user on mount
+    useEffect(() => {
+        const init = async () => {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            setCurrentUser(user)
+
+            const fetchedRooms = await getMatchRooms()
+            setRooms(fetchedRooms)
+        }
+        init()
+    }, [])
+
+    const handleCreateRoom = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsCreating(true)
+        try {
+            const result = await createMatchRoom(formData)
+            if (result.success && result.roomId) {
+                setShowCreateModal(false)
+                setSelectedRoomId(result.roomId)
+                setView('ROOM')
+                const fetchedRooms = await getMatchRooms()
+                setRooms(fetchedRooms)
+            } else {
+                alert(result.error || 'Failed to create room')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('An error occurred')
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
+    const handleJoinRoom = (roomId: string) => {
+        setSelectedRoomId(roomId)
+        setView('ROOM')
+    }
+
+    // Filter logic
+    const filteredRooms = rooms.filter(room => {
+        const matchesSearch = room.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            room.court_name.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesCity = cityFilter ? room.city === cityFilter : true
+        return matchesSearch && matchesCity
+    })
+
+    // Get unique cities for filter
+    const cities = Array.from(new Set(rooms.map(r => r.city || 'Jakarta')))
+
+    const renderLobby = () => (
+        <div className="max-w-7xl mx-auto px-4 py-6 font-sans">
+
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-3">
+                <div>
+                    <h2 className="text-4xl md:text-6xl font-display font-black mb-1 uppercase tracking-tight">Match Lobby</h2>
+                    <p className="text-sm md:text-base font-bold text-gray-500">Find your squad. Dominate the court.</p>
+                </div>
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="bg-black text-white px-5 py-2.5 rounded-lg font-black text-xs md:text-sm shadow-hard hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2 border-2 border-black whitespace-nowrap"
+                >
+                    <Plus className="w-4 h-4" /> Create Match
+                </button>
+            </div>
+
+            {/* Neo-Brutalist Search Bar (Redesigned - Split Containers) */}
+            <div className="mb-10 flex flex-col xl:flex-row gap-4 items-stretch">
+                {/* Search Input Container */}
+                <div className="flex-1 relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-pastel-acid rounded-lg border border-black flex items-center justify-center pointer-events-none group-focus-within:rotate-12 transition-transform shadow-sm">
+                        <Search className="w-4 h-4 text-black" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search event..."
+                        className="w-full h-14 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl focus:translate-x-1 focus:translate-y-1 focus:shadow-none shadow-hard transition-all outline-none"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                {/* City Filter Container */}
+                <div className="w-full xl:w-48 relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-pastel-lilac rounded-lg border border-black flex items-center justify-center pointer-events-none group-focus-within:-rotate-12 transition-transform shadow-sm">
+                        <MapPin className="w-4 h-4 text-black" />
+                    </div>
+                    <select
+                        className="w-full h-14 pl-16 pr-8 font-bold text-sm bg-white border-2 border-black rounded-xl focus:translate-x-1 focus:translate-y-1 focus:shadow-none shadow-hard transition-all outline-none appearance-none cursor-pointer"
+                        value={cityFilter}
+                        onChange={e => setCityFilter(e.target.value)}
+                    >
+                        <option value="">All Cities</option>
+                        {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-black"></div>
+                    </div>
+                </div>
+
+
+
+                {/* Filter Button */}
+                <button className="h-14 w-14 bg-white border-2 border-black rounded-xl shadow-hard flex items-center justify-center hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group shrink-0">
+                    <Filter className="w-6 h-6 text-black group-hover:rotate-180 transition-transform duration-500" />
+                </button>
+
+                {/* Search Button */}
+                <button className="h-14 px-8 bg-black text-white font-black text-sm uppercase tracking-wider rounded-xl border-2 border-transparent shadow-hard hover:bg-gray-900 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-2 justify-center xl:justify-start shrink-0">
+                    <Search className="w-5 h-5" />
+                    Search Match
+                </button>
+            </div>
+
+            <div className="flex justify-between items-center mb-3 px-1">
+                <p className="text-sm md:text-base font-bold text-gray-500 uppercase tracking-wider">Active Matches ({filteredRooms.length})</p>
+            </div>
+
+            {/* Room List - Larger Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredRooms.map((room) => (
+                    <motion.div
+                        key={room.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ y: -2 }}
+                        className="bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all overflow-hidden group cursor-pointer flex flex-col h-full"
+                        onClick={() => handleJoinRoom(room.id)}
+                    >
+                        {/* Header - Height increased to h-10 */}
+                        <div className="px-4 py-2.5 border-b-2 border-black bg-gray-50 flex justify-between items-center h-10">
+                            <div className="flex gap-2 items-center">
+                                <span className="bg-black text-white text-xs font-black px-2 py-0.5 rounded-md tracking-wide uppercase">
+                                    {room.game_format}
+                                </span>
+                                <span className={cn(
+                                    "text-xs font-black px-2 py-0.5 rounded-md border border-black uppercase tracking-wide",
+                                    room.level_requirement === 'BEGINNER' ? "bg-pastel-acid text-black" :
+                                        room.level_requirement === 'INTERMEDIATE' ? "bg-pastel-lilac text-black" :
+                                            "bg-pastel-pink text-black"
+                                )}>
+                                    {room.level_requirement}
+                                </span>
+                            </div>
+                            {room.mode === 'RANKED' && (
+                                <Trophy className="w-4 h-4 text-orange-500" />
+                            )}
+                        </div>
+
+                        <div className="p-4 flex-1 flex flex-col gap-2 min-h-[90px]">
+                            <h3 className="text-base font-black text-black leading-tight uppercase line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">{room.title}</h3>
+
+                            <div className="mt-auto space-y-2">
+                                <div className="flex items-center gap-2 text-gray-600">
+                                    <Calendar className="w-4 h-4 shrink-0" />
+                                    <p className="text-xs font-bold leading-none">{new Date(room.match_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {room.start_time?.slice(0, 5)}</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-600">
+                                    <MapPin className="w-4 h-4 shrink-0" />
+                                    <p className="text-xs font-bold leading-none truncate">{room.court_name}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer - Height increased to h-10 */}
+                        <div className="px-4 py-2.5 border-t-2 border-black bg-white flex justify-between items-center h-10">
+                            <span className="text-base font-black text-black">
+                                {room.price_per_person > 0
+                                    ? `IDR ${(room.price_per_person / 1000)}k`
+                                    : 'Free'
+                                }
+                            </span>
+
+                            <button className="px-3 py-1 bg-pastel-mint text-black font-black rounded-md border border-black hover:bg-green-400 transition-colors text-xs uppercase flex items-center gap-1.5 shadow-sm hover:translate-y-px hover:shadow-none">
+                                Join <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+
+            {filteredRooms.length === 0 && (
+                <div className="col-span-full text-center py-12 bg-gray-50 rounded-xl border-2 border-black border-dashed opacity-70">
+                    <div className="bg-white w-10 h-10 rounded-lg border-2 border-black shadow flex items-center justify-center mx-auto mb-3 rotate-3">
+                        <Users className="w-5 h-5 text-black" />
+                    </div>
+                    <h3 className="text-sm font-black uppercase mb-1">No Matches Found</h3>
+                    <button onClick={() => setShowCreateModal(true)} className="mt-2 bg-black text-white px-4 py-1.5 rounded font-bold text-[10px] border border-transparent hover:bg-gray-800 transition-colors">
+                        Create Match
+                    </button>
+                </div>
+            )}
+
+            {/* Create Modal (Kept standard size for usability) */}
+            {showCreateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white w-full max-w-xl rounded-2xl border-4 border-black shadow-hard-xl overflow-hidden my-8 relative"
+                    >
+                        <div className="p-5 border-b-4 border-black bg-pastel-acid flex justify-between items-center relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-display font-black uppercase tracking-tight">Create Match</h3>
+                                <p className="font-bold text-black/60 text-xs">Set up your battlefield</p>
+                            </div>
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="bg-white p-2 rounded-lg border-2 border-black shadow-hard-sm hover:translate-y-0.5 hover:shadow-none transition-all relative z-10"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCreateRoom} className="p-6 space-y-4 bg-white max-h-[70vh] overflow-y-auto tags-input">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="col-span-full">
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">Room Title</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm focus:bg-gray-50 outline-none transition-all shadow-sm focus:shadow-hard-sm"
+                                        placeholder="e.g. Sunday Morning Smash"
+                                        value={formData.title}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                    />
+                                </div>
+                                {/* ... Rest of form inputs simplified for brevity but kept functional ... */}
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">Location</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        placeholder="GOR Name"
+                                        value={formData.courtName}
+                                        onChange={e => setFormData({ ...formData, courtName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">City</label>
+                                    <select
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm bg-white focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        value={formData.city}
+                                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                    >
+                                        <option value="Jakarta">Jakarta</option>
+                                        <option value="Bandung">Bandung</option>
+                                        <option value="Surabaya">Surabaya</option>
+                                        <option value="Tangerang">Tangerang</option>
+                                        <option value="Bekasi">Bekasi</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        value={formData.matchDate}
+                                        onChange={e => setFormData({ ...formData, matchDate: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase mb-1 ml-1">Start</label>
+                                        <input
+                                            type="time"
+                                            required
+                                            className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm text-center focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                            value={formData.startTime}
+                                            onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase mb-1 ml-1">End</label>
+                                        <input
+                                            type="time"
+                                            required
+                                            className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm text-center focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                            value={formData.endTime}
+                                            onChange={e => setFormData({ ...formData, endTime: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">Price</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="1000"
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        value={formData.price}
+                                        onChange={e => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">Format</label>
+                                    <select
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm bg-white focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        value={formData.gameFormat}
+                                        onChange={e => setFormData({ ...formData, gameFormat: e.target.value as GameFormat })}
+                                    >
+                                        <option value="DOUBLE">Double</option>
+                                        <option value="SINGLE">Single</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">Stats</label>
+                                    <select
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm bg-white focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        value={formData.levelRequirement}
+                                        onChange={e => setFormData({ ...formData, levelRequirement: e.target.value as LevelRequirement })}
+                                    >
+                                        <option value="BEGINNER">Beginner</option>
+                                        <option value="INTERMEDIATE">Intermediate</option>
+                                        <option value="ADVANCED">Advanced</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase mb-1 ml-1">My Spot</label>
+                                    <select
+                                        className="w-full p-3 border-2 border-black rounded-lg font-bold text-sm bg-white focus:bg-gray-50 outline-none shadow-sm focus:shadow-hard-sm"
+                                        value={formData.mySlot}
+                                        onChange={e => setFormData({ ...formData, mySlot: e.target.value as CourtSlot })}
+                                    >
+                                        <option value="A_BACK">A - Back</option>
+                                        <option value="A_FRONT">A - Front</option>
+                                        <option value="B_BACK">B - Back</option>
+                                        <option value="B_FRONT">B - Front</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-200 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="px-4 py-3 font-bold text-xs text-gray-500 hover:text-black transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isCreating}
+                                    className="px-6 py-3 bg-black text-white rounded-lg font-black text-sm border-2 border-transparent shadow-hard hover:translate-y-0.5 hover:shadow-none hover:bg-gray-900 transition-all disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isCreating ? '...' : 'Launch 🚀'}
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </div>
+            )}
+        </div>
+    )
+
+    const renderRoom = () => (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+            <button
+                onClick={() => setView('LOBBY')}
+                className="mb-6 flex items-center gap-2 font-bold text-black bg-white px-4 py-2 border-2 border-black rounded-lg shadow-hard hover:translate-y-0.5 hover:shadow-none transition-all"
+            >
+                ← Back to Lobby
+            </button>
+
+            {selectedRoomId && (
+                <VisualCourtSelector
+                    roomId={selectedRoomId}
+                    currentUser={currentUser}
+                    initialParticipants={[]} // Data will fetch via realtime/client load in component
+                    gameFormat={rooms.find(r => r.id === selectedRoomId)?.game_format || 'DOUBLE'}
+                />
+            )}
+        </div>
+    )
+
+    return (
+        <section className="min-h-screen bg-[#F4F7FE] pt-28 pb-20 font-sans relative overflow-hidden">
+            {/* Grid Background */}
+            <div
+                className="absolute inset-0 z-0 w-full h-full pointer-events-none"
+                style={{
+                    backgroundImage: 'linear-gradient(to right, rgba(160, 82, 45, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(160, 82, 45, 0.15) 1px, transparent 1px)',
+                    backgroundSize: '100px 100px'
+                }}
+            />
+
+            <div className="relative z-10">
+                {view === 'LOBBY' ? renderLobby() : renderRoom()}
+            </div>
+        </section>
+    )
+}

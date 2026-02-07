@@ -14,7 +14,11 @@ interface HeroBookingWidgetProps {
 export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
     const router = useRouter()
     const [searchQuery, setSearchQuery] = useState("")
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [date, setDate] = useState("")
+
+    useEffect(() => {
+        setDate(new Date().toISOString().split('T')[0])
+    }, [])
 
     // Autocomplete State
     const [venues, setVenues] = useState<SmashVenue[]>([])
@@ -28,7 +32,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
         const loadVenues = async () => {
             try {
                 const data = await fetchVenues()
-                setVenues(data)
+                setVenues(Array.isArray(data) ? data : [])
             } catch (error) {
                 console.error("Failed to load venues", error)
             } finally {

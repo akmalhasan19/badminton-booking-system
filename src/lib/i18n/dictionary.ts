@@ -4,6 +4,7 @@ export type Dictionary = {
     // Navbar
     home: string;
     book: string;
+    match: string;
     shop: string;
     join_us: string;
     login: string;
@@ -134,6 +135,7 @@ export const dictionaries: Record<Language, Dictionary> = {
     en: {
         home: "HOME",
         book: "BOOK",
+        match: "MATCH",
         shop: "SHOP",
         join_us: "Join Us",
         login: "Login",
@@ -261,6 +263,7 @@ export const dictionaries: Record<Language, Dictionary> = {
     id: {
         home: "BERANDA",
         book: "PESAN",
+        match: "TANDING",
         shop: "BELANJA",
         join_us: "Gabung Mitra",
         login: "Masuk",
@@ -388,6 +391,7 @@ export const dictionaries: Record<Language, Dictionary> = {
     jv: {
         home: "GRIYA",
         book: "PESEN",
+        match: "TANDING",
         shop: "WANDÉ",
         join_us: "Ndherek Gabung",
         login: "Mlebet",

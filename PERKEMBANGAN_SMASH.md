@@ -172,3 +172,52 @@ Kita valid memiliki **"Zero-Wait Booking Experience"**.
 *   User offline -> Masih bisa lihat jadwal (karena PWA).
 
 Ini adalah data teknis yang tidak bisa dibantah oleh marketing "murah" kompetitor. Kita menjual **WAKTU** yang dihemat user.
+
+---
+
+## 🚀 Strategic Pivot: Deep Vertical Features
+
+Kita melakukan pivot strategi untuk menghadapi kompetitor besar (AYO, Gelora). Fokus "Smash" bergeser dari General Booking App menjadi "Deep Vertical Badminton Ecosystem" dengan fitur komunitas yang mendalam.
+
+### 1. Feature: Advanced Badminton ELO Rating
+**Goal:** Membuat sistem ranking yang adil dan adiktif (Gamification).
+
+**User Flow:**
+- [ ] User input skor hasil pertandingan.
+- [ ] Sistem menghitung selisih rating kedua pemain.
+- [ ] Winner mendapat poin (+), Loser mendapat poin (-).
+- [ ] Jika Rank naik (misal: Bronze -> Silver), tampilkan animasi selebrasi.
+
+**Technical Implementation:**
+- **Algorithm:** Implementasi standar ELO Rating Calculation (K-Factor adjustment).
+- **Database:** Supabase Schema Update (Table `matches`, `player_ratings`, `rating_history`).
+- **Backend:** Next.js API Routes untuk kalkulasi skor dan update rating atomik.
+
+### 2. Feature: Gear Health Tracker (Smart Stringing)
+**Goal:** Utilitas unik untuk pemain merawat raket & senar.
+
+**User Flow:**
+- [ ] User input data raket (Brand, Tipe) & Senar (Tipe, Tarikan Lbs, Tanggal Pasang).
+- [ ] Setiap kali user bermain (berdasarkan booking/match history), sistem menghitung durasi pakai.
+- **Trigger:** Jika durasi > 30 jam atau > 3 bulan, kirim Push Notification: "Performa senar menurun, waktunya ganti!".
+- [ ] **Monetization Potential:** Slot rekomendasi toko senar terdekat.
+
+**Technical Implementation:**
+- **Database:** Supabase Schema Update (Table `user_gears`, `gear_usage_logs`).
+- **Cron Job:** Scheduled job (via Supabase Edge Functions atau Next.js Cron) untuk cek durasi pemakaian dan trigger notifikasi.
+- **Push Notification:** Integrasi dengan Web Push API / FCM.
+
+### 3. Feature: "Shuttlecock Fund" & Smart Split Bill
+**Goal:** Menyelesaikan masalah administrasi keuangan komunitas (Pain Point utama).
+
+**User Flow:**
+- [ ] Admin membuat "Sesi Main".
+- [ ] Input biaya sewa lapangan + pembelian kok (misal: 1 slop).
+- [ ] Sistem otomatis membagi total biaya dengan jumlah pemain yang hadir.
+- [ ] Kirim tagihan personal via WhatsApp link/In-App notification.
+- [ ] Fitur "Inventory Kok": Mencatat sisa kok di tabungan komunitas.
+
+**Technical Implementation:**
+- **Database:** Supabase Schema Update (Table `game_sessions`, `session_expenses`, `bill_splits`, `community_inventory`).
+- **Logic:** Fungsi pembagian tagihan dinamis.
+- **Integration:** WhatsApp/Messaging deeplink generator.

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, User, LogOut, ChevronDown, Calendar, CreditCard, Bell, HelpCircle, Settings, Star, Gift } from "lucide-react"
+import { Menu, X, User, Users, LogOut, ChevronDown, Calendar, CreditCard, Bell, HelpCircle, Settings, Star, Gift } from "lucide-react"
 import { Tab } from "@/types"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser, signOut } from "@/lib/auth/actions"
@@ -46,6 +46,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const menuItems = [
         { tab: Tab.HOME, label: t.home, color: "pastel-acid", path: "/" },
         { tab: Tab.BOOK, label: t.book, color: "pastel-mint", path: "/?tab=book" },
+        { tab: Tab.MATCH, label: t.match, color: "pastel-lilac", path: "/?tab=match" },
         // { tab: Tab.SHOP, label: t.shop, color: "pastel-pink", path: "/shop" }
     ];
 
@@ -67,6 +68,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     // Determine current active tab
     const currentTab = activeTab || (() => {
         if (pathname === "/" && searchParams.get('tab') === 'book') return Tab.BOOK
+        if (pathname === "/" && searchParams.get('tab') === 'match') return Tab.MATCH
         if (pathname === "/") return Tab.HOME
         if (pathname.startsWith("/booking")) return Tab.BOOK
         if (pathname.startsWith("/shop")) return Tab.SHOP
@@ -134,6 +136,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         switch (tab) {
             case Tab.HOME: return 'bg-pastel-acid';
             case Tab.BOOK: return 'bg-pastel-mint';
+            case Tab.MATCH: return 'bg-pastel-lilac';
             case Tab.SHOP: return 'bg-pastel-pink';
             default: return 'bg-transparent';
         }
@@ -328,6 +331,16 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                                 <Calendar className="w-4.5 h-4.5 text-gray-700" />
                                                             </div>
                                                             <span>{t.my_bookings}</span>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/communities'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-blue/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-blue/50 transition-colors">
+                                                                <Users className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Komunitas</span>
                                                         </button>
 
                                                         <button

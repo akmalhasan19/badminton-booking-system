@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { User, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift, Star, ArrowLeft } from "lucide-react"
+import { User, Calendar, CreditCard, Bell, Settings, HelpCircle, LogOut, ChevronRight, Gift, Star, ArrowLeft, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser, signOut } from "@/lib/auth/actions"
@@ -45,6 +45,13 @@ export default function AccountPage() {
             path: "/bookings",
             bgColor: "bg-pastel-mint/30",
             hoverColor: "hover:bg-pastel-mint/50"
+        },
+        {
+            icon: Users, // Using Users icon
+            label: "Komunitas", // Hardcoded per user request for now or t.communities if available
+            path: "/communities",
+            bgColor: "bg-pastel-blue/30",
+            hoverColor: "hover:bg-pastel-blue/50"
         },
         {
             icon: User,
@@ -106,7 +113,7 @@ export default function AccountPage() {
                 {/* Top Navigation */}
                 <div className="flex items-center justify-between p-4">
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => router.push('/')}
                         className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6" />

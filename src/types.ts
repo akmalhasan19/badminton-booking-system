@@ -44,5 +44,6 @@ export interface Message {
 export enum Tab {
     HOME = 'HOME',
     BOOK = 'BOOK',
+    MATCH = 'MATCH',
     SHOP = 'SHOP',
 }
