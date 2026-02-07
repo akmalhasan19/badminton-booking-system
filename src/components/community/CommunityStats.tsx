@@ -112,7 +112,8 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
                     .from('community_members')
                     .select(`
                         id,
-                        users!inner (
+                        user_id,
+                        users (
                             id,
                             avatar_url,
                             full_name
@@ -127,9 +128,9 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
 
                 // Transform the data to flat structure
                 const transformedMembers: Member[] = (data || []).map((member: any) => ({
-                    id: member.users.id,
-                    avatar_url: member.users.avatar_url,
-                    full_name: member.users.full_name
+                    id: member.users?.id || member.user_id,
+                    avatar_url: member.users?.avatar_url || null,
+                    full_name: member.users?.full_name || 'Unknown Member'
                 }))
 
                 setMembers(transformedMembers)
