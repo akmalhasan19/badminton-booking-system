@@ -424,13 +424,16 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                         </div>
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden p-2 text-black bg-white border-2 border-black rounded-lg shadow-hard-sm"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    >
-                        {mobileMenuOpen ? <X /> : <Menu />}
-                    </button>
+                    {/* Mobile Language Switcher & Menu Button */}
+                    <div className="md:hidden flex items-center gap-2">
+                        <LanguageSwitcher />
+                        <button
+                            className="p-2 text-black bg-white border-2 border-black rounded-lg shadow-hard-sm"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        >
+                            {mobileMenuOpen ? <X /> : <Menu />}
+                        </button>
+                    </div>
                 </div>
             </nav>
 
@@ -452,7 +455,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             exit="exit"
                             className="flex flex-col items-center space-y-6"
                         >
-                            <LanguageSwitcher />
 
                             {menuItems.map((item) => (
                                 <motion.button

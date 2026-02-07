@@ -30,6 +30,7 @@ export async function getCommunityById(id: string) {
                 description,
                 sport,
                 logo_url,
+                cover_url,
                 city,
                 privacy,
                 created_by
@@ -91,7 +92,8 @@ export async function getCommunitiesForUser(role?: 'admin' | 'member') {
                     name,
                     description,
                     sport,
-                    logo_url
+                    logo_url,
+                    cover_url
                 )
             `)
             .eq('user_id', user.id)
@@ -193,6 +195,102 @@ export async function createCommunity(formData: FormData) {
     } catch (error) {
         console.error("Error creating community:", error)
         return { error: "Failed to create community" }
+    }
+}
+
+export async function updateCommunityCover(communityId: string, coverUrl: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Not authenticated" }
+    }
+
+    try {
+        // Verify user is admin of the community
+        const { data: memberData } = await supabase
+            .from('community_members')
+            .select('role')
+            .eq('community_id', communityId)
+            .eq('user_id', user.id)
+            .single()
+
+        if (!memberData || memberData.role !== 'admin') {
+            return { error: "Not authorized to update this community" }
+        }
+
+        const { error } = await supabase
+            .from('communities')
+            .update({ cover_url: coverUrl })
+            .eq('id', communityId)
+
+        if (error) throw error
+
+        revalidatePath(`/communities/${communityId}`)
+        return { success: true }
+    } catch (error) {
+        console.error("Error updating community cover:", error)
+        return { error: "Failed to update community cover" }
+    }
+}
+
+export async function updateCommunityLogo(communityId: string, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Not authenticated" }
+    }
+
+    const file = formData.get('file') as File
+    if (!file) {
+        return { error: "No file provided" }
+    }
+
+    try {
+        // Verify user is admin of the community
+        const { data: membership, error: membershipError } = await supabase
+            .from('community_members')
+            .select('role')
+            .eq('community_id', communityId)
+            .eq('user_id', user.id)
+            .single()
+
+        if (membershipError || !membership || membership.role !== 'admin') {
+            return { error: "Unauthorized: You must be an admin to update the logo" }
+        }
+
+        // 1. Upload file to storage
+        const fileExt = 'webp'; // We are converting to webp on client
+        const filePath = `${communityId}/profile/logo-${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+            .from('communities')
+            .upload(filePath, file, {
+                contentType: 'image/webp',
+                upsert: true
+            })
+
+        if (uploadError) throw uploadError
+
+        // 2. Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('communities')
+            .getPublicUrl(filePath)
+
+        // 3. Update community record
+        const { error: updateError } = await supabase
+            .from('communities')
+            .update({ logo_url: publicUrl })
+            .eq('id', communityId)
+
+        if (updateError) throw updateError
+
+        revalidatePath(`/communities/${communityId}`)
+        return { success: true, logo_url: publicUrl }
+    } catch (error) {
+        console.error("Error updating community logo:", error)
+        return { error: "Failed to update community logo" }
     }
 }
 

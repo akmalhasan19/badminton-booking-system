@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react'
 import Cropper, { Area } from 'react-easy-crop'
 import { X, ZoomIn, ZoomOut, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import { useEffect, useState as useReactState } from 'react'
 
 interface ImageCropperProps {
     imageSrc: string
@@ -46,6 +48,12 @@ export function ImageCropper({ imageSrc, onCropComplete, onCancel }: ImageCroppe
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+        return () => setMounted(false)
+    }, [])
 
     const onCropChange = useCallback((crop: { x: number; y: number }) => {
         setCrop(crop)
@@ -66,13 +74,13 @@ export function ImageCropper({ imageSrc, onCropComplete, onCancel }: ImageCroppe
         }
     }
 
-    return (
+    const content = (
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
@@ -143,4 +151,8 @@ export function ImageCropper({ imageSrc, onCropComplete, onCancel }: ImageCroppe
             </motion.div>
         </AnimatePresence>
     )
+
+    if (!mounted) return null
+
+    return createPortal(content, document.body)
 }

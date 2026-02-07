@@ -272,15 +272,27 @@ export default function CommunitiesPage() {
                                         {communities.map((community) => (
                                             <motion.div
                                                 key={community.id}
-                                                whileHover={{ scale: 1.03, y: -2 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                className="bg-white p-4 rounded-xl border-2 border-black shadow-hard-sm cursor-pointer hover:shadow-hard-md transition-all flex flex-col items-center text-center"
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                className="p-2 cursor-pointer transition-all flex flex-col items-center text-center group"
                                                 onClick={() => router.push(`/communities/${community.id}`)}
                                             >
-                                                <div className={`w-14 h-14 ${community.color} rounded-xl border-2 border-black flex items-center justify-center font-bold text-xl shadow-sm mb-3`}>
-                                                    {community.initials}
+
+
+                                                <div className="relative z-10 flex flex-col items-center">
+                                                    <div className={`w-14 h-14 ${community.color} rounded-xl border-2 border-black flex items-center justify-center font-bold text-xl shadow-sm mb-3 overflow-hidden bg-white`}>
+                                                        {community.logo_url ? (
+                                                            <img
+                                                                src={community.logo_url}
+                                                                alt={community.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            community.initials
+                                                        )}
+                                                    </div>
+                                                    <h3 className="font-bold text-sm text-black leading-tight line-clamp-2 mb-1">{community.name}</h3>
                                                 </div>
-                                                <h3 className="font-bold text-sm text-black leading-tight line-clamp-2 mb-1">{community.name}</h3>
                                                 {community.role && (
                                                     <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-full capitalize mb-2">
                                                         {community.role}
