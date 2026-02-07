@@ -232,7 +232,7 @@ export function BookingSection() {
         async function loadVenues() {
             setIsLoadingVenues(true);
             setApiError(null);
-            startLoading("Memuat venue...");
+            // startLoading("Memuat venue...");
             try {
                 const venuesData = await fetchVenues();
 
@@ -303,7 +303,7 @@ export function BookingSection() {
                 setApiError('Failed to connect to PWA Smash');
             } finally {
                 setIsLoadingVenues(false);
-                stopLoading();
+                // stopLoading();
             }
         }
         loadVenues();
@@ -857,8 +857,32 @@ export function BookingSection() {
                                     ))}
                                 </div>
 
-                                {/* Exact Matches */}
-                                {exactMatches.length > 0 || nearbyMatches.length > 0 ? (
+                                {/* Skeleton Loader */}
+                                {isLoadingVenues ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="bg-white rounded-[2rem] border-2 border-gray-100 overflow-hidden flex flex-col h-full animate-pulse">
+                                                <div className="h-48 bg-gray-200" />
+                                                <div className="p-6 flex flex-col justify-between flex-grow space-y-4">
+                                                    <div>
+                                                        <div className="h-8 bg-gray-200 rounded-lg w-3/4 mb-4" />
+                                                        <div className="space-y-2">
+                                                            <div className="h-4 bg-gray-200 rounded-lg w-full" />
+                                                            <div className="h-4 bg-gray-200 rounded-lg w-5/6" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex justify-between items-end border-t-2 border-gray-100 pt-4 mt-auto">
+                                                        <div className="w-1/3">
+                                                            <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+                                                            <div className="h-6 bg-gray-200 rounded w-full" />
+                                                        </div>
+                                                        <div className="w-8 h-8 rounded-full bg-gray-200" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : exactMatches.length > 0 || nearbyMatches.length > 0 ? (
                                     <div className="space-y-12">
 
                                         {/* Primary Results */}
