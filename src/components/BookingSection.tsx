@@ -2,12 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map, X, ChevronDown, Loader2, MapPinOff, AlertCircle, Car, Wifi, Utensils, Wind, Droplets, Accessibility, Star } from "lucide-react"
+import { Calendar, CheckCircle, Zap, MapPin, ChevronLeft, Info, Filter, Map as MapIcon, X, ChevronDown, Loader2, MapPinOff, AlertCircle, Car, Wifi, Utensils, Wind, Droplets, Accessibility, Star } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
 import { PhoneVerificationModal } from "@/components/PhoneVerificationModal"
-import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking } from "@/lib/api/actions"
+import { fetchVenues, fetchVenueDetails, fetchAvailableSlots, createBooking, fetchPublicCourts } from "@/lib/api/actions"
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
@@ -103,6 +103,8 @@ export function BookingSection() {
 
     // Real data from API
     const [venues, setVenues] = useState<any[]>([]) // Venues (Halls) from API
+    const [allCourts, setAllCourts] = useState<any[]>([]) // All public courts for filtering
+    const [courtTypes, setCourtTypes] = useState<string[]>(['All']) // Derived court types
     const [venueCourts, setVenueCourts] = useState<SmashCourt[]>([]) // Courts for selected venue
     const [availabilityData, setAvailabilityData] = useState<SmashAvailabilityResponse | null>(null)
     const [isLoadingVenues, setIsLoadingVenues] = useState(true)
@@ -234,7 +236,35 @@ export function BookingSection() {
             setApiError(null);
             // startLoading("Memuat venue...");
             try {
-                const venuesData = await fetchVenues();
+                // Fetch public courts which contains venue info + specific court details (type, etc)
+                // Extract unique venues from courts data
+                // We map by venue_id to deduplicate
+                const uniqueVenuesMap = new Map();
+                const types = new Set<string>(['All']);
+
+                // If public courts endpoint is just courts, we construct venues from it. 
+                // However, fetchVenues() returned a clean list of venues.
+                // It might be safer to call BOTH: 
+                // 1. fetchVenues() for the main list (reliable venue data)
+                // 2. fetchPublicCourts() just to derive the filters and mapping.
+
+                const [venuesData, publicCourtsData] = await Promise.all([
+                    fetchVenues(),
+                    fetchPublicCourts()
+                ]);
+
+                setVenues(venuesData || []);
+                setAllCourts(publicCourtsData || []);
+
+                // Extract types from publicCourtsData
+                const dynamicTypes = new Set<string>(['All']);
+                publicCourtsData.forEach((court: any) => {
+                    // Normalize type: Capitalize first letter?
+                    if (court.type) {
+                        dynamicTypes.add(court.type);
+                    }
+                });
+                setCourtTypes(Array.from(dynamicTypes));
 
                 if (venuesData && venuesData.length > 0) {
                     // Fetch details for each venue to get court prices
@@ -377,11 +407,24 @@ export function BookingSection() {
         let filteredVenues = venues;
         if (searchQuery) {
             const lowerQuery = searchQuery.toLowerCase();
-            filteredVenues = venues.filter(venue =>
+            filteredVenues = filteredVenues.filter(venue =>
                 venue.name.toLowerCase().includes(lowerQuery) ||
-                venue.location.city.toLowerCase().includes(lowerQuery) ||
-                (venue.location.address && venue.location.address.toLowerCase().includes(lowerQuery))
+                venue.location?.city?.toLowerCase().includes(lowerQuery) ||
+                (venue.location?.address && venue.location.address.toLowerCase().includes(lowerQuery))
             );
+        }
+
+        // Filter by Court Type
+        if (filterType !== 'All') {
+            // Find venues that have at least one court of the selected type
+            // We use 'allCourts' which describes { venue_id, type }
+            const validVenueIds = new Set(
+                allCourts
+                    .filter(court => court.type === filterType)
+                    .map(court => court.venue_id)
+            );
+
+            filteredVenues = filteredVenues.filter(venue => validVenueIds.has(venue.id));
         }
 
         // If user location is not available or searching, show all filtered venues
@@ -741,50 +784,7 @@ export function BookingSection() {
                 </AnimatePresence>
 
                 <div className="mb-16">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {/* API Connection Status */}
-                        {isLoadingVenues ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black bg-yellow-100 text-yellow-700">
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Connecting...
-                            </span>
-                        ) : apiError ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-400 bg-red-50 text-red-600">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                {apiError}
-                            </span>
-                        ) : venues.length > 0 ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-black bg-pastel-mint text-black">
-                                <Zap className="w-3 h-3 mr-1 fill-current" />
-                                Connected to Smash Partner
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-gray-300 bg-gray-100 text-gray-500">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                No Venues Available
-                            </span>
-                        )}
 
-                        {/* Location Status */}
-                        {locationStatus === 'loading' && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-300 bg-blue-50 text-blue-600">
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Getting Location...
-                            </span>
-                        )}
-                        {locationStatus === 'granted' && userLocation && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-green-300 bg-green-50 text-green-600">
-                                <MapPin className="w-3 h-3 mr-1" />
-                                Location Enabled
-                            </span>
-                        )}
-                        {locationStatus === 'denied' && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-orange-300 bg-orange-50 text-orange-600">
-                                <MapPinOff className="w-3 h-3 mr-1" />
-                                Location Denied
-                            </span>
-                        )}
-                    </div>
                     <h2 className="text-5xl md:text-7xl font-display font-black text-black mb-4 uppercase tracking-tighter">
                         {selectedHall ? (
                             <>
@@ -842,7 +842,7 @@ export function BookingSection() {
                                     <div className="flex items-center text-sm font-bold uppercase tracking-wider mr-2">
                                         <Filter className="w-4 h-4 mr-1" /> Filter:
                                     </div>
-                                    {['All', 'Rubber', 'Wooden', 'Synthetic'].map((type) => (
+                                    {courtTypes.map((type) => (
                                         <button
                                             key={type}
                                             onClick={() => setFilterType(type as any)}

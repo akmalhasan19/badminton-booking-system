@@ -179,6 +179,35 @@ export const smashApi = {
     },
 
     /**
+     * Get All Public Courts (with details)
+     * Endpoint: GET /public/courts
+     */
+    getPublicCourts: async (): Promise<any[]> => {
+        try {
+            const url = `${BASE_URL}/public/courts`;
+            logger.info({ url }, `[SmashAPI] Fetching public courts`);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                // Public endpoint might not need auth, but it doesn't hurt to send if we have it
+                // headers: getHeaders(), 
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                logger.error({ status: response.status }, `[SmashAPI] Failed to fetch public courts`);
+                return [];
+            }
+
+            const json = await response.json();
+            return json.data || [];
+        } catch (error) {
+            logger.error({ error }, "Smash API Error (getPublicCourts)");
+            return [];
+        }
+    },
+
+    /**
      * Check Availability (Real-time)
      * Endpoint: GET /venues/:id/availability?date=YYYY-MM-DD
      */

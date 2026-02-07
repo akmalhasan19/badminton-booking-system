@@ -132,14 +132,13 @@ export function MatchSection() {
                 <div className="flex flex-row gap-4 w-full xl:w-auto">
                     {/* City Filter Container */}
                     <div className="flex-1 xl:flex-none xl:w-48 relative group" ref={cityDropdownRef}>
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-pastel-lilac rounded-lg border border-black flex items-center justify-center pointer-events-none z-10">
-                            <MapPin className="w-4 h-4 text-black" />
-                        </div>
-
                         <button
                             onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-                            className="w-full h-14 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-hard transition-all outline-none flex items-center justify-between"
+                            className="w-full h-14 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-hard transition-all outline-none flex items-center justify-between relative"
                         >
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-pastel-lilac rounded-lg border border-black flex items-center justify-center pointer-events-none">
+                                <MapPin className="w-4 h-4 text-black" />
+                            </div>
                             <span className="truncate">{cityFilter || "Choose City"}</span>
                             <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCityDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>

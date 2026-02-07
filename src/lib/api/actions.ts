@@ -29,6 +29,15 @@ export async function fetchVenues() {
 }
 
 /**
+ * Server action to fetch public courts (with venue details)
+ * Use for dynamic filtering
+ */
+export async function fetchPublicCourts() {
+    const courts = await smashApi.getPublicCourts()
+    return courts
+}
+
+/**
  * Server action to fetch venue details (with courts) from Smash API
  * Use this when user selects a venue to get court list
  */
