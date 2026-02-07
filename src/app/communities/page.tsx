@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Users, Shield, Search, Loader2 } from "lucide-react"
 import { motion, AnimatePresence, Variants } from "framer-motion"
+import { FeatureInProgress } from "@/components/ui/FeatureInProgress"
 import { UserSidebar } from "@/components/UserSidebar"
 import { MobileHeader } from "@/components/MobileHeader"
 import { SmashLogo } from "@/components/SmashLogo"
@@ -110,6 +111,10 @@ export default function CommunitiesPage() {
 
     return (
         <main className="min-h-screen bg-white pt-0 md:pt-6 pb-12 relative overflow-hidden">
+            <FeatureInProgress
+                title="Community Hub"
+                description="We are currently building the ultimate space for badminton communities. Matchmaking, tournaments, and club management coming soon!"
+            />
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 w-full h-full pointer-events-none"
