@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, Share2, MoreVertical, Plus, Edit, Loader2, Camera, MessageCircle } from "lucide-react"
+import { ArrowLeft, Share2, MoreVertical, Plus, Edit, Loader2, Camera, MessageCircle, Check, LogOut } from "lucide-react"
 import { Community } from "@/app/communities/actions"
 import { createClient } from "@/lib/supabase/client"
 import { updateCommunityCover } from "@/app/communities/actions"
 import { useRouter } from "next/navigation"
 import { CommunityProfileImage } from "@/components/CommunityProfileImage"
 import { joinCommunity, leaveCommunity } from "@/app/communities/actions"
-import { Check, LogOut } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { CommunityEditModal } from "./CommunityEditModal"
 
 interface CommunityHeroProps {
     community: Community;
@@ -26,7 +27,12 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
     const [showOverlay, setShowOverlay] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
     const [isJoining, setIsJoining] = useState(false)
+    // State for member status
     const [isMember, setIsMember] = useState(!!community.role) // 'admin' or 'member' means they are a member
+    const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+    console.log("CommunityHero rendering, isMenuOpen:", isMenuOpen)
 
     // Check if user is admin specifically for editing rights
     const isAdmin = community.role === 'admin'
@@ -148,8 +154,31 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
         }
     }
 
+    const handleShare = async () => {
+        const shareData = {
+            title: `Join ${community.name} on Smash`,
+            text: `Check out ${community.name} community on Smash!`,
+            url: `${window.location.origin}/communities/${community.id}`
+        }
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData)
+            } else {
+                await navigator.clipboard.writeText(shareData.url)
+                toast.success("Link komunitas disalin ke clipboard!")
+            }
+        } catch (error) {
+            console.error("Error sharing:", error)
+            // Don't show error if user cancelled share (common in mobile)
+            if ((error as Error).name !== 'AbortError') {
+                toast.error("Gagal membagikan komunitas")
+            }
+        }
+    }
+
     return (
-        <div className="relative bg-white dark:bg-background-dark shadow-none overflow-hidden pb-4 md:rounded-3xl md:border-3 md:border-black md:shadow-hard transition-all">
+        <div className="relative bg-transparent dark:bg-transparent md:bg-white md:dark:bg-background-dark shadow-none overflow-hidden pb-4 md:rounded-3xl md:border-3 md:border-black md:shadow-hard transition-all">
             <div className="relative h-64 w-full">
                 <input
                     type="file"
@@ -192,7 +221,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
 
                 {/* Top Navigation - Mobile Only primarily, but keeping structure */}
                 {/* Top Navigation */}
-                <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-20">
+                <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-30">
                     <button
                         onClick={() => router.back()}
                         className="bg-white w-12 h-12 flex items-center justify-center border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-xl"
@@ -200,12 +229,95 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                         <ArrowLeft className="text-black w-7 h-7 stroke-[3px]" />
                     </button>
                     <div className="flex gap-3">
-                        <button className="bg-white w-12 h-12 flex items-center justify-center border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-xl">
+                        <button
+                            onClick={handleShare}
+                            className="bg-white w-12 h-12 flex items-center justify-center border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-xl"
+                        >
                             <Share2 className="text-black w-6 h-6 stroke-[3px]" />
                         </button>
-                        <button className="bg-white w-12 h-12 flex items-center justify-center border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-xl">
-                            <MoreVertical className="text-black w-6 h-6 stroke-[3px]" />
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="bg-white w-12 h-12 flex items-center justify-center border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-xl relative z-20"
+                            >
+                                <MoreVertical className="text-black w-6 h-6 stroke-[3px]" />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            <AnimatePresence>
+                                {isMenuOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-10"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            transition={{ duration: 0.1 }}
+                                            className="absolute right-0 top-full mt-2 w-48 bg-white border-3 border-black shadow-hard rounded-xl overflow-hidden z-30 py-1"
+                                        >
+                                            {/* Admin Options */}
+                                            {isAdmin && (
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            setIsMenuOpen(false);
+                                                            // Handle edit - standard navigation if on specific edit page or modal
+                                                            setIsEditModalOpen(true)
+                                                        }}
+                                                        className="w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-gray-50 flex items-center gap-2"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                        Edit Community
+                                                    </button>
+                                                    <div className="h-0.5 bg-gray-100 mx-2" />
+                                                </>
+                                            )}
+
+                                            {/* Member Options */}
+                                            {isMember && (
+                                                <button
+                                                    onClick={() => {
+                                                        setIsMenuOpen(false);
+                                                        handleJoinLeave();
+                                                    }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-red-50 text-red-600 flex items-center gap-2"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                    Leave Community
+                                                </button>
+                                            )}
+
+                                            {/* Common Options */}
+                                            <button
+                                                onClick={() => {
+                                                    setIsMenuOpen(false);
+                                                    navigator.clipboard.writeText(community.id);
+                                                    toast.success("Community ID copied!");
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-gray-50 flex items-center gap-2"
+                                            >
+                                                <Check className="w-4 h-4" />
+                                                Copy ID
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    setIsMenuOpen(false);
+                                                    toast.info("Report submitted to admins.");
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-gray-50 flex items-center gap-2"
+                                            >
+                                                <MessageCircle className="w-4 h-4" />
+                                                Report
+                                            </button>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
 
@@ -273,6 +385,12 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                     </div>
                 </div>
             </div>
+            {/* Edit Modal */}
+            <CommunityEditModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                community={community}
+            />
         </div>
     )
 }

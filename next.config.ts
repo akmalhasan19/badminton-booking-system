@@ -13,6 +13,12 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["postscholastic-periscopic-matias.ngrok-free.dev"],
+    },
+  },
+  allowedDevOrigins: ["postscholastic-periscopic-matias.ngrok-free.dev"],
 };
 
 export default withPWA(nextConfig);

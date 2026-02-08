@@ -6,7 +6,8 @@ import {
     Users,
     Settings,
     LogOut,
-    Lock
+    Lock,
+    Image as ImageIcon
 } from "lucide-react";
 
 export default async function AdminLayout({
@@ -69,6 +70,7 @@ export default async function AdminLayout({
         { icon: LayoutDashboard, label: "Overview", href: "/admin" },
         { icon: CalendarDays, label: "Bookings", href: "/admin/bookings" },
         { icon: Users, label: "Users", href: "/admin/users" },
+        { icon: ImageIcon, label: "Activity Images", href: "/admin/activity-images" },
         { icon: Settings, label: "Settings", href: "/admin/settings" },
     ];
 

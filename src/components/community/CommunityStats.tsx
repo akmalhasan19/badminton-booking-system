@@ -83,6 +83,7 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
 
     const [members, setMembers] = useState<Member[]>([])
     const [totalMembersCount, setTotalMembersCount] = useState(membersCount)
+    const [newMembersCount, setNewMembersCount] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
 
     // Sync totalMembersCount when prop changes (e.g. after join/leave action)
@@ -106,6 +107,21 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
 
                 // Update the total count - keep in sync with DB
                 setTotalMembersCount(count || 0)
+
+                // Get new members count (last 7 days)
+                const sevenDaysAgo = new Date()
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+                const { count: newCount, error: newCountError } = await supabase
+                    .from('community_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('community_id', community_id)
+                    .eq('status', 'approved')
+                    .gte('joined_at', sevenDaysAgo.toISOString())
+
+                if (!newCountError) {
+                    setNewMembersCount(newCount || 0)
+                }
 
                 // Then fetch the member details
                 const { data, error } = await supabase
@@ -166,7 +182,7 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
                     <div className="flex flex-col justify-between flex-1">
                         <div className="mt-2">
                             <span className="text-6xl font-black block tracking-tighter text-black leading-none">{totalMembersCount}</span>
-                            <span className="text-xs font-bold text-green-600 uppercase tracking-tight -ml-1">+12 this week</span>
+                            <span className="text-xs font-bold text-green-600 uppercase tracking-tight -ml-1">+{newMembersCount} this week</span>
                         </div>
                     </div>
 
@@ -187,7 +203,7 @@ export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 
 
                     {/* +12 this week - Kanan Bawah */}
                     <div className="absolute bottom-0 right-0">
-                        <span className="text-xs font-bold text-green-600 uppercase tracking-tight">+12 this week</span>
+                        <span className="text-xs font-bold text-green-600 uppercase tracking-tight">+{newMembersCount} this week</span>
                     </div>
 
                     {/* Member Profile Pictures - Kiri Atas dekat garis */}
