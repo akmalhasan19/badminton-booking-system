@@ -32,7 +32,8 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
             users (
                 full_name,
                 email,
-                phone
+                phone,
+                avatar_url
             ),
             courts (
                 name

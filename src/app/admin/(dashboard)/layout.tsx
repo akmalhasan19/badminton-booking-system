@@ -9,6 +9,8 @@ import {
     Lock,
     Image as ImageIcon
 } from "lucide-react";
+import { SignOutButton } from "./components/SignOutButton";
+
 
 export default async function AdminLayout({
     children,
@@ -100,10 +102,8 @@ export default async function AdminLayout({
                 </nav>
 
                 <div className="mt-auto pt-6 border-t-3 border-neo-black">
-                    <button className="w-full flex items-center gap-3 px-4 py-3 font-bold border-2 border-transparent hover:bg-neo-pink hover:border-neo-black hover:shadow-hard-sm transition-all">
-                        <LogOut className="w-5 h-5" />
-                        Sign Out
-                    </button>
+                    <SignOutButton />
+
                 </div>
             </aside>
 

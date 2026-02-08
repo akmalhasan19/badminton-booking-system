@@ -58,8 +58,16 @@ export function BookingTable({ bookings }: { bookings: any[] }) {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-pastel-yellow border-2 border-black flex items-center justify-center flex-shrink-0">
-                                                <User className="w-5 h-5" />
+                                            <div className="w-10 h-10 rounded-full bg-pastel-yellow border-2 border-black flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                {booking.users?.avatar_url ? (
+                                                    <img
+                                                        src={booking.users.avatar_url}
+                                                        alt={booking.users.full_name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <User className="w-5 h-5" />
+                                                )}
                                             </div>
                                             <div>
                                                 <div className="font-bold">{booking.users?.full_name || 'Guest'}</div>
@@ -127,91 +135,119 @@ function BookingDetailsModal({ booking, isOpen, onClose, onUpdateStatus, isUpdat
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
                             <div className="space-y-6">
-                                {/* User Info */}
-                                <div className="bg-gray-50 p-4 border-2 border-gray-200 rounded-lg">
-                                    <h3 className="font-black uppercase text-sm mb-3 flex items-center gap-2">
-                                        <User className="w-4 h-4" /> Guest Information
-                                    </h3>
-                                    <div className="space-y-1">
-                                        <p className="font-bold">{booking.users?.full_name || 'Guest'}</p>
-                                        <p className="text-sm text-gray-600">{booking.users?.email}</p>
-                                        <p className="text-sm text-gray-600">{booking.users?.phone || '-'}</p>
+                                {/* User Header */}
+                                <div className="flex items-center gap-4 bg-neo-bg p-4 border-2 border-neo-black shadow-hard-sm">
+                                    <div className="w-16 h-16 rounded-full bg-white border-2 border-neo-black flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                        {booking.users?.avatar_url ? (
+                                            <img
+                                                src={booking.users.avatar_url}
+                                                alt={booking.users.full_name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <User className="w-8 h-8 text-gray-400" />
+                                        )}
                                     </div>
-                                </div>
-
-                                {/* Booking Info */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2 bg-pastel-blue/20 p-4 border-2 border-neo-blue rounded-lg">
-                                        <h3 className="font-black uppercase text-sm mb-3 text-neo-blue flex items-center gap-2">
-                                            <MapPin className="w-4 h-4" /> Venue & Court
-                                        </h3>
-                                        <p className="text-lg font-black">
-                                            {booking.venue_id || booking.courts?.name?.split('(')[0]?.trim() || 'Unknown Venue'}
-                                        </p>
-                                        <p className="font-medium text-gray-600">{booking.courts?.name}</p>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-4 border-2 border-gray-200 rounded-lg">
-                                        <h3 className="font-black uppercase text-sm mb-3 flex items-center gap-2">
-                                            <Calendar className="w-4 h-4" /> Date
-                                        </h3>
-                                        <p className="font-medium">{booking.booking_date}</p>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-4 border-2 border-gray-200 rounded-lg">
-                                        <h3 className="font-black uppercase text-sm mb-3 flex items-center gap-2">
-                                            <Clock className="w-4 h-4" /> Time
-                                        </h3>
-                                        <p className="font-medium">{booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}</p>
-                                    </div>
-                                </div>
-
-                                {/* Status & Price */}
-                                <div className="flex items-center justify-between p-4 border-2 border-black bg-pastel-yellow/30 rounded-lg">
                                     <div>
-                                        <p className="text-xs font-black uppercase text-gray-500 mb-1">Total Price</p>
-                                        <p className="text-xl font-black">Rp {booking.total_price?.toLocaleString()}</p>
+                                        <h3 className="font-black text-xl uppercase tracking-tight">{booking.users?.full_name || 'Guest User'}</h3>
+                                        <div className="flex flex-col text-sm font-mono text-gray-600">
+                                            <span>{booking.users?.email}</span>
+                                            {booking.users?.phone && <span>{booking.users.phone}</span>}
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-black uppercase text-gray-500 mb-1">Status</p>
-                                        <StatusBadge status={booking.status} />
+                                </div>
+
+                                {/* Status & Price Grid */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 border-2 border-neo-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <p className="text-xs font-black uppercase text-gray-500 mb-1">Total Amount</p>
+                                        <p className="text-2xl font-black tracking-tight text-neo-green-dark">
+                                            Rp {booking.total_price?.toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="bg-white p-4 border-2 border-neo-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-center">
+                                        <p className="text-xs font-black uppercase text-gray-500 mb-1">Current Status</p>
+                                        <div>
+                                            <StatusBadge status={booking.status} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Booking Details */}
+                                <div className="bg-gray-50 p-6 border-2 border-gray-200 rounded-none relative">
+                                    <div className="absolute top-0 right-0 bg-neo-black text-white text-xs font-bold px-3 py-1 uppercase">
+                                        Booking Information
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h4 className="font-bold text-sm text-gray-500 uppercase mb-1 flex items-center gap-2">
+                                                    <MapPin className="w-4 h-4" /> Venue
+                                                </h4>
+                                                <p className="font-black text-lg leading-tight">
+                                                    {booking.venue_id || booking.courts?.name?.split('(')[0]?.trim() || 'Unknown Venue'}
+                                                </p>
+                                                <p className="text-sm font-medium text-gray-600 mt-1 pl-6 border-l-2 border-gray-300">
+                                                    {booking.courts?.name}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h4 className="font-bold text-sm text-gray-500 uppercase mb-1 flex items-center gap-2">
+                                                    <Calendar className="w-4 h-4" /> Schedule
+                                                </h4>
+                                                <p className="font-mono font-bold text-lg">
+                                                    {booking.booking_date}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-1 text-neo-blue font-bold bg-blue-50 w-fit px-2 py-1 rounded border border-blue-200">
+                                                    <Clock className="w-4 h-4" />
+                                                    {booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Actions */}
                                 {booking.status === 'pending' && (
-                                    <div className="grid grid-cols-2 gap-3 pt-4 border-t-2 border-dashed border-gray-200">
+                                    <div className="grid grid-cols-2 gap-4 mt-6">
                                         <button
                                             onClick={() => onUpdateStatus(booking.id, 'cancelled')}
                                             disabled={isUpdating}
-                                            className="w-full py-3 bg-red-100 text-red-700 border-2 border-red-200 font-bold hover:bg-red-200 hover:border-red-400 transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-white text-red-600 border-3 border-red-200 font-black hover:bg-red-50 hover:border-red-500 transition-all flex items-center justify-center gap-2 uppercase tracking-wide group"
                                         >
-                                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                                            Reject
+                                            {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <X className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+                                            Reject Booking
                                         </button>
                                         <button
                                             onClick={() => onUpdateStatus(booking.id, 'confirmed')}
                                             disabled={isUpdating}
-                                            className="w-full py-3 bg-neo-green text-black border-2 border-black font-black hover:bg-green-400 hover:shadow-hard-sm transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-neo-green text-black border-3 border-black font-black hover:bg-green-400 hover:shadow-hard transition-all flex items-center justify-center gap-2 uppercase tracking-wide group hover:-translate-y-1"
                                         >
-                                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                            {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5 group-hover:scale-110 transition-transform" />}
                                             Confirm Booking
                                         </button>
                                     </div>
                                 )}
 
                                 {booking.status === 'confirmed' && (
-                                    <div className="pt-4 border-t-2 border-dashed border-gray-200">
+                                    <div className="mt-6">
                                         <button
                                             onClick={() => onUpdateStatus(booking.id, 'cancelled')}
                                             disabled={isUpdating}
-                                            className="w-full py-3 bg-red-100 text-red-700 border-2 border-red-200 font-bold hover:bg-red-200 hover:border-red-400 transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-white text-red-600 border-3 border-red-200 font-black hover:bg-red-50 hover:border-red-500 transition-all flex items-center justify-center gap-2 uppercase tracking-wide group"
                                         >
-                                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                                            {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <X className="w-5 h-5 group-hover:scale-110 transition-transform" />}
                                             Cancel Booking
                                         </button>
+                                        <p className="text-center text-xs text-gray-500 mt-2 font-mono">
+                                            Warning: This action cannot be undone easily.
+                                        </p>
                                     </div>
                                 )}
                             </div>
