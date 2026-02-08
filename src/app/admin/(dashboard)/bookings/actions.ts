@@ -5,8 +5,8 @@ import { isAdmin } from '@/lib/auth/actions'
 import { revalidatePath } from 'next/cache'
 import { withLogging } from '@/lib/safe-action'
 
-const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
-    const { page, limit } = params
+const getAllBookingsLogic = async (params: { page: number, limit: number, filterType?: 'success' | 'failed' | 'all' }) => {
+    const { page, limit, filterType = 'success' } = params
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { error: 'Unauthorized' }
@@ -18,7 +18,7 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
     const from = (page - 1) * limit
     const to = from + limit - 1
 
-    const { data, count, error } = await supabase
+    let query = supabase
         .from('bookings')
         .select(`
             id,
@@ -46,6 +46,20 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
         .order('booking_date', { ascending: false })
         .range(from, to)
 
+    // Apply filters based on type
+    if (filterType === 'success') {
+        query = query.in('status', ['confirmed', 'completed', 'paid'])
+    } else if (filterType === 'failed') {
+        // Includes pending as they are not yet successful, and cancelled/rejected/failed
+        query = query.in('status', ['cancelled', 'rejected', 'pending', 'failed'])
+    }
+
+    // if 'all' or undefined (though we default to success), we don't filter status (or maybe we do? user asked for split)
+    // User asked for "Confirmed/Success" and "Failed/Cancelled". "All" might not be needed but good to keep as fallback logic if needed.
+    // For now, if filterType is 'all', we just don't add .in() filter.
+
+    const { data, count, error } = await query
+
     if (error) {
         // console.error('Error fetching admin bookings:', error) -> Handled by withLogging
         return { error: 'Failed to fetch bookings' }
@@ -71,8 +85,8 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
 
 const getAllBookingsWrapped = withLogging('getAllBookings', getAllBookingsLogic)
 
-export async function getAllBookings(page: number = 1, limit: number = 10) {
-    return getAllBookingsWrapped({ page, limit })
+export async function getAllBookings(page: number = 1, limit: number = 10, filterType: 'success' | 'failed' | 'all' = 'success') {
+    return getAllBookingsWrapped({ page, limit, filterType })
 }
 
 export async function updateBookingStatus(bookingId: string, status: 'confirmed' | 'cancelled' | 'completed') {
