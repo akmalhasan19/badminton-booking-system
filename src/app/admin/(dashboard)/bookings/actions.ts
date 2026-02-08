@@ -40,7 +40,8 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
             ),
             venue_id,
             venue_name,
-            court_name
+            court_name,
+            payment_method
         `, { count: 'exact' })
         .order('booking_date', { ascending: false })
         .range(from, to)

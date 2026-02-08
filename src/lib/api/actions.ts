@@ -156,6 +156,13 @@ export async function createBooking(data: {
         })
 
         console.log('[CreateBooking] Invoice created in Platform Account:', invoice.id)
+        console.log('[CreateBooking] Full Invoice Response:', JSON.stringify(invoice, null, 2))
+
+        if (!invoice.invoice_url) {
+            console.error('[CreateBooking] ⚠️ WARNING: Invoice URL is MISSING in Xendit response!', invoice)
+        } else {
+            console.log('[CreateBooking] Invoice URL:', invoice.invoice_url)
+        }
 
         // 4. Save to Local Database (Dual Write)
         const { createServiceClient } = await import('@/lib/supabase/server')

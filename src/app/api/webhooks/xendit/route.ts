@@ -45,10 +45,14 @@ export async function POST(req: Request) {
         if (status === 'PAID' || status === 'SETTLED') {
 
             // 3. Update local database
+            if (!payment_method) {
+                logger.warn({ bookingId: external_id, invoice_id }, 'Payment method not provided in webhook, defaulting to XENDIT');
+            }
             const { error } = await supabase
                 .from('bookings')
                 .update({
                     status: 'confirmed',
+                    payment_method: payment_method || 'XENDIT' // Save payment method or default
                 })
                 .eq('id', external_id)
 

@@ -63,6 +63,11 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('[XenditClient] Create Invoice Failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData: JSON.stringify(errorData)
+        })
         throw new Error(`Xendit API Error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
 

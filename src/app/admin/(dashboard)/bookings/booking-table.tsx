@@ -185,6 +185,14 @@ function BookingDetailsModal({ booking, isOpen, onClose, onUpdateStatus, isUpdat
                                             <div>
                                                 <StatusBadge status={booking.status} />
                                             </div>
+                                            {booking.payment_method && (
+                                                <div className="mt-2 pt-2 border-t border-dashed border-gray-200 w-full">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Payment via</p>
+                                                    <p className="font-mono text-sm font-bold text-neo-black truncate">
+                                                        {booking.payment_method.replace(/_/g, ' ')}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -226,6 +234,22 @@ function BookingDetailsModal({ booking, isOpen, onClose, onUpdateStatus, isUpdat
                                                         <Clock className="w-4 h-4" />
                                                         {booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}
                                                     </div>
+                                                </div>
+
+                                                <div className="pt-4 border-t border-dashed border-gray-200">
+                                                    <h4 className="font-bold text-xs text-gray-400 uppercase mb-1">
+                                                        Created At
+                                                    </h4>
+                                                    <p className="font-mono text-sm text-gray-600">
+                                                        {booking.created_at ? new Date(booking.created_at).toLocaleString('id-ID', {
+                                                            weekday: 'long',
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        }) : '-'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
