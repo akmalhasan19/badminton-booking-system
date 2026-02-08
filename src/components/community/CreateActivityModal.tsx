@@ -211,7 +211,7 @@ export function CreateActivityModal({ isOpen, onClose, communityId }: CreateActi
                             </div>
                         ) : (
                             <div className="flex flex-col gap-6">
-                                <div className="space-y-6">
+                                <div className="space-y-8">
                                     {/* Image Frames - Dynamic Grid */}
                                     <div className="grid grid-cols-2 gap-3 h-48 relative">
                                         {/* Loading Overlay */}
