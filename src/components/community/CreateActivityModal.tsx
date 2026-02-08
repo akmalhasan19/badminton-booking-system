@@ -1,9 +1,10 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Users, Swords, Trophy, X, ChevronRight } from "lucide-react"
+import { Users, Swords, Trophy, X, ChevronRight, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface CreateActivityModalProps {
     isOpen: boolean
@@ -11,9 +12,17 @@ interface CreateActivityModalProps {
     communityId: string
 }
 
+interface ActivityImage {
+    url: string
+    slot: 'main' | 'sparring' | 'fun'
+}
+
 export function CreateActivityModal({ isOpen, onClose, communityId }: CreateActivityModalProps) {
     const router = useRouter()
     const [step, setStep] = useState<'selection' | 'casual-strategy'>('selection')
+    const [images, setImages] = useState<ActivityImage[]>([])
+    const [loadingImages, setLoadingImages] = useState(false)
+    const supabase = createClient()
 
     // Reset step when modal closes
     useEffect(() => {
@@ -23,6 +32,34 @@ export function CreateActivityModal({ isOpen, onClose, communityId }: CreateActi
             return () => clearTimeout(timer)
         }
     }, [isOpen])
+
+    // Fetch images when step changes to 'casual-strategy'
+    useEffect(() => {
+        if (isOpen && step === 'casual-strategy') {
+            fetchImages()
+        }
+    }, [isOpen, step])
+
+    const fetchImages = async () => {
+        try {
+            setLoadingImages(true)
+            const { data, error } = await supabase
+                .from('activity_images')
+                .select('url, slot')
+                .eq('is_active', true)
+
+            if (error) throw error
+            setImages(data as ActivityImage[] || [])
+        } catch (error) {
+            console.error('Error fetching activity images:', error)
+        } finally {
+            setLoadingImages(false)
+        }
+    }
+
+    const getImageBySlot = (slot: string) => {
+        return images.find(img => img.slot === slot)?.url
+    }
 
     const options = [
         {
@@ -74,6 +111,31 @@ export function CreateActivityModal({ isOpen, onClose, communityId }: CreateActi
         onClose()
     }
 
+    const renderFrame = (slot: string, label: string) => {
+        const imageUrl = getImageBySlot(slot)
+
+        return (
+            <div className="relative rounded-xl overflow-hidden border-3 border-neo-black bg-gray-100 flex items-center justify-center group h-full w-full">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={label}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                ) : (
+                    <>
+                        <div className={`absolute inset-0 bg-[linear-gradient(${slot === 'sparring' ? '-45deg' : '45deg'},transparent_25%,rgba(0,0,0,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]`} />
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest text-center px-2 relative z-10">
+                            {label}
+                        </span>
+                    </>
+                )}
+
+                {/* Optional: Add a subtle overlay gradient for text readability if needed in future, keeping generic for now */}
+            </div>
+        )
+    }
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -93,7 +155,7 @@ export function CreateActivityModal({ isOpen, onClose, communityId }: CreateActi
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 rounded-t-3xl border-t-2 border-l-2 border-r-2 border-black shadow-[0_-4px_0_0_rgba(0,0,0,0.1)] p-6 pb-10"
+                        className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 rounded-t-3xl border-t-2 border-l-2 border-r-2 border-black shadow-[0_-4px_0_0_rgba(0,0,0,0.1)] p-6 pb-10 max-h-[90vh] overflow-y-auto hide-scrollbar"
                     >
                         {/* Drag Handle (Visual only) */}
                         <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />
@@ -151,54 +213,45 @@ export function CreateActivityModal({ isOpen, onClose, communityId }: CreateActi
                             <div className="flex flex-col gap-6">
                                 <div className="space-y-6">
                                     {/* Image Frames - Dynamic Grid */}
-                                    {/* 
-                                        TODO: Fetch these images from 'activity_images' table dynamically.
-                                        For now, we use placeholders as requested.
-                                    */}
-                                    <div className="grid grid-cols-2 gap-3 h-48">
+                                    <div className="grid grid-cols-2 gap-3 h-48 relative">
+                                        {/* Loading Overlay */}
+                                        {loadingImages && (
+                                            <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center backdrop-blur-sm rounded-xl">
+                                                <Loader2 className="w-8 h-8 animate-spin text-black" />
+                                            </div>
+                                        )}
+
                                         {/* Frame 1 - Large Left */}
-                                        <div className="relative rounded-xl overflow-hidden border-3 border-neo-black bg-gray-100 flex items-center justify-center group">
-                                            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]" />
-                                            <span className="text-gray-400 font-bold uppercase text-xs tracking-widest text-center px-2">
-                                                Main Bareng Moment
-                                            </span>
+                                        <div className="h-full">
+                                            {renderFrame('main', 'Main Bareng Moment')}
                                         </div>
 
-                                        <div className="grid grid-rows-2 gap-3">
+                                        <div className="grid grid-rows-2 gap-3 h-full">
                                             {/* Frame 2 - Top Right */}
-                                            <div className="relative rounded-xl overflow-hidden border-3 border-neo-black bg-gray-100 flex items-center justify-center">
-                                                <div className="absolute inset-0 bg-[linear-gradient(-45deg,transparent_25%,rgba(0,0,0,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]" />
-                                                <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">
-                                                    Sparring
-                                                </span>
-                                            </div>
+                                            {renderFrame('sparring', 'Sparring')}
+
                                             {/* Frame 3 - Bottom Right */}
-                                            <div className="relative rounded-xl overflow-hidden border-3 border-neo-black bg-gray-100 flex items-center justify-center">
-                                                <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-[length:8px_8px]" />
-                                                <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">
-                                                    Fun Match
-                                                </span>
-                                            </div>
+                                            {renderFrame('fun', 'Fun Match')}
                                         </div>
                                     </div>
 
                                     {/* Typography Section */}
                                     <div className="space-y-4">
                                         <h3 className="text-2xl font-black leading-tight text-black dark:text-white">
-                                            Book the venue first, then play smoothly!
+                                            Secure the Court. Rule the Game.
                                         </h3>
                                         <ul className="space-y-3">
                                             <li className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-2 shrink-0" />
-                                                <span>Venue schedule certainty, no more double booking.</span>
+                                                <span>No More Double Bookings. Ever.</span>
                                             </li>
                                             <li className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-2 shrink-0" />
-                                                <span>Free cancellation up to 100%*</span>
+                                                <span>Book Risk-Free. Cancel Anytime</span>
                                             </li>
                                             <li className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-2 shrink-0" />
-                                                <span>Automatically integrated with the open play you created.</span>
+                                                <span>Automate Your Game, Sync Your Community.</span>
                                             </li>
                                         </ul>
                                     </div>
