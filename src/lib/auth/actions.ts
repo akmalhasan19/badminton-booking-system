@@ -1,5 +1,6 @@
 'use server'
 
+import { cache } from 'react'
 import { withLogging } from '@/lib/safe-action'
 
 import { createClient } from '@/lib/supabase/server'
@@ -92,11 +93,10 @@ export async function signOut() {
 }
 
 /**
- * Get current authenticated user with profile data
+ * Get current authenticated user with profile data  
+ * OPTIMIZATION (server-cache-react): Wrapped with React.cache() for per-request deduplication
  */
-// ... imports ...
-
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
     const supabase = await createClient()
 
     const {
@@ -125,7 +125,7 @@ export async function getCurrentUser() {
         date_of_birth: profile?.date_of_birth,
         city: profile?.city,
     }
-}
+})
 
 interface ProfileData {
     full_name: string

@@ -174,22 +174,30 @@ export async function confirmBookingPayment(bookingId: string) {
 
         if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
             console.log('[ManualCheck] Invoice is PAID. Updating booking...')
-            await updateBookingStatus(bookingId, 'confirmed', invoice.amount)
 
-            // Force update local DB
+            // OPTIMIZATION (async-defer-await): Parallelize independent updates
+            // Both updateBookingStatus (SmashAPI) and local DB update can happen simultaneously
             const { createServiceClient } = await import('@/lib/supabase/server')
             const supabase = createServiceClient()
-            await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+
+            await Promise.all([
+                updateBookingStatus(bookingId, 'confirmed', invoice.amount),
+                supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+            ]);
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'confirmed' }
         } else if (invoice && invoice.status === 'EXPIRED') {
             console.log('[ManualCheck] Invoice is EXPIRED. Cancelling...')
-            await updateBookingStatus(bookingId, 'cancelled')
 
+            // OPTIMIZATION (async-defer-await): Parallelize independent updates
             const { createServiceClient } = await import('@/lib/supabase/server')
             const supabase = createServiceClient()
-            await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+
+            await Promise.all([
+                updateBookingStatus(bookingId, 'cancelled'),
+                supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+            ]);
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'cancelled' }

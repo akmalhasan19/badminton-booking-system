@@ -191,41 +191,46 @@ export async function createBooking(bookingData: CreateBookingData) {
         return { error: 'Not authenticated' }
     }
 
-    // 1. Validate Operational Hours
-    const opsCheck = await validateOperationalHours(
-        supabase,
-        bookingData.bookingDate,
-        bookingData.startTime,
-        bookingData.durationHours
-    )
+    // OPTIMIZATION (async-parallel): Parallelize independent validation checks
+    // These three operations don't depend on each other and can run simultaneously
+    const [opsCheck, isAvailable, priceCalc] = await Promise.all([
+        // 1. Validate Operational Hours
+        validateOperationalHours(
+            supabase,
+            bookingData.bookingDate,
+            bookingData.startTime,
+            bookingData.durationHours
+        ),
+        // 2. Check availability
+        checkAvailability(
+            bookingData.courtId,
+            bookingData.bookingDate,
+            bookingData.startTime
+        ),
+        // 3. Calculate Price
+        calculateBookingPrice(
+            supabase,
+            bookingData.courtId,
+            bookingData.bookingDate,
+            bookingData.durationHours
+        )
+    ]);
+
+    // Validate results
     if (!opsCheck.isValid) {
         return { error: opsCheck.error }
     }
 
-    // 2. Check availability
-    const isAvailable = await checkAvailability(
-        bookingData.courtId,
-        bookingData.bookingDate,
-        bookingData.startTime
-    )
-
     if (!isAvailable) {
         return { error: 'Time slot is not available' }
     }
-
-    // 3. Calculate Price Correctly
-    const priceCalc = await calculateBookingPrice(
-        supabase,
-        bookingData.courtId,
-        bookingData.bookingDate,
-        bookingData.durationHours
-    )
 
     if (priceCalc.error) {
         return { error: priceCalc.error }
     }
 
     // 4. Double-check availability immediately before insert (Race condition mitigation)
+    // This MUST be sequential to prevent race conditions
     const isStillAvailable = await checkAvailability(
         bookingData.courtId,
         bookingData.bookingDate,
