@@ -1,0 +1,3 @@
+ALTER TABLE public.bookings
+ADD COLUMN IF NOT EXISTS venue_name TEXT,
+ADD COLUMN IF NOT EXISTS court_name TEXT;

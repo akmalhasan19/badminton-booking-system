@@ -74,6 +74,8 @@ export async function createBooking(data: {
     endTime: string
     durationHours: number
     notes?: string
+    venueName?: string
+    courtName?: string
 }) {
     // Get current user for booking details
     const user = await getCurrentUser()
@@ -232,6 +234,8 @@ export async function createBooking(data: {
             status: 'pending',
             duration_hours: data.durationHours,
             venue_id: data.courtId, // Save Venue ID for Partner Sync
+            venue_name: data.venueName || venueDetails?.name || 'Unknown Venue', // Snapshot Venue Name
+            court_name: data.courtName || selectedCourt?.name || 'Unknown Court', // Snapshot Court Name
             payment_url: invoice.invoice_url, // Save Xendit payment URL for direct redirect
             // Fee Breakdown columns
             application_fee: applicationFeePartner,

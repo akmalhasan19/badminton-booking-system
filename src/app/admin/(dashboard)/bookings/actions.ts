@@ -38,7 +38,9 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
             courts (
                 name
             ),
-            venue_id
+            venue_id,
+            venue_name,
+            court_name
         `, { count: 'exact' })
         .order('booking_date', { ascending: false })
         .range(from, to)
@@ -48,7 +50,14 @@ const getAllBookingsLogic = async (params: { page: number, limit: number }) => {
         return { error: 'Failed to fetch bookings' }
     }
 
-    return { data, totalCount: count || 0 }
+    // Map venue_id to venue_name (Backwards compatibility)
+    const bookingsWithVenueName = data.map((booking: any) => ({
+        ...booking,
+        venue_name: booking.venue_name || 'GOR Smash Juara', // Use DB value or Fallback
+        court_name: booking.court_name || booking.courts?.name || 'Unknown Court', // Use DB value or Fallback
+    }))
+
+    return { data: bookingsWithVenueName, totalCount: count || 0 }
 }
 
 // Adapting the signature to match original (args vs single object)

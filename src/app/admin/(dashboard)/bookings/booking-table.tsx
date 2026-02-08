@@ -198,14 +198,19 @@ function BookingDetailsModal({ booking, isOpen, onClose, onUpdateStatus, isUpdat
                                             <div className="space-y-4">
                                                 <div>
                                                     <h4 className="font-bold text-xs text-gray-400 uppercase mb-2 flex items-center gap-2">
-                                                        <MapPin className="w-4 h-4" /> Venue
+                                                        <MapPin className="w-4 h-4" /> Venue & Court
                                                     </h4>
                                                     <p className="font-black text-lg leading-tight text-neo-black">
-                                                        {booking.venue_id || booking.courts?.name?.split('(')[0]?.trim() || 'Unknown Venue'}
+                                                        {booking.venue_name || 'GOR Smash Juara'}
                                                     </p>
-                                                    <p className="text-sm font-medium text-gray-500 mt-1 pl-4 border-l-2 border-gray-200">
-                                                        {booking.courts?.name}
+                                                    <p className="text-xs font-mono text-gray-400 mt-0.5 mb-2 break-all">
+                                                        {booking.venue_id}
                                                     </p>
+
+                                                    <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg border-2 border-gray-200">
+                                                        <span className="text-xs font-bold text-gray-500 uppercase">Court:</span>
+                                                        <span className="font-black text-neo-black text-sm">{booking.court_name || 'Unknown Court'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
 
