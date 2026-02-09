@@ -359,7 +359,10 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                             </>
                         )}
                     </button>
-                    <button className="bg-secondary px-8 py-2.5 text-sm font-black text-white border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider rounded-lg">
+                    <button 
+                        onClick={() => router.push(`/communities/${community.id}/chat`)}
+                        className="bg-secondary px-8 py-2.5 text-sm font-black text-white border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider rounded-lg"
+                    >
                         Chat
                     </button>
                 </div>
