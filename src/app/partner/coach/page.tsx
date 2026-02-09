@@ -5,6 +5,8 @@ import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { ArrowRight, User, Mail, Phone, Trophy, Award, Clock, FileText, CheckCircle, ShieldCheck, DollarSign } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
+import { SmashLogo } from "@/components/SmashLogo"
 import { submitCoachApplication } from "../actions"
 
 const AnimatedBackground = () => (
@@ -96,6 +98,14 @@ export default function CoachRegisterPage() {
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 relative overflow-hidden">
             <AnimatedBackground />
+
+            {/* Logo Home Link */}
+            <Link href="/" className="absolute top-6 left-6 md:top-8 md:left-12 flex items-center gap-2 z-50 group no-underline text-black">
+                <SmashLogo className="w-10 h-10 md:w-12 md:h-12 bg-black group-hover:scale-110 transition-transform" />
+                <span className="font-display font-bold text-2xl md:text-3xl tracking-tighter">
+                    SMASH<span className="text-pastel-mint">.</span>
+                </span>
+            </Link>
             <div className="max-w-3xl mx-auto relative z-10">
                 <div className="text-center mb-8">
                     <motion.div
