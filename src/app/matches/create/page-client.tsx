@@ -7,14 +7,17 @@ import { cn } from "@/lib/utils"
 interface CreateMatchPageClientProps {
     communityId: string | null
     communityName: string
+    communityImageUrl?: string | null
     mode: string
 }
 
 type SkillPreference = "ALL" | "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
+type MatchFormat = "SINGLE" | "DOUBLE" | "MIXED"
 
 export default function CreateMatchPageClient({
     communityId,
     communityName,
+    communityImageUrl,
     mode
 }: CreateMatchPageClientProps) {
     const router = useRouter()
@@ -24,28 +27,29 @@ export default function CreateMatchPageClient({
     const [skillPreference, setSkillPreference] = useState<SkillPreference>("ALL")
     const [fee, setFee] = useState<number>(0)
     const [isPublic, setIsPublic] = useState(true)
+    const [matchFormat, setMatchFormat] = useState<MatchFormat>("DOUBLE")
 
     const modeConfig = useMemo(() => {
         const normalized = mode.toUpperCase()
         if (normalized === "SPARRING") {
             return {
                 title: "Sparring",
-                subtitle: "Challenge Mode",
+                subtitle: "Tantangan",
                 headerClass: "bg-secondary text-white",
                 badgeClass: "bg-secondary text-white"
             }
         }
         if (normalized === "RANKED") {
             return {
-                title: "Tournament",
-                subtitle: "Ranked Event",
+                title: "Turnamen",
+                subtitle: "Kompetisi",
                 headerClass: "bg-pastel-yellow text-black",
                 badgeClass: "bg-black text-white"
             }
         }
         return {
             title: "Main Bareng",
-            subtitle: "Open Play",
+            subtitle: "Main Bareng",
             headerClass: "bg-primary text-black",
             badgeClass: "bg-black text-white"
         }
@@ -68,7 +72,7 @@ export default function CreateMatchPageClient({
                     <span className="material-icons-round text-black dark:text-white">arrow_back</span>
                 </button>
                 <div className="flex flex-col items-center">
-                    <h1 className="font-display font-bold text-xl uppercase tracking-wider">Create Event</h1>
+                    <h1 className="font-display font-bold text-xl uppercase tracking-wider">Create Activity</h1>
                     <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded", modeConfig.badgeClass)}>
                         {modeConfig.subtitle}
                     </span>
@@ -79,18 +83,18 @@ export default function CreateMatchPageClient({
             <main className="p-5 space-y-6 max-w-md mx-auto">
                 <section className="space-y-4">
                     <div className="group relative">
-                        <label className="block font-display font-bold text-sm mb-1 uppercase tracking-wide">Event Name</label>
+                        <label className="block font-display font-bold text-sm mb-1 uppercase tracking-wide">Activity Name</label>
                         <input
                             className="w-full bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-4 py-3 font-bold placeholder-gray-400 focus:ring-0 shadow-hard focus:translate-y-0.5 focus:shadow-hard-sm transition-all dark:text-white dark:placeholder-gray-500"
-                            placeholder="e.g. Saturday Smash"
+                            placeholder="contoh: Main Bareng Mingguan"
                             type="text"
                         />
                     </div>
                     <div className="group relative">
-                        <label className="block font-display font-bold text-sm mb-1 uppercase tracking-wide">Description</label>
+                        <label className="block font-display font-bold text-sm mb-1 uppercase tracking-wide">Deskripsi</label>
                         <textarea
                             className="w-full bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-4 py-3 font-medium placeholder-gray-400 focus:ring-0 shadow-hard focus:translate-y-0.5 focus:shadow-hard-sm transition-all dark:text-white dark:placeholder-gray-500 resize-none"
-                            placeholder="Describe the play style, rules, etc."
+                            placeholder="Tulis gaya main, aturan, atau info penting lainnya."
                             rows={3}
                         />
                     </div>
@@ -99,33 +103,60 @@ export default function CreateMatchPageClient({
                 <hr className="border-2 border-black dark:border-white border-dashed opacity-20" />
 
                 <section className="grid gap-4">
-                    <div className="bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-xl p-4 shadow-hard flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-accent w-10 h-10 rounded-md border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                <span className="material-icons-round text-black">sports_tennis</span>
-                            </div>
-                            <div>
-                                <p className="font-display font-bold text-xs uppercase text-gray-500 dark:text-gray-400">Category</p>
-                                <p className="font-bold text-lg leading-tight">Badminton</p>
+                    <div className="bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-xl p-4 shadow-hard">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-accent w-10 h-10 rounded-md border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="material-icons-round text-black">sports_tennis</span>
+                                </div>
+                                <div>
+                                    <p className="font-display font-bold text-xs uppercase text-gray-500 dark:text-gray-400">Format Main</p>
+                                    <p className="font-bold text-lg leading-tight">Pilih format pertandingan</p>
+                                </div>
                             </div>
                         </div>
-                        <span className="material-icons-round text-2xl">chevron_right</span>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {(["SINGLE", "DOUBLE", "MIXED"] as MatchFormat[]).map((format) => (
+                                <button
+                                    key={format}
+                                    type="button"
+                                    onClick={() => setMatchFormat(format)}
+                                    className={cn(
+                                        "px-3 py-2 text-xs font-black uppercase border-2 rounded-lg transition-all",
+                                        matchFormat === format
+                                            ? "bg-black text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                            : "bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white"
+                                    )}
+                                >
+                                    {format === "SINGLE" ? "1 vs 1" : format === "DOUBLE" ? "2 vs 2" : "Campuran"}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-xl p-4 shadow-hard flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="bg-secondary w-10 h-10 rounded-md border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                <span className="material-icons-round text-white">groups</span>
+                            <div className="bg-secondary w-10 h-10 rounded-md border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                {communityImageUrl ? (
+                                    <img
+                                        src={communityImageUrl}
+                                        alt={communityName}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="material-icons-round text-white">groups</span>
+                                )}
                             </div>
                             <div>
-                                <p className="font-display font-bold text-xs uppercase text-gray-500 dark:text-gray-400">Community</p>
+                                <p className="font-display font-bold text-xs uppercase text-gray-500 dark:text-gray-400">Komunitas</p>
                                 <p className="font-bold text-lg leading-tight">{communityName}</p>
                                 {communityId && (
-                                    <p className="text-[10px] text-gray-400 font-mono">#{communityId.slice(0, 6).toUpperCase()}</p>
+                                    <p className="text-[10px] text-gray-400 font-mono">
+                                        Admin komunitas ini sedang membuat activity.
+                                    </p>
                                 )}
                             </div>
                         </div>
-                        <span className="material-icons-round text-2xl">chevron_right</span>
                     </div>
                 </section>
 
@@ -136,7 +167,7 @@ export default function CreateMatchPageClient({
                                 <div className="bg-white dark:bg-gray-700 w-10 h-10 rounded-md border-2 border-black dark:border-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                                     <span className="material-icons-round">calendar_month</span>
                                 </div>
-                                <p className="font-bold text-lg leading-tight">Date & Time</p>
+                                <p className="font-bold text-lg leading-tight">Tanggal & Waktu</p>
                             </div>
                             <span className="material-icons-round text-2xl">chevron_right</span>
                         </div>
@@ -165,7 +196,7 @@ export default function CreateMatchPageClient({
                                 <div className="bg-white dark:bg-gray-700 w-10 h-10 rounded-md border-2 border-black dark:border-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                                     <span className="material-icons-round">location_on</span>
                                 </div>
-                                <p className="font-bold text-lg leading-tight">Location</p>
+                                <p className="font-bold text-lg leading-tight">Lokasi</p>
                             </div>
                             <span className="material-icons-round text-2xl">chevron_right</span>
                         </div>
@@ -173,12 +204,12 @@ export default function CreateMatchPageClient({
                             <input
                                 type="text"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-3 py-2 text-xs font-bold"
-                                placeholder="GOR / Venue Name"
+                                placeholder="Nama GOR / Venue"
                             />
                             <input
                                 type="text"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-3 py-2 text-xs font-medium"
-                                placeholder="Address (optional)"
+                                placeholder="Alamat (opsional)"
                             />
                         </div>
                     </div>
@@ -189,7 +220,7 @@ export default function CreateMatchPageClient({
                         <div className="bg-secondary w-8 h-8 rounded border-2 border-black flex items-center justify-center">
                             <span className="material-icons-round text-white text-sm">school</span>
                         </div>
-                        <span className="font-display font-bold uppercase tracking-tight">Coaching Session</span>
+                        <span className="font-display font-bold uppercase tracking-tight">Sesi Coaching</span>
                         <span className="material-icons-round text-gray-500 text-sm cursor-help">info</span>
                     </div>
                     <div className="relative inline-block w-12 h-7 align-middle select-none transition duration-200 ease-in">
@@ -211,7 +242,7 @@ export default function CreateMatchPageClient({
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <span className="material-icons-round text-2xl">group</span>
-                            <span className="font-display font-bold text-lg uppercase">Participants</span>
+                            <span className="font-display font-bold text-lg uppercase">Peserta</span>
                         </div>
                         <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-black dark:border-gray-600">
                             <button
@@ -238,7 +269,7 @@ export default function CreateMatchPageClient({
                             className="w-6 h-6 border-2 border-black rounded text-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"
                             type="checkbox"
                         />
-                        <span className="font-bold text-sm leading-tight">Host counts as a participant</span>
+                        <span className="font-bold text-sm leading-tight">Host dihitung sebagai peserta</span>
                     </label>
                 </section>
 
@@ -248,7 +279,7 @@ export default function CreateMatchPageClient({
                             <div className="bg-white dark:bg-gray-700 w-10 h-10 rounded-md border-2 border-black dark:border-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                                 <span className="material-icons-round">graphic_eq</span>
                             </div>
-                            <p className="font-bold text-lg leading-tight">Skill Preferences</p>
+                            <p className="font-bold text-lg leading-tight">Preferensi Level</p>
                         </div>
                         <span className="material-icons-round text-2xl">chevron_right</span>
                     </div>
@@ -265,7 +296,7 @@ export default function CreateMatchPageClient({
                                         : "bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white"
                                 )}
                             >
-                                {level === "ALL" ? "All Levels" : level}
+                                {level === "ALL" ? "Semua Level" : level}
                             </button>
                         ))}
                     </div>
@@ -276,7 +307,7 @@ export default function CreateMatchPageClient({
                         <div className="flex justify-between items-center">
                             <span className="font-bold flex items-center gap-2">
                                 <span className="material-icons-round text-sm border border-black dark:border-white rounded p-0.5">payments</span>
-                                Fee
+                                Biaya
                             </span>
                             <span className="material-icons-round">chevron_right</span>
                         </div>
@@ -289,14 +320,14 @@ export default function CreateMatchPageClient({
                                 className="flex-1 bg-background-light dark:bg-background-dark border-2 border-black dark:border-white rounded-lg px-3 py-2 text-xs font-bold"
                                 placeholder="0"
                             />
-                            <span className="text-xs font-bold text-gray-500">IDR / person</span>
+                            <span className="text-xs font-bold text-gray-500">IDR / orang</span>
                         </div>
                     </div>
 
                     <div className="bg-white dark:bg-surface-dark border-2 border-black dark:border-white p-3 rounded-lg flex justify-between items-center">
                         <span className="font-bold flex items-center gap-2">
                             <span className="material-icons-round text-sm border border-black dark:border-white rounded p-0.5">lock</span>
-                            Privacy
+                            Privasi
                         </span>
                         <div className="flex items-center gap-2">
                             <button
@@ -307,7 +338,7 @@ export default function CreateMatchPageClient({
                                     isPublic ? "bg-black text-white border-black" : "bg-white text-black border-black"
                                 )}
                             >
-                                Public
+                                Publik
                             </button>
                             <button
                                 type="button"
@@ -317,7 +348,7 @@ export default function CreateMatchPageClient({
                                     !isPublic ? "bg-black text-white border-black" : "bg-white text-black border-black"
                                 )}
                             >
-                                Private
+                                Privat
                             </button>
                         </div>
                     </div>
@@ -325,7 +356,7 @@ export default function CreateMatchPageClient({
 
                 <div className="pt-4 flex items-center gap-2 text-gray-500 dark:text-gray-400">
                     <span className="material-icons-round animate-spin-slow">settings</span>
-                    <span className="font-display font-bold uppercase tracking-wide text-sm">Advanced Settings</span>
+                    <span className="font-display font-bold uppercase tracking-wide text-sm">Pengaturan Lanjutan</span>
                 </div>
             </main>
 
@@ -335,7 +366,7 @@ export default function CreateMatchPageClient({
                         type="button"
                         className="w-full bg-primary text-black font-display font-bold text-lg uppercase tracking-wider py-4 rounded-xl border-2 border-black shadow-hard active:shadow-none active:translate-y-1 transition-all"
                     >
-                        Confirm &amp; Create Event
+                        Konfirmasi &amp; Buat Aktivitas
                     </button>
                 </div>
             </div>

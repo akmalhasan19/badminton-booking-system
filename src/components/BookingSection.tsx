@@ -799,7 +799,7 @@ export function BookingSection() {
 
                     {/* Booking Type Toggle */}
                     <div className="flex justify-center mb-8">
-                        <div className="bg-white border-2 border-black rounded-full p-1 flex gap-1 shadow-hard-sm">
+                        <div className="bg-white border-2 border-black rounded-full p-1 flex gap-1 shadow-hard-sm relative z-0">
                             <button
                                 onClick={() => {
                                     setBookingType('COURT')
@@ -807,11 +807,16 @@ export function BookingSection() {
                                     params.set('type', 'court')
                                     router.push(`/?${params.toString()}`, { scroll: false })
                                 }}
-                                className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${bookingType === 'COURT'
-                                    ? 'bg-black text-white shadow-md'
-                                    : 'text-gray-500 hover:bg-gray-100'
+                                className={`relative px-6 py-2 rounded-full font-bold text-sm transition-colors duration-300 z-10 ${bookingType === 'COURT' ? 'text-white' : 'text-gray-500 hover:text-black'
                                     }`}
                             >
+                                {bookingType === 'COURT' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute inset-0 bg-black rounded-full shadow-md -z-10"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
                                 Book Court
                             </button>
                             <button
@@ -821,11 +826,16 @@ export function BookingSection() {
                                     params.set('type', 'coach')
                                     router.push(`/?${params.toString()}`, { scroll: false })
                                 }}
-                                className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${bookingType === 'COACH'
-                                    ? 'bg-black text-white shadow-md'
-                                    : 'text-gray-500 hover:bg-gray-100'
+                                className={`relative px-6 py-2 rounded-full font-bold text-sm transition-colors duration-300 z-10 ${bookingType === 'COACH' ? 'text-black' : 'text-gray-500 hover:text-black'
                                     }`}
                             >
+                                {bookingType === 'COACH' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute inset-0 bg-pastel-lilac border-2 border-black rounded-full shadow-hard-sm -z-10"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
                                 Find Coach
                             </button>
                         </div>

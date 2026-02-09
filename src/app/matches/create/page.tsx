@@ -11,11 +11,15 @@ interface CreateMatchPageProps {
 export default async function CreateMatchPage({ searchParams }: CreateMatchPageProps) {
     const { communityId, mode } = await searchParams
     let communityName = "Community"
+    let communityImageUrl: string | null = null
 
     if (communityId) {
         const { data } = await getCommunityById(communityId)
         if (data?.name) {
             communityName = data.name
+        }
+        if (data?.image_url) {
+            communityImageUrl = data.image_url
         }
     }
 
@@ -23,6 +27,7 @@ export default async function CreateMatchPage({ searchParams }: CreateMatchPageP
         <CreateMatchPageClient
             communityId={communityId || null}
             communityName={communityName}
+            communityImageUrl={communityImageUrl}
             mode={(mode || "CASUAL").toUpperCase()}
         />
     )
