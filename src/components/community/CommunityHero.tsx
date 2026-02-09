@@ -12,6 +12,7 @@ import { CommunityProfileImage } from "@/components/CommunityProfileImage"
 import { joinCommunity, leaveCommunity } from "@/app/communities/actions"
 import { motion, AnimatePresence } from "framer-motion"
 import { CommunityEditModal } from "./CommunityEditModal"
+import { ReportModal } from "./ReportModal"
 
 interface CommunityHeroProps {
     community: Community;
@@ -31,6 +32,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
     const [isMember, setIsMember] = useState(!!community.role) // 'admin' or 'member' means they are a member
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
     console.log("CommunityHero rendering, isMenuOpen:", isMenuOpen)
 
@@ -306,7 +308,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                                             <button
                                                 onClick={() => {
                                                     setIsMenuOpen(false);
-                                                    toast.info("Report submitted to admins.");
+                                                    setIsReportModalOpen(true);
                                                 }}
                                                 className="w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-gray-50 flex items-center gap-2"
                                             >
@@ -359,7 +361,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                             </>
                         )}
                     </button>
-                    <button 
+                    <button
                         onClick={() => router.push(`/communities/${community.id}/chat`)}
                         className="bg-secondary px-8 py-2.5 text-sm font-black text-white border-3 border-black shadow-hard hover:shadow-hard-hover hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider rounded-lg"
                     >
@@ -393,6 +395,13 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 community={community}
+            />
+
+            {/* Report Modal */}
+            <ReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                communityName={community.name}
             />
         </div>
     )

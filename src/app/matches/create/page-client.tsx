@@ -111,7 +111,13 @@ export default function CreateMatchPageClient({
                                 </div>
                                 <div>
                                     <p className="font-display font-bold text-xs uppercase text-gray-500 dark:text-gray-400">Format Main</p>
-                                    <p className="font-bold text-lg leading-tight">Pilih format pertandingan</p>
+                                    <p className="font-bold text-lg leading-tight">
+                                        {matchFormat === "SINGLE"
+                                            ? "1 vs 1"
+                                            : matchFormat === "DOUBLE"
+                                                ? "2 vs 2"
+                                                : "Campuran"}
+                                    </p>
                                 </div>
                             </div>
                         </div>
