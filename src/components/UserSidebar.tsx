@@ -10,12 +10,17 @@ interface UserSidebarProps {
         email: string; // Used for "Google" placeholder text replacement if needed, or just showing role
         avatar_url?: string;
         role?: string;
+        skill_score?: number;
+        skill_review_count?: number;
     } | null;
 }
 
 export function UserSidebar({ user }: UserSidebarProps) {
     const router = useRouter()
     const pathname = usePathname()
+    const skillScore = user?.skill_score ?? 0
+    const skillReviewCount = user?.skill_review_count ?? 0
+    const formattedSkillScore = skillReviewCount > 0 ? skillScore.toFixed(1) : '0'
 
     const menuItems = [
         { label: "Booking Saya", icon: Calendar, path: "/bookings" },
@@ -75,8 +80,9 @@ export function UserSidebar({ user }: UserSidebarProps) {
                     <Gift className="w-4 h-4 text-black" />
                 </div>
                 <div>
-                    <p className="font-display font-black text-lg leading-none">0</p>
-                    <p className="text-xs font-bold text-gray-500">Poin</p>
+                    <p className="font-display font-black text-lg leading-none">{formattedSkillScore}</p>
+                    <p className="text-xs font-bold text-gray-500">Keterampilan</p>
+                    <p className="text-[10px] text-gray-400">{skillReviewCount} review</p>
                 </div>
             </div>
 

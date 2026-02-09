@@ -107,12 +107,22 @@ export const getCurrentUser = cache(async () => {
         return null
     }
 
-    // Get user profile from public.users table
-    const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+    // Get user profile and skill score in parallel
+    const [profileResult, skillResult] = await Promise.all([
+        supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single(),
+        supabase
+            .from('player_skill_scores')
+            .select('average_score, review_count')
+            .eq('user_id', user.id)
+            .limit(1)
+    ])
+
+    const profile = profileResult.data
+    const skillData = skillResult.data?.[0]
 
     return {
         id: user.id,
@@ -124,6 +134,8 @@ export const getCurrentUser = cache(async () => {
         gender: profile?.gender,
         date_of_birth: profile?.date_of_birth,
         city: profile?.city,
+        skill_score: Number(skillData?.average_score ?? 0),
+        skill_review_count: Number(skillData?.review_count ?? 0),
     }
 })
 

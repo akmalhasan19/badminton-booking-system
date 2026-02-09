@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { Plus, Users, Calendar, MapPin, Trophy, ArrowRight, Search, Filter, Clock, DollarSign, Locate, User, X, Check, ChevronDown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { getMatchRooms, createMatchRoom, MatchMode, LevelRequirement, GameFormat, CourtSlot } from "@/lib/api/matchmaking"
+import { getMatchRooms, createMatchRoom, MatchMode, LevelRequirement, GameFormat, CourtSlot, getMatchRoomDetail } from "@/lib/api/matchmaking"
 import { VisualCourtSelector } from "@/components/matchmaking/VisualCourtSelector"
 import { cn } from "@/lib/utils"
+import { createPlayerReview, getMyRoomReviews } from "@/lib/api/player-reviews"
 
 export function MatchSection() {
     const [view, setView] = useState<'LOBBY' | 'ROOM'>('LOBBY')
@@ -14,6 +15,13 @@ export function MatchSection() {
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
     const [currentUser, setCurrentUser] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [roomDetail, setRoomDetail] = useState<any>(null)
+    const [roomParticipants, setRoomParticipants] = useState<any[]>([])
+    const [roomDetailLoading, setRoomDetailLoading] = useState(false)
+    const [roomDetailError, setRoomDetailError] = useState<string | null>(null)
+    const [reviewedUserIds, setReviewedUserIds] = useState<Set<string>>(new Set())
+    const [reviewDrafts, setReviewDrafts] = useState<Record<string, { rating: number; comment: string }>>({})
+    const [reviewStatus, setReviewStatus] = useState<Record<string, { submitting?: boolean; error?: string; success?: boolean }>>({})
 
     // Filters
     const [searchQuery, setSearchQuery] = useState("")
@@ -65,6 +73,58 @@ export function MatchSection() {
         init()
     }, [])
 
+    useEffect(() => {
+        if (!selectedRoomId) return
+
+        let isActive = true
+        setRoomDetailLoading(true)
+        setRoomDetailError(null)
+
+        const loadRoomDetail = async () => {
+            const [detailResult, reviewsResult] = await Promise.all([
+                getMatchRoomDetail(selectedRoomId),
+                getMyRoomReviews(selectedRoomId)
+            ])
+
+            if (!isActive) return
+
+            if (detailResult?.error) {
+                setRoomDetail(null)
+                setRoomParticipants([])
+                setRoomDetailError(detailResult.error)
+            } else {
+                setRoomDetail(detailResult.room)
+                setRoomParticipants(detailResult.participants || [])
+            }
+
+            if (!reviewsResult?.error && reviewsResult?.data) {
+                setReviewedUserIds(new Set(reviewsResult.data))
+            }
+
+            setRoomDetailLoading(false)
+        }
+
+        loadRoomDetail()
+
+        return () => {
+            isActive = false
+        }
+    }, [selectedRoomId])
+
+    useEffect(() => {
+        if (roomParticipants.length === 0) return
+
+        setReviewDrafts((prev) => {
+            const next = { ...prev }
+            roomParticipants.forEach((participant) => {
+                if (!next[participant.user_id]) {
+                    next[participant.user_id] = { rating: 5, comment: '' }
+                }
+            })
+            return next
+        })
+    }, [roomParticipants])
+
     const handleCreateRoom = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsCreating(true)
@@ -92,6 +152,52 @@ export function MatchSection() {
         setView('ROOM')
     }
 
+    const handleReviewFieldChange = (userId: string, field: 'rating' | 'comment', value: string | number) => {
+        setReviewDrafts((prev) => ({
+            ...prev,
+            [userId]: {
+                rating: field === 'rating' ? Number(value) : (prev[userId]?.rating ?? 5),
+                comment: field === 'comment' ? String(value) : (prev[userId]?.comment ?? '')
+            }
+        }))
+    }
+
+    const handleSubmitReview = async (revieweeUserId: string) => {
+        if (!selectedRoomId) return
+
+        setReviewStatus((prev) => ({
+            ...prev,
+            [revieweeUserId]: { submitting: true }
+        }))
+
+        const draft = reviewDrafts[revieweeUserId] || { rating: 5, comment: '' }
+        const result = await createPlayerReview({
+            roomId: selectedRoomId,
+            revieweeUserId,
+            rating: draft.rating,
+            comment: draft.comment
+        })
+
+        if (result?.error) {
+            setReviewStatus((prev) => ({
+                ...prev,
+                [revieweeUserId]: { submitting: false, error: result.error }
+            }))
+            return
+        }
+
+        setReviewedUserIds((prev) => {
+            const next = new Set(prev)
+            next.add(revieweeUserId)
+            return next
+        })
+
+        setReviewStatus((prev) => ({
+            ...prev,
+            [revieweeUserId]: { submitting: false, success: true }
+        }))
+    }
+
     // Filter logic
     const filteredRooms = rooms.filter(room => {
         const matchesSearch = room.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,6 +208,10 @@ export function MatchSection() {
 
     // Get unique cities for filter
     const cities = Array.from(new Set(rooms.map(r => r.city || 'Jakarta')))
+
+    const isRoomCompleted = roomDetail?.status === 'COMPLETED'
+    const isCurrentUserParticipant = roomParticipants.some(participant => participant.user_id === currentUser?.id)
+    const reviewTargets = roomParticipants.filter(participant => participant.user_id !== currentUser?.id)
 
     const renderLobby = () => (
         <div className="max-w-7xl mx-auto px-4 py-6 font-sans">
@@ -471,6 +581,118 @@ export function MatchSection() {
                     gameFormat={rooms.find(r => r.id === selectedRoomId)?.game_format || 'DOUBLE'}
                 />
             )}
+
+            <div className="mt-8 bg-white border-2 border-black rounded-xl p-5 shadow-hard">
+                <div className="flex items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h3 className="text-lg font-black uppercase tracking-wide">Review Keterampilan</h3>
+                        <p className="text-xs text-gray-500 font-medium">
+                            Beri penilaian setelah match selesai.
+                        </p>
+                    </div>
+                    {roomDetail?.status && (
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-black text-white px-2 py-1 rounded-full">
+                            {roomDetail.status}
+                        </span>
+                    )}
+                </div>
+
+                {roomDetailLoading ? (
+                    <div className="text-sm text-gray-500 font-medium">Memuat data match...</div>
+                ) : roomDetailError ? (
+                    <div className="text-sm text-red-500 font-medium">{roomDetailError}</div>
+                ) : !isRoomCompleted ? (
+                    <div className="text-sm text-gray-500 font-medium">
+                        Review tersedia setelah match selesai.
+                    </div>
+                ) : !isCurrentUserParticipant ? (
+                    <div className="text-sm text-gray-500 font-medium">
+                        Hanya peserta match yang bisa memberikan review.
+                    </div>
+                ) : reviewTargets.length === 0 ? (
+                    <div className="text-sm text-gray-500 font-medium">
+                        Tidak ada peserta lain untuk direview.
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {reviewTargets.map((participant) => {
+                            const revieweeId = participant.user_id
+                            const revieweeName = participant.users?.full_name || 'Player'
+                            const revieweeAvatar = participant.users?.avatar_url
+                            const draft = reviewDrafts[revieweeId] || { rating: 5, comment: '' }
+                            const status = reviewStatus[revieweeId]
+                            const isReviewed = reviewedUserIds.has(revieweeId)
+
+                            return (
+                                <div key={revieweeId} className="border-2 border-black/10 rounded-xl p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full border-2 border-black overflow-hidden bg-gray-200">
+                                                {revieweeAvatar ? (
+                                                    <img src={revieweeAvatar} alt={revieweeName} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-xs font-black text-gray-500">
+                                                        {revieweeName.slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="font-bold text-sm">{revieweeName}</div>
+                                        </div>
+                                        {isReviewed && (
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-pastel-mint/40 text-black px-2 py-1 rounded-full border border-black">
+                                                Sudah Direview
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {!isReviewed && (
+                                        <div className="mt-3 space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Rating</label>
+                                                <select
+                                                    value={draft.rating}
+                                                    onChange={(event) => handleReviewFieldChange(revieweeId, 'rating', event.target.value)}
+                                                    className="px-3 py-2 border-2 border-black rounded-lg text-sm font-bold bg-white"
+                                                >
+                                                    {[5, 4, 3, 2, 1].map((value) => (
+                                                        <option key={value} value={value}>{value}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <textarea
+                                                value={draft.comment}
+                                                onChange={(event) => handleReviewFieldChange(revieweeId, 'comment', event.target.value)}
+                                                className="w-full px-3 py-2 border-2 border-black rounded-lg text-sm font-medium"
+                                                rows={3}
+                                                placeholder="Tulis catatan singkat (opsional)"
+                                            />
+
+                                            {status?.error && (
+                                                <div className="text-xs text-red-500 font-bold">{status.error}</div>
+                                            )}
+                                            {status?.success && (
+                                                <div className="text-xs text-green-600 font-bold">Review tersimpan.</div>
+                                            )}
+
+                                            <div className="flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSubmitReview(revieweeId)}
+                                                    disabled={status?.submitting}
+                                                    className="px-4 py-2 bg-black text-white text-xs font-black uppercase rounded-lg border-2 border-black hover:bg-gray-900 transition-colors disabled:opacity-50"
+                                                >
+                                                    {status?.submitting ? 'Menyimpan...' : 'Submit Review'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     )
 

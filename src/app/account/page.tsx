@@ -11,7 +11,13 @@ import { useLanguage } from "@/lib/i18n/LanguageContext"
 export default function AccountPage() {
     const router = useRouter()
     const { t } = useLanguage()
-    const [user, setUser] = useState<{ name: string; email: string; avatar_url?: string } | null>(null)
+    const [user, setUser] = useState<{
+        name: string;
+        email: string;
+        avatar_url?: string;
+        skill_score?: number;
+        skill_review_count?: number;
+    } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -21,7 +27,9 @@ export default function AccountPage() {
                 setUser({
                     name: currentUser.name,
                     email: currentUser.email,
-                    avatar_url: currentUser.avatar_url
+                    avatar_url: currentUser.avatar_url,
+                    skill_score: currentUser.skill_score,
+                    skill_review_count: currentUser.skill_review_count
                 })
             } else {
                 // Redirect to home if not logged in
@@ -106,6 +114,10 @@ export default function AccountPage() {
         return null
     }
 
+    const skillScore = user.skill_score ?? 0
+    const skillReviewCount = user.skill_review_count ?? 0
+    const formattedSkillScore = skillReviewCount > 0 ? skillScore.toFixed(1) : '0'
+
     return (
         <main className="min-h-screen bg-white">
             {/* Header with gradient */}
@@ -160,8 +172,8 @@ export default function AccountPage() {
                         <div className="w-8 h-8 bg-pastel-yellow rounded-full flex items-center justify-center border-2 border-black">
                             <Gift className="w-4 h-4 text-black" />
                         </div>
-                        <span className="text-white font-bold">0 Points</span>
-                        <span className="text-gray-400 text-sm ml-auto">Earn more →</span>
+                        <span className="text-white font-bold">{formattedSkillScore} Keterampilan</span>
+                        <span className="text-gray-400 text-sm ml-auto">{skillReviewCount} review</span>
                     </motion.div>
                 </div>
             </div>

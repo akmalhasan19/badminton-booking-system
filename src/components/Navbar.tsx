@@ -60,7 +60,13 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const tabsRef = useRef<(HTMLButtonElement | null)[]>([])
 
     // User state
-    const [user, setUser] = useState<{ name: string; email: string; avatar_url?: string } | null>(null)
+    const [user, setUser] = useState<{
+        name: string;
+        email: string;
+        avatar_url?: string;
+        skill_score?: number;
+        skill_review_count?: number;
+    } | null>(null)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [showUserDropdown, setShowUserDropdown] = useState(false)
     const [showMemberDetails, setShowMemberDetails] = useState(false)
@@ -95,7 +101,9 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 setUser({
                     name: currentUser.name,
                     email: currentUser.email,
-                    avatar_url: currentUser.avatar_url
+                    avatar_url: currentUser.avatar_url,
+                    skill_score: currentUser.skill_score,
+                    skill_review_count: currentUser.skill_review_count
                 });
             }
         }
@@ -141,6 +149,10 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             default: return 'bg-transparent';
         }
     }
+
+    const skillScore = user?.skill_score ?? 0
+    const skillReviewCount = user?.skill_review_count ?? 0
+    const formattedSkillScore = skillReviewCount > 0 ? skillScore.toFixed(1) : '0'
 
     const handleLogout = async () => {
         // Update local state immediately
@@ -302,7 +314,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                                                 </li>
                                                                                 <li className="flex items-center gap-1.5">
                                                                                     <div className="w-1 h-1 rounded-full bg-pastel-mint" />
-                                                                                    Earn 1x Points
+                                                                                    Tingkatkan Keterampilan
                                                                                 </li>
                                                                             </ul>
                                                                         </div>
@@ -316,8 +328,8 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                             <div className="w-6 h-6 bg-pastel-yellow rounded-full flex items-center justify-center">
                                                                 <Gift className="w-3.5 h-3.5 text-black" />
                                                             </div>
-                                                            <span className="text-white font-bold text-sm">0 Points</span>
-                                                            <span className="text-gray-400 text-xs ml-auto">Earn more →</span>
+                                                            <span className="text-white font-bold text-sm">{formattedSkillScore} Keterampilan</span>
+                                                            <span className="text-gray-400 text-xs ml-auto">{skillReviewCount} review</span>
                                                         </div>
                                                     </div>
 

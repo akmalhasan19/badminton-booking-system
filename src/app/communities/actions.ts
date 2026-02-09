@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { updateCompletedMatchRooms } from "@/lib/match-rooms/status"
 
 const COMMUNITY_TIMEZONES = ['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'] as const
 type CommunityTimeZone = typeof COMMUNITY_TIMEZONES[number]
@@ -671,6 +672,8 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
     const supabase = await createClient()
 
     try {
+        await updateCompletedMatchRooms({ supabase, communityId })
+
         // Resolve timezone per community (fallback to Asia/Jakarta)
         const { data: community, error: communityError } = await supabase
             .from('communities')

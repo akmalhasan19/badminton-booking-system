@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { updateCompletedMatchRooms } from '@/lib/match-rooms/status'
 
 export type MatchMode = 'RANKED' | 'CASUAL' | 'DRILLING'
 export type LevelRequirement = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'PRO'
@@ -188,6 +189,8 @@ export async function getMatchRooms() {
     const supabase = await createClient()
 
     try {
+        await updateCompletedMatchRooms({ supabase })
+
         const { data, error } = await supabase
             .from('match_rooms')
             .select(`
@@ -203,5 +206,48 @@ export async function getMatchRooms() {
     } catch (error) {
         console.error('Get Rooms Error:', error)
         return []
+    }
+}
+
+export async function getMatchRoomDetail(roomId: string) {
+    const supabase = await createClient()
+
+    try {
+        await updateCompletedMatchRooms({ supabase, roomIds: [roomId] })
+
+        const { data: room, error: roomError } = await supabase
+            .from('match_rooms')
+            .select('*')
+            .eq('id', roomId)
+            .single()
+
+        if (roomError || !room) {
+            throw roomError || new Error('Room not found')
+        }
+
+        const { data: participants, error: participantsError } = await supabase
+            .from('room_participants')
+            .select(`
+                id,
+                user_id,
+                status,
+                users (
+                    id,
+                    full_name,
+                    avatar_url
+                )
+            `)
+            .eq('room_id', roomId)
+            .eq('status', 'APPROVED')
+            .order('created_at', { ascending: true })
+
+        if (participantsError) {
+            throw participantsError
+        }
+
+        return { room, participants: participants || [] }
+    } catch (error: any) {
+        console.error('Get Match Room Detail Error:', error)
+        return { error: error?.message || 'Failed to fetch room detail' }
     }
 }
