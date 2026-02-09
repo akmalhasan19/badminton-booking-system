@@ -185,7 +185,16 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
                                             <label className="block text-sm font-bold uppercase tracking-wide mb-2">Timezone</label>
                                             <select
                                                 value={formData.timezone}
-                                                onChange={e => setFormData({ ...formData, timezone: e.target.value })}
+                                                onChange={e =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        timezone:
+                                                            e.target.value as
+                                                                | "Asia/Jakarta"
+                                                                | "Asia/Makassar"
+                                                                | "Asia/Jayapura",
+                                                    })
+                                                }
                                                 className="w-full px-4 py-3 border-3 border-black rounded-xl font-medium focus:outline-none focus:ring-4 focus:ring-neo-yellow/50 transition-all bg-white"
                                             >
                                                 <option value="Asia/Jakarta">WIB (Asia/Jakarta)</option>
