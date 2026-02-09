@@ -96,7 +96,7 @@ export function MessageList({
     return (
         <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto bg-white p-4 space-y-6 flex flex-col"
+            className="flex-1 overflow-y-auto bg-white p-4 space-y-3 flex flex-col"
         >
             {/* Load more indicator */}
             {isLoading && (

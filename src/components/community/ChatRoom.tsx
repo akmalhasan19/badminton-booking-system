@@ -63,7 +63,13 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
         setIsLoading(true)
         const result = await getCommunityMessages(communityId, 30, cursor)
         if (!result.error) {
-            setMessages(prev => [...prev, ...(result.data || [])])
+            setMessages(prev => {
+                const newMessages = result.data || []
+                const uniqueNewMessages = newMessages.filter(
+                    newMsg => !prev.some(existingMsg => existingMsg.id === newMsg.id)
+                )
+                return [...prev, ...uniqueNewMessages]
+            })
             setCursor(result.nextCursor)
             setHasMore(result.hasMore || false)
         }
