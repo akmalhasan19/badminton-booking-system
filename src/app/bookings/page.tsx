@@ -271,7 +271,7 @@ export default function BookingSayaPage() {
                                     Sepertinya kamu belum booking lapangan nih. Yuk cari lapangan kosong dan mulai main!
                                 </p>
                                 <button
-                                    onClick={() => router.push('/booking')}
+                                    onClick={() => router.push('/?tab=book')}
                                     className="px-8 py-3 bg-pastel-acid text-black border-2 border-black rounded-xl font-bold shadow-hard hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center gap-2"
                                 >
                                     Booking Sekarang
