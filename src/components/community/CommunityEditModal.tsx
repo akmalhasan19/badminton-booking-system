@@ -210,7 +210,7 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowTimezoneOptions((prev) => !prev)}
-                                                    className="block w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold focus:outline-none focus:border-black focus:shadow-hard-sm transition-all text-left"
+                                                    className="block w-full pl-12 pr-10 py-3 bg-white border-3 border-black rounded-xl font-medium focus:outline-none focus:ring-4 focus:ring-neo-yellow/50 transition-all text-left"
                                                     aria-haspopup="listbox"
                                                     aria-expanded={showTimezoneOptions}
                                                 >
@@ -220,31 +220,39 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
                                                     <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showTimezoneOptions ? "rotate-180" : ""}`} />
                                                 </div>
 
-                                                {showTimezoneOptions && (
-                                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-black rounded-xl shadow-hard z-50 overflow-hidden">
-                                                        <ul role="listbox" aria-label="Timezone options">
-                                                            {TIMEZONE_OPTIONS.map(option => {
-                                                                const isSelected = option.value === formData.timezone
-                                                                return (
-                                                                    <li key={option.value}>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setFormData({ ...formData, timezone: option.value })
-                                                                                setShowTimezoneOptions(false)
-                                                                            }}
-                                                                            className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-gray-100 font-bold transition-colors ${isSelected ? "bg-pastel-mint/30" : "hover:bg-pastel-mint/30"}`}
-                                                                            role="option"
-                                                                            aria-selected={isSelected}
-                                                                        >
-                                                                            {option.label}
-                                                                        </button>
-                                                                    </li>
-                                                                )
-                                                            })}
-                                                        </ul>
-                                                    </div>
-                                                )}
+                                                <AnimatePresence>
+                                                    {showTimezoneOptions && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                                            transition={{ duration: 0.18, ease: "easeOut" }}
+                                                            className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-black rounded-xl shadow-hard z-50 overflow-hidden"
+                                                        >
+                                                            <ul role="listbox" aria-label="Timezone options">
+                                                                {TIMEZONE_OPTIONS.map(option => {
+                                                                    const isSelected = option.value === formData.timezone
+                                                                    return (
+                                                                        <li key={option.value}>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setFormData({ ...formData, timezone: option.value })
+                                                                                    setShowTimezoneOptions(false)
+                                                                                }}
+                                                                                className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-gray-100 font-bold transition-colors ${isSelected ? "bg-pastel-mint/30" : "hover:bg-pastel-mint/30"}`}
+                                                                                role="option"
+                                                                                aria-selected={isSelected}
+                                                                            >
+                                                                                {option.label}
+                                                                            </button>
+                                                                        </li>
+                                                                    )
+                                                                })}
+                                                            </ul>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                             <p className="text-xs text-gray-500 mt-2">
                                                 Zona waktu dipakai untuk menentukan "hari ini" saat menampilkan aktivitas aktif.
