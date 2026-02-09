@@ -39,19 +39,6 @@ import { AuthModal } from "@/components/AuthModal"
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const { t } = useLanguage()
     const router = useRouter()
-    const pathname = usePathname()
-    const searchParams = useSearchParams()
-    // ... state ...
-
-    const menuItems = [
-        { tab: Tab.HOME, label: t.home, color: "pastel-acid", path: "/" },
-        { tab: Tab.BOOK, label: t.book, color: "pastel-mint", path: "/?tab=book" },
-        //{ tab: Tab.MATCH, label: t.match, color: "pastel-lilac", path: "/?tab=match" },
-        // { tab: Tab.SHOP, label: t.shop, color: "pastel-pink", path: "/shop" }
-    ];
-
-    // ... rest of state ...
-
     // ... (keep existing state declarations: scrolled, mobileMenuOpen, showAuthModal, highlightStyle, tabsRef, user, isLoggedIn, showUserDropdown, showMemberDetails) ...
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
