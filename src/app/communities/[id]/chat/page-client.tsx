@@ -1,12 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowLeft, MessageSquare, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { ChatRoom } from "@/components/community/ChatRoom"
-import { DMList } from "@/components/community/DMList"
-import { DMChat } from "@/components/community/DMChat"
-import { type DMConversation } from "./actions"
 
 interface ChatPageClientProps {
     communityId: string
@@ -15,8 +10,6 @@ interface ChatPageClientProps {
     isAdmin: boolean
 }
 
-type TabType = "room" | "dm"
-
 export default function ChatPageClient({
     communityId,
     communityName,
@@ -24,95 +17,37 @@ export default function ChatPageClient({
     isAdmin
 }: ChatPageClientProps) {
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<TabType>("room")
-    const [selectedConversation, setSelectedConversation] = useState<DMConversation | null>(null)
 
     return (
-        <main className="min-h-screen bg-background-light dark:bg-background-dark font-body text-text-light dark:text-text-dark">
-            <div className="max-w-7xl mx-auto px-4 py-6">
+        <main className="bg-white text-[#171717] flex justify-center min-h-screen">
+            <div className="w-full max-w-[393px] bg-white relative flex flex-col h-screen overflow-hidden border-x border-[#171717] mx-auto">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-6">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-3 bg-white dark:bg-gray-800 border-3 border-black dark:border-white rounded-lg hover:shadow-hard transition-all"
-                    >
-                        <ArrowLeft className="w-6 h-6 text-black dark:text-white" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-black uppercase text-black dark:text-white">
-                            {communityName}
-                        </h1>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                            Community Chat
-                        </p>
-                    </div>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex gap-3 mb-6 border-b-3 border-black dark:border-white">
-                    <button
-                        onClick={() => {
-                            setActiveTab("room")
-                            setSelectedConversation(null)
-                        }}
-                        className={`flex items-center gap-2 px-5 py-3 font-bold uppercase text-sm transition-all border-b-3 ${
-                            activeTab === "room"
-                                ? "border-black dark:border-white text-black dark:text-white"
-                                : "border-transparent text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                        }`}
-                    >
-                        <Users className="w-5 h-5" />
-                        Room Chat
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("dm")}
-                        className={`flex items-center gap-2 px-5 py-3 font-bold uppercase text-sm transition-all border-b-3 ${
-                            activeTab === "dm"
-                                ? "border-black dark:border-white text-black dark:text-white"
-                                : "border-transparent text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                        }`}
-                    >
-                        <MessageSquare className="w-5 h-5" />
-                        Direct Messages
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div className="h-[calc(100vh-280px)]">
-                    {activeTab === "room" ? (
-                        <ChatRoom
-                            communityId={communityId}
-                            currentUserId={currentUserId}
-                            isAdmin={isAdmin}
-                        />
-                    ) : (
-                        <div className="flex gap-3 h-full">
-                            <DMList
-                                communityId={communityId}
-                                onSelectConversation={setSelectedConversation}
-                                selectedConversationId={selectedConversation?.id}
-                            />
-
-                            {selectedConversation ? (
-                                <DMChat
-                                    conversationId={selectedConversation.id}
-                                    currentUserId={currentUserId}
-                                    otherUser={selectedConversation.other_user}
-                                    onBack={() => setSelectedConversation(null)}
-                                />
-                            ) : (
-                                <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 rounded-xl border-2 border-black dark:border-white">
-                                    <div className="text-center">
-                                        <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
-                                        <p className="text-gray-600 dark:text-gray-400 font-bold">
-                                            Select a conversation to start messaging
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
+                <header className="bg-white border-b border-[#171717] p-4 flex items-center justify-between sticky top-0 z-20">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => router.back()}
+                            className="bg-white p-2 border border-[#171717] rounded shadow-[1px_1px_0px_0px_#171717] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all hover:bg-gray-50"
+                        >
+                            <span className="material-icons-round text-[#171717] text-xl">arrow_back</span>
+                        </button>
+                        <div className="flex flex-col">
+                            <h1 className="font-extrabold text-lg leading-tight tracking-tight text-[#171717]">
+                                {communityName}
+                            </h1>
+                            <span className="text-xs font-semibold text-gray-500">Community Chat</span>
                         </div>
-                    )}
-                </div>
+                    </div>
+                    <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <span className="material-icons-round text-2xl text-[#171717]">more_vert</span>
+                    </button>
+                </header>
+
+                {/* Chat Content */}
+                <ChatRoom
+                    communityId={communityId}
+                    currentUserId={currentUserId}
+                    isAdmin={isAdmin}
+                />
             </div>
         </main>
     )

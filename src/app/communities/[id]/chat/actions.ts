@@ -77,15 +77,20 @@ export async function getCommunityMessages(
     }
 
     try {
+        console.log('getCommunityMessages - user:', user.id, 'communityId:', communityId)
+
         // Check if user is community member
-        const { data: memberCheck } = await supabase
+        const { data: memberCheck, error: memberError } = await supabase
             .from("community_members")
             .select("id")
             .eq("community_id", communityId)
             .eq("user_id", user.id)
             .single()
 
+        console.log('Member check result:', { memberCheck, memberError })
+
         if (!memberCheck) {
+            console.error('User is not a community member')
             return { error: "You are not a member of this community" }
         }
 
@@ -99,12 +104,7 @@ export async function getCommunityMessages(
                 image_url,
                 created_at,
                 updated_at,
-                deleted_at,
-                users:user_id (
-                    id,
-                    full_name,
-                    avatar_url
-                )
+                deleted_at
             `)
             .eq("community_id", communityId)
             .order("created_at", { ascending: false })
@@ -116,11 +116,25 @@ export async function getCommunityMessages(
 
         const { data: messages, error } = await query
 
-        if (error) throw error
+        if (error) {
+            console.error('Error fetching messages from DB:', error)
+            throw error
+        }
+
+        console.log('Fetched messages:', messages?.length)
 
         const hasMore = messages.length > limit
         const paginatedMessages = messages.slice(0, limit)
         const nextCursor = hasMore ? paginatedMessages[paginatedMessages.length - 1]?.created_at : null
+
+        // Get user data for messages
+        const userIds = [...new Set(paginatedMessages.map(m => m.user_id))]
+        const { data: users } = await supabase
+            .from("users")
+            .select("id, full_name, avatar_url")
+            .in("id", userIds)
+
+        const usersMap = new Map(users?.map(u => [u.id, u]) || [])
 
         // Get reactions for messages
         const messageIds = paginatedMessages.map(m => m.id)
@@ -130,12 +144,18 @@ export async function getCommunityMessages(
                 id,
                 message_id,
                 user_id,
-                emoji,
-                users:user_id (
-                    full_name
-                )
+                emoji
             `)
             .in("message_id", messageIds)
+
+        // Get users for reactions
+        const reactionUserIds = [...new Set(reactions?.map(r => r.user_id) || [])]
+        const { data: reactionUsers } = await supabase
+            .from("users")
+            .select("id, full_name")
+            .in("id", reactionUserIds)
+
+        const reactionUsersMap = new Map(reactionUsers?.map(u => [u.id, u]) || [])
 
         const reactionsMap = new Map<string, MessageReaction[]>()
         reactions?.forEach(r => {
@@ -147,7 +167,7 @@ export async function getCommunityMessages(
                 message_id: r.message_id,
                 user_id: r.user_id,
                 emoji: r.emoji,
-                user: Array.isArray(r.users) ? r.users[0] : r.users
+                user: reactionUsersMap.get(r.user_id)
             })
         })
 
@@ -160,7 +180,7 @@ export async function getCommunityMessages(
             created_at: m.created_at,
             updated_at: m.updated_at,
             deleted_at: m.deleted_at,
-            user: Array.isArray(m.users) ? m.users[0] : m.users,
+            user: usersMap.get(m.user_id),
             reactions: reactionsMap.get(m.id) || [],
             is_deleted: !!m.deleted_at
         }))

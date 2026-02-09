@@ -19,15 +19,36 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
     const [hasMore, setHasMore] = useState(true)
     const [cursor, setCursor] = useState<string | undefined>()
 
+    // Debug: Check auth status
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { createClient } = await import('@/lib/supabase/client')
+            const supabase = createClient()
+            const { data: { session }, error } = await supabase.auth.getSession()
+            console.log("ChatRoom auth check:", {
+                hasSession: !!session,
+                userId: session?.user?.id,
+                error
+            })
+            if (!session) {
+                console.error("No session found in ChatRoom!")
+            }
+        }
+        checkAuth()
+    }, [])
+
     // Load initial messages
     useEffect(() => {
         const loadMessages = async () => {
             setIsLoading(true)
             const result = await getCommunityMessages(communityId, 30)
+            console.log("Load messages result:", result)
             if (!result.error) {
                 setMessages(result.data || [])
                 setCursor(result.nextCursor)
                 setHasMore(result.hasMore || false)
+            } else {
+                console.error("Error loading messages:", result.error)
             }
             setIsLoading(false)
         }
@@ -54,8 +75,18 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
         table: "community_messages",
         filter: `community_id=eq.${communityId}`,
         event: "INSERT",
-        onInsert: (newMessage: any) => {
-            setMessages(prev => [...prev, {
+        onInsert: async (newMessage: any) => {
+            // Fetch full message data with user info
+            const { createClient } = await import('@/lib/supabase/client')
+            const supabase = createClient()
+
+            const { data: userData } = await supabase
+                .from("users")
+                .select("id, full_name, avatar_url")
+                .eq("id", newMessage.user_id)
+                .single()
+
+            const fullMessage: CommunityMessage = {
                 id: newMessage.id,
                 community_id: newMessage.community_id,
                 user_id: newMessage.user_id,
@@ -64,12 +95,22 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
                 created_at: newMessage.created_at,
                 updated_at: newMessage.updated_at,
                 deleted_at: newMessage.deleted_at,
+                user: userData || undefined,
+                reactions: [],
                 is_deleted: false
-            }])
+            }
+
+            setMessages(prev => {
+                // Check if message already exists (prevent duplicates)
+                if (prev.some(m => m.id === fullMessage.id)) {
+                    return prev
+                }
+                return [...prev, fullMessage]
+            })
         },
         onUpdate: (updatedMessage: any) => {
-            setMessages(prev => prev.map(m => 
-                m.id === updatedMessage.id 
+            setMessages(prev => prev.map(m =>
+                m.id === updatedMessage.id
                     ? { ...m, ...updatedMessage, is_deleted: !!updatedMessage.deleted_at }
                     : m
             ))
@@ -79,13 +120,13 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
     if (isLoading && messages.length === 0) {
         return (
             <div className="flex items-center justify-center h-96">
-                <Loader2 className="w-8 h-8 animate-spin text-black dark:text-white" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#171717]" />
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-2 border-black dark:border-white rounded-xl overflow-hidden shadow-hard">
+        <div className="flex flex-col flex-1 bg-white overflow-hidden">
             {/* Messages */}
             <MessageList
                 messages={messages}
@@ -97,7 +138,7 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
                 communityId={communityId}
             />
 
-            {/* Input */}
+            {/* Input - Fixed at bottom */}
             <MessageInput
                 communityId={communityId}
                 onMessageSent={() => {

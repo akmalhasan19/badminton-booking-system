@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { format } from "date-fns"
+import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
-import { Loader2, X, Edit2, Trash2 } from "lucide-react"
+import { Loader2, Edit2, Trash2 } from "lucide-react"
 import { CommunityMessage, editCommunityMessage, deleteCommunityMessage } from "@/app/communities/[id]/chat/actions"
 import { MessageReactions } from "@/components/community/MessageReactions"
 import { ReactionPicker } from "@/components/community/ReactionPicker"
@@ -74,29 +74,44 @@ export function MessageList({
         }
     }
 
+    // Add date divider logic
+    const getDateDivider = (date: string) => {
+        const messageDate = new Date(date)
+        if (isToday(messageDate)) {
+            return "Today"
+        } else if (isYesterday(messageDate)) {
+            return "Yesterday"
+        } else {
+            return format(messageDate, "dd MMM yyyy", { locale: idLocale })
+        }
+    }
+
     // Reverse messages for display (newest at bottom)
     const displayMessages = [...messages].reverse()
+
+    // Check if user is the sender
+    const isOwnMessage = (message: CommunityMessage) => {
+        return currentUserId === message.user_id
+    }
 
     return (
         <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto bg-white dark:bg-gray-900 p-6 space-y-6 flex flex-col"
+            className="flex-1 overflow-y-auto bg-white p-4 space-y-6 flex flex-col"
         >
             {/* Load more indicator */}
             {isLoading && (
                 <div className="flex justify-center py-4">
-                    <Loader2 className="w-6 h-6 animate-spin text-black dark:text-white" />
+                    <Loader2 className="w-6 h-6 animate-spin text-[#171717]" />
                 </div>
             )}
 
-            {hasMore && !isLoading && (
-                <button
-                    onClick={onLoadMore}
-                    className="mx-auto px-4 py-2 text-sm font-bold text-black dark:text-white border-2 border-black dark:border-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                    Load Previous Messages
-                </button>
-            )}
+            {/* Date Divider - Today */}
+            <div className="flex justify-center">
+                <span className="bg-gray-100 text-gray-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded border border-[#171717]/20">
+                    Today
+                </span>
+            </div>
 
             {/* Messages */}
             {displayMessages.map((message) => (
@@ -112,86 +127,118 @@ export function MessageList({
                     {/* Deleted message */}
                     {message.is_deleted ? (
                         <div className="flex gap-3 items-center opacity-50">
-                            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                            <div className="w-9 h-9 rounded-full bg-gray-200 flex-shrink-0" />
                             <div className="flex-1">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                                <p className="text-sm text-gray-500 italic">
                                     Message deleted
                                 </p>
                             </div>
                         </div>
+                    ) : isOwnMessage(message) ? (
+                        /* User's own messages - Yellow pastel bubble */
+                        <div className="flex gap-3 items-end justify-end group">
+                            <div className="flex flex-col gap-1 max-w-[80%] items-end">
+                                <div className="bg-[#FEF9C3] text-[#171717] border border-[#171717] px-4 py-3 rounded-l-xl rounded-tr-xl rounded-br-none shadow-[2px_2px_0px_0px_#171717]">
+                                    {editingMessageId === message.id ? (
+                                        <div className="space-y-2">
+                                            <textarea
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                className="w-full p-2 border border-[#171717] rounded bg-white text-[#171717] font-medium resize-none"
+                                                rows={2}
+                                            />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleEditMessage(message.id)}
+                                                    className="px-3 py-1 text-xs font-bold bg-[#171717] text-white border border-[#171717] rounded"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditingMessageId(null)}
+                                                    className="px-3 py-1 text-xs font-bold bg-white text-[#171717] border border-[#171717] rounded"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm font-medium leading-relaxed break-words">
+                                            {message.content}
+                                        </p>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-semibold text-gray-400 mr-1 mt-0.5">
+                                    {format(new Date(message.created_at), "HH:mm", { locale: idLocale })} • You
+                                </span>
+                            </div>
+                        </div>
                     ) : (
-                        <div className="flex gap-3">
+                        /* Other users' messages - White bubble with accent bar */
+                        <div className="flex gap-3 items-start group">
                             {/* Avatar */}
-                            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden border-2 border-black dark:border-white">
+                            <div className="w-9 h-9 shrink-0 bg-white rounded-full border border-[#171717] overflow-hidden mt-1">
                                 {message.user?.avatar_url ? (
                                     <img
                                         src={message.user.avatar_url}
                                         alt={message.user.full_name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover grayscale contrast-125"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-neo-green text-sm font-bold text-black">
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-sm font-bold text-[#171717]">
                                         {message.user?.full_name?.[0]?.toUpperCase()}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Message Content */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2 mb-1">
-                                    <span className="font-bold text-black dark:text-white">
-                                        {message.user?.full_name}
-                                    </span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        {format(new Date(message.created_at), "HH:mm", {
-                                            locale: idLocale
-                                        })}
-                                    </span>
-                                    {message.created_at !== message.updated_at && (
-                                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                                            (edited)
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Message body */}
-                                {editingMessageId === message.id ? (
-                                    <div className="space-y-2">
-                                        <textarea
-                                            value={editContent}
-                                            onChange={(e) => setEditContent(e.target.value)}
-                                            className="w-full p-3 border-2 border-black dark:border-white rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white font-medium resize-none"
-                                            rows={3}
-                                        />
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleEditMessage(message.id)}
-                                                className="px-3 py-1 text-sm font-bold bg-black dark:bg-white text-white dark:text-black border-2 border-black dark:border-white rounded hover:shadow-hard transition-all"
-                                            >
-                                                Save
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingMessageId(null)}
-                                                className="px-3 py-1 text-sm font-bold bg-white dark:bg-gray-800 text-black dark:text-white border-2 border-black dark:border-white rounded hover:shadow-hard transition-all"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-black dark:text-gray-100 break-words">
-                                            {message.content}
-                                        </p>
+                            <div className="flex flex-col gap-1 w-full max-w-[88%]">
+                                <span className="text-xs font-bold ml-1 text-[#171717] uppercase">
+                                    {message.user?.full_name}
+                                </span>
+                                <div className="bg-white border border-[#171717] p-4 rounded-lg shadow-[2px_2px_0px_0px_#171717] relative overflow-hidden">
+                                    {/* Yellow accent bar */}
+                                    <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#FDE047] border-r border-[#171717]"></div>
+                                    <div className="pl-3">
+                                        {editingMessageId === message.id ? (
+                                            <div className="space-y-2">
+                                                <textarea
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    className="w-full p-2 border border-[#171717] rounded bg-white text-[#171717] font-medium resize-none"
+                                                    rows={2}
+                                                />
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEditMessage(message.id)}
+                                                        className="px-3 py-1 text-xs font-bold bg-[#171717] text-white border border-[#171717] rounded"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingMessageId(null)}
+                                                        className="px-3 py-1 text-xs font-bold bg-white text-[#171717] border border-[#171717] rounded"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-800 leading-relaxed break-words">
+                                                {message.content}
+                                            </p>
+                                        )}
                                         {message.image_url && (
                                             <img
                                                 src={message.image_url}
                                                 alt="Message attachment"
-                                                className="mt-3 max-w-sm rounded-lg border-2 border-black dark:border-white shadow-hard"
+                                                className="mt-3 max-w-full rounded border border-[#171717]"
                                             />
                                         )}
-                                    </>
-                                )}
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-semibold text-gray-400 ml-1 mt-0.5 flex items-center gap-1">
+                                    {format(new Date(message.created_at), "HH:mm", { locale: idLocale })} • {message.user?.full_name?.split(' ')[0]}
+                                </span>
 
                                 {/* Reactions */}
                                 {message.reactions && message.reactions.length > 0 && (
@@ -204,7 +251,7 @@ export function MessageList({
 
                                 {/* Message Actions */}
                                 {hoveredMessageId === message.id && editingMessageId !== message.id && (
-                                    <div className="flex gap-2 mt-2 items-center">
+                                    <div className="flex gap-2 mt-1 items-center">
                                         <ReactionPicker messageId={message.id} />
                                         {(currentUserId === message.user_id || isAdmin) && (
                                             <>
@@ -213,14 +260,14 @@ export function MessageList({
                                                         setEditingMessageId(message.id)
                                                         setEditContent(message.content)
                                                     }}
-                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                                                    className="p-1 hover:bg-gray-100 rounded"
                                                     title="Edit message"
                                                 >
-                                                    <Edit2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                                    <Edit2 className="w-4 h-4 text-gray-500" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteMessage(message.id)}
-                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                                                    className="p-1 hover:bg-gray-100 rounded"
                                                     title="Delete message"
                                                 >
                                                     <Trash2 className="w-4 h-4 text-red-500" />
