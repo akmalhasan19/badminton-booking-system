@@ -1,6 +1,6 @@
 "use client"
 
-import { Users, Calendar, Trophy, Star, Bot } from "lucide-react"
+import { Users, Calendar, Trophy, Star, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -47,6 +47,54 @@ function MemberAvatar({ member }: { member: Member }) {
         <div className={`w-full h-full ${colors[colorIndex]} flex items-center justify-center text-white text-xs font-bold`}>
             {initials}
         </div>
+        {isMembersModalOpen && (
+            <div className="fixed inset-0 z-50">
+                <div
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setIsMembersModalOpen(false)}
+                />
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-lg max-h-[80vh] rounded-3xl border-3 border-black shadow-hard overflow-hidden flex flex-col">
+                        <div className="p-5 border-b-3 border-black flex items-center justify-between bg-neo-yellow">
+                            <div>
+                                <h3 className="text-lg font-black uppercase tracking-wider">Members</h3>
+                                <p className="text-xs text-gray-700 font-medium">
+                                    {totalMembersCount} member{totalMembersCount === 1 ? "" : "s"}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsMembersModalOpen(false)}
+                                className="w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
+                                aria-label="Close members list"
+                            >
+                                <X className="w-4 h-4 stroke-[3px]" />
+                            </button>
+                        </div>
+                        <div className="p-5 overflow-y-auto">
+                            {isMembersModalLoading ? (
+                                <div className="text-center py-10 text-gray-500 font-medium">Loading members...</div>
+                            ) : membersModalError ? (
+                                <div className="text-center py-10 text-red-500 font-medium">{membersModalError}</div>
+                            ) : allMembers.length === 0 ? (
+                                <div className="text-center py-10 text-gray-500 font-medium">Belum ada member.</div>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {allMembers.map(member => (
+                                        <li key={member.id} className="flex items-center gap-3 p-3 border-2 border-black/10 rounded-xl">
+                                            <div className="w-10 h-10 rounded-full border-2 border-black overflow-hidden bg-gray-200">
+                                                <MemberAvatar member={member} />
+                                            </div>
+                                            <div className="font-bold text-sm">{member.full_name}</div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
     )
 }
 
@@ -94,9 +142,13 @@ export function CommunityStats({
         : 0
 
     const [members, setMembers] = useState<Member[]>([])
+    const [allMembers, setAllMembers] = useState<Member[]>([])
     const [totalMembersCount, setTotalMembersCount] = useState(membersCount)
     const [newMembersCount, setNewMembersCount] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
+    const [isMembersModalOpen, setIsMembersModalOpen] = useState(false)
+    const [isMembersModalLoading, setIsMembersModalLoading] = useState(false)
+    const [membersModalError, setMembersModalError] = useState<string | null>(null)
 
     // Sync totalMembersCount when prop changes (e.g. after join/leave action)
     useEffect(() => {
@@ -172,6 +224,56 @@ export function CommunityStats({
         fetchMembers()
     }, [community_id, supabase, membersCount])
 
+    useEffect(() => {
+        if (!isMembersModalOpen) return
+
+        let isActive = true
+
+        const fetchAllMembers = async () => {
+            try {
+                setIsMembersModalLoading(true)
+                setMembersModalError(null)
+
+                const { data, error } = await supabase
+                    .from('community_members')
+                    .select(`
+                        id,
+                        user_id,
+                        users (
+                            id,
+                            avatar_url,
+                            full_name
+                        )
+                    `)
+                    .eq('community_id', community_id)
+                    .eq('status', 'approved')
+                    .order('joined_at', { ascending: false })
+
+                if (error) throw error
+
+                const transformedMembers: Member[] = (data || []).map((member: any) => ({
+                    id: member.users?.id || member.user_id,
+                    avatar_url: member.users?.avatar_url || null,
+                    full_name: member.users?.full_name || 'Unknown Member'
+                }))
+
+                if (!isActive) return
+                setAllMembers(transformedMembers)
+            } catch (error) {
+                console.error('Error fetching all members:', error)
+                if (isActive) setMembersModalError("Gagal memuat daftar member.")
+            } finally {
+                if (isActive) setIsMembersModalLoading(false)
+            }
+        }
+
+        fetchAllMembers()
+
+        return () => {
+            isActive = false
+        }
+    }, [isMembersModalOpen, community_id, supabase])
+
     const handleRatingClick = () => {
         router.push(`/communities/${community_id}/reviews`)
     }
@@ -185,7 +287,14 @@ export function CommunityStats({
 
                 <div className="flex justify-between items-start mb-2 relative z-10">
                     <Users className="text-black w-8 h-8" />
-                    <span className="bg-black text-white text-[10px] font-black px-2 py-1 uppercase tracking-widest">Members</span>
+                    <button
+                        type="button"
+                        onClick={() => setIsMembersModalOpen(true)}
+                        className="bg-black text-white text-[10px] font-black px-2 py-1 uppercase tracking-widest hover:bg-white hover:text-black transition-colors border-2 border-black"
+                        aria-label="Lihat daftar member"
+                    >
+                        Members
+                    </button>
                 </div>
 
                 {/* Layout dengan 2 kolom - Desktop Only */}
