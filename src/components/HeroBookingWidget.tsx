@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Calendar, MapPin, Loader2 } from "lucide-react"
+import { Search, Calendar, MapPin, Loader2, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { fetchVenues } from "@/lib/api/actions"
 import { SmashVenue } from "@/lib/smash-api"
@@ -13,6 +13,7 @@ interface HeroBookingWidgetProps {
 
 export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
     const router = useRouter()
+    const [activeTab, setActiveTab] = useState<'court' | 'coach'>('court')
     const [searchQuery, setSearchQuery] = useState("")
     const [date, setDate] = useState("")
 
@@ -72,11 +73,12 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
         const queryToUse = overrideQuery !== undefined ? overrideQuery : searchQuery
         const params = new URLSearchParams()
         params.set('tab', 'book')
+        params.set('type', activeTab) // 'court' or 'coach'
 
         if (queryToUse) {
-            // Check if matches a venue exactly
+            // Check if matches a venue exactly (only for court)
             const matchedVenue = venues.find(v => v.name.toLowerCase() === queryToUse.toLowerCase())
-            if (matchedVenue) {
+            if (matchedVenue && activeTab === 'court') {
                 params.set('venueId', matchedVenue.id)
             } else {
                 params.set('q', queryToUse)
@@ -98,12 +100,26 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
     return (
         <div className={`w-full bg-white rounded-3xl border-2 border-black shadow-hard p-2 ${className}`}>
             {/* Tabs - Visual only for now */}
+            {/* Tabs */}
             <div className="flex gap-2 mb-2 px-2 pt-2">
-                <button className="flex items-center gap-2 px-4 py-2 bg-pastel-mint border-2 border-black rounded-xl font-bold text-sm shadow-hard-sm transform -translate-y-1">
-                    <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>
+                <button
+                    onClick={() => setActiveTab('court')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'court'
+                            ? 'bg-pastel-mint border-2 border-black shadow-hard-sm transform -translate-y-1'
+                            : 'bg-transparent hover:bg-gray-100 text-gray-500'
+                        }`}
+                >
+                    {activeTab === 'court' && <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>}
                     Booking Court
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-transparent hover:bg-gray-100 rounded-xl font-bold text-sm text-gray-500 transition-colors">
+                <button
+                    onClick={() => setActiveTab('coach')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'coach'
+                            ? 'bg-pastel-lilac border-2 border-black shadow-hard-sm transform -translate-y-1'
+                            : 'bg-transparent hover:bg-gray-100 text-gray-500'
+                        }`}
+                >
+                    {activeTab === 'coach' && <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>}
                     Find Coach
                 </button>
             </div>
@@ -112,11 +128,15 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 {/* Search Input */}
                 <div className="flex-1 w-full">
                     <label className="block text-xs font-bold uppercase text-gray-400 mb-2 ml-1">
-                        Venue / Location
+                        {activeTab === 'court' ? 'Venue / Location' : 'Coach Name / Location'}
                     </label>
                     <div className="relative group" ref={wrapperRef}>
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <MapPin className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                            {activeTab === 'court' ? (
+                                <MapPin className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                            ) : (
+                                <User className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                            )}
                         </div>
                         <input
                             type="text"
@@ -126,8 +146,8 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                                 setShowSuggestions(true)
                             }}
                             onFocus={() => setShowSuggestions(true)}
-                            className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold placeholder-gray-300 focus:outline-none focus:border-black focus:shadow-hard-sm transition-all"
-                            placeholder="Find name or location..."
+                            className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-black/10 rounded-xl text-black font-bold placeholder-gray-300 focus:outline-none focus:border-black focus:shadow-hard-sm transition-all"
+                            placeholder={activeTab === 'court' ? "Find name or location..." : "Find coach by name..."}
                         />
 
                         {/* Suggestions Dropdown */}
