@@ -39,6 +39,8 @@ import { AuthModal } from "@/components/AuthModal"
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const { t } = useLanguage()
     const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
     // ... (keep existing state declarations: scrolled, mobileMenuOpen, showAuthModal, highlightStyle, tabsRef, user, isLoggedIn, showUserDropdown, showMemberDetails) ...
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
