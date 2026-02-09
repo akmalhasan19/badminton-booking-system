@@ -13,6 +13,7 @@ export type Community = {
     description: string | null
     sport: string
     logo_url: string | null
+    image_url?: string | null // Alias for logo_url for consistency in chat
     cover_url?: string | null
     city?: string | null
     timezone?: CommunityTimeZone | null
@@ -142,6 +143,7 @@ export async function getCommunityById(id: string) {
         return {
             data: {
                 ...community,
+                image_url: community.logo_url, // Map logo_url to image_url
                 members_count: membersCount || 0,
                 role: userRole
             } as Community

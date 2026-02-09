@@ -6,6 +6,7 @@ import { ChatRoom } from "@/components/community/ChatRoom"
 interface ChatPageClientProps {
     communityId: string
     communityName: string
+    communityImage?: string | null
     currentUserId: string
     isAdmin: boolean
 }
@@ -13,6 +14,7 @@ interface ChatPageClientProps {
 export default function ChatPageClient({
     communityId,
     communityName,
+    communityImage,
     currentUserId,
     isAdmin
 }: ChatPageClientProps) {
@@ -26,18 +28,34 @@ export default function ChatPageClient({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => router.back()}
-                            className="bg-white p-2 border border-[#171717] rounded shadow-[1px_1px_0px_0px_#171717] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all hover:bg-gray-50"
+                            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
                         >
-                            <span className="material-icons-round text-[#171717] text-xl">arrow_back</span>
+                            <span className="material-icons-round text-[#171717] text-2xl">arrow_back</span>
                         </button>
-                        <div className="flex flex-col">
-                            <h1 className="font-extrabold text-lg leading-tight tracking-tight text-[#171717]">
+
+                        {/* Profile Picture */}
+                        <div className="w-10 h-10 border border-[#171717] rounded-lg overflow-hidden shadow-[2px_2px_0px_0px_#171717] flex-shrink-0 bg-gray-100">
+                            {communityImage ? (
+                                <img
+                                    src={communityImage}
+                                    alt={communityName}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-200 text-[#171717] font-bold">
+                                    {communityName[0]?.toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                            <h1 className="font-extrabold text-lg leading-tight tracking-tight text-[#171717] truncate">
                                 {communityName}
                             </h1>
-                            <span className="text-xs font-semibold text-gray-500">Community Chat</span>
+                            <span className="text-xs font-semibold text-gray-500 truncate">Community Chat</span>
                         </div>
                     </div>
-                    <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <button className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
                         <span className="material-icons-round text-2xl text-[#171717]">more_vert</span>
                     </button>
                 </header>

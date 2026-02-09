@@ -18,6 +18,7 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
     const [isLoading, setIsLoading] = useState(true)
     const [hasMore, setHasMore] = useState(true)
     const [cursor, setCursor] = useState<string | undefined>()
+    const [replyingTo, setReplyingTo] = useState<CommunityMessage | null>(null)
 
     // Debug: Check auth status
     useEffect(() => {
@@ -81,11 +82,7 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
 
     // Handle reply action from MessageList
     const handleReply = useCallback((message: CommunityMessage) => {
-        const quote = `> ${message.content}\n\n`
-        setMessageInput(prev => prev + quote)
-
-        // Optional: Focus input (handled by binding state to input)
-        // If we want to auto-focus, we might need a ref to the input component
+        setReplyingTo(message)
     }, [])
 
     // Stable callback for handling new messages
@@ -157,7 +154,7 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
     }
 
     return (
-        <div className="flex flex-col flex-1 bg-white overflow-hidden">
+        <div className="flex flex-col flex-1 bg-[#FDF8F6] bg-[linear-gradient(to_right,#78350f20_1px,transparent_1px),linear-gradient(to_bottom,#78350f20_1px,transparent_1px)] bg-[size:24px_24px] overflow-hidden">
             {/* Messages */}
             <MessageList
                 messages={messages}
@@ -175,8 +172,11 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
                 communityId={communityId}
                 value={messageInput}
                 onChange={setMessageInput}
+                replyingTo={replyingTo}
+                onCancelReply={() => setReplyingTo(null)}
                 onMessageSent={() => {
                     // Messages will be loaded via realtime
+                    setReplyingTo(null)
                 }}
             />
         </div>

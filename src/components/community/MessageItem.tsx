@@ -67,6 +67,38 @@ export function MessageItem({
     // Merge onMouseLeave
     const { onMouseLeave: onLongPressLeave, ...otherLongPressHandlers } = longPressHandlers
 
+    // Helper to render message content with quotes
+    const renderMessageContent = (content: string, isOwn: boolean) => {
+        // Check for blockquote pattern: starts with "> " and has a double newline separation
+        // We use a simple split strategy to handle the specific format we generate
+        if (content.startsWith("> ")) {
+            const firstNewLineIndex = content.indexOf("\n\n")
+            if (firstNewLineIndex !== -1) {
+                const quotePart = content.substring(2, firstNewLineIndex)
+                const replyPart = content.substring(firstNewLineIndex + 2)
+
+                return (
+                    <div className="flex flex-col gap-1">
+                        <div className={`border-l-4 border border-[#171717] ${isOwn ? 'border-l-yellow-600/50' : 'border-l-emerald-500'} bg-white p-3 mb-1 rounded shadow-[2px_2px_0px_0px_#171717]`}>
+                            <p className="text-xs italic line-clamp-1 whitespace-pre-wrap break-all text-[#171717]">
+                                {quotePart}
+                            </p>
+                        </div>
+                        <p className="text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
+                            {replyPart}
+                        </p>
+                    </div>
+                )
+            }
+        }
+
+        return (
+            <p className="text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
+                {content}
+            </p>
+        )
+    }
+
     return (
         <>
             <div
@@ -122,12 +154,10 @@ export function MessageItem({
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-sm font-medium leading-relaxed break-words">
-                                        {message.content}
-                                    </p>
+                                    renderMessageContent(message.content, true)
                                 )}
                             </div>
-                            <span className="text-[10px] font-semibold text-gray-400 mr-1 mt-0.5">
+                            <span className="text-[10px] font-bold text-[#171717] mr-1 mt-0.5">
                                 {format(new Date(message.created_at), "HH:mm", { locale: idLocale })} • You
                             </span>
                         </div>
@@ -158,9 +188,7 @@ export function MessageItem({
                                 {/* Yellow accent bar */}
                                 <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#FDE047] border-r border-[#171717]"></div>
                                 <div className="pl-3">
-                                    <p className="text-sm text-gray-800 leading-relaxed break-words">
-                                        {message.content}
-                                    </p>
+                                    {renderMessageContent(message.content, false)}
                                     {message.image_url && (
                                         <img
                                             src={message.image_url}
@@ -170,7 +198,7 @@ export function MessageItem({
                                     )}
                                 </div>
                             </div>
-                            <span className="text-[10px] font-semibold text-gray-400 ml-1 mt-0.5 flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-[#171717] ml-1 mt-0.5 flex items-center gap-1">
                                 {format(new Date(message.created_at), "HH:mm", { locale: idLocale })} • {message.user?.full_name?.split(' ')[0]}
                             </span>
 

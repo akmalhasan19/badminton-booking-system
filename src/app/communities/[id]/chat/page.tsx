@@ -33,6 +33,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         <ChatPageClient
             communityId={id}
             communityName={community.name}
+            communityImage={community.image_url}
             currentUserId={user.id}
             isAdmin={memberCheck.role === "admin"}
         />
