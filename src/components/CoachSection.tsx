@@ -4,11 +4,13 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Search, MapPin, Filter, User, Star, Trophy, Calendar, Clock, ChevronRight } from "lucide-react"
 import { useSearchParams } from "next/navigation"
+import { CoachDetailModal, type Coach } from "./CoachDetailModal"
 
 export function CoachSection() {
     const searchParams = useSearchParams()
     const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || "")
     const [cityFilter, setCityFilter] = useState(searchParams.get('city') || "")
+    const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null)
 
     // Mock Data for Coaches
     const coaches = [
@@ -23,6 +25,9 @@ export function CoachSection() {
             image: "https://images.unsplash.com/photo-1542596594-649edbc13630?q=80&w=1000&auto=format&fit=crop",
             specialization: "Doubles Strategy",
             level: "Advanced",
+            about: "Former national team player with over 10 years of competitive experience. Specializes in advanced doubles tactics, rotation, and high-pressure game psychology. Has coached multiple regional champions.",
+            experience: "15 Years",
+            achievements: ["National Doubles Champion 2015", "Certified BWF Level 2 Coach", "Head Coach at PB Jaya"]
         },
         {
             id: 2,
@@ -35,6 +40,9 @@ export function CoachSection() {
             image: "https://images.unsplash.com/photo-1626244422523-26330452377d?q=80&w=1000&auto=format&fit=crop",
             specialization: "Basics & Footwork",
             level: "Beginner",
+            about: "Patient and detailed-oriented coach perfect for beginners and children. Focuses on building a strong foundation with correct footwork and stroke mechanics to prevent injury and ensure long-term progress.",
+            experience: "5 Years",
+            achievements: ["West Java Provincial Silver Medalist", "Best Youth Coach Award 2023"]
         },
         {
             id: 3,
@@ -47,6 +55,9 @@ export function CoachSection() {
             image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1000&auto=format&fit=crop",
             specialization: "Smash Power",
             level: "Intermediate",
+            about: "Known for his explosive playstyle, Rizky teaches players how to generate maximum power in their smashes and clears. Also covers physical conditioning specifically for badminton power.",
+            experience: "8 Years",
+            achievements: ["Surabaya Open Winner 2019", "Physical Trainer Certificate"]
         }
     ]
 
@@ -104,6 +115,7 @@ export function CoachSection() {
                         key={coach.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
+                        onClick={() => setSelectedCoach(coach)}
                         className="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-hard hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all group cursor-pointer"
                     >
                         {/* Coach Image & Badge */}
@@ -163,6 +175,13 @@ export function CoachSection() {
                     <p className="text-gray-400 font-medium">Try adjusting your search filters.</p>
                 </div>
             )}
-        </div>
+
+
+            <CoachDetailModal
+                isOpen={!!selectedCoach}
+                onClose={() => setSelectedCoach(null)}
+                coach={selectedCoach}
+            />
+        </div >
     )
 }

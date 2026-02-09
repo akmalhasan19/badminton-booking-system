@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -13,6 +13,7 @@ interface CreateMatchPageClientProps {
 
 type SkillPreference = "ALL" | "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
 type MatchFormat = "SINGLE" | "DOUBLE" | "MIXED"
+type GenderPreference = "ANY" | "MALE" | "FEMALE"
 
 export default function CreateMatchPageClient({
     communityId,
@@ -28,6 +29,18 @@ export default function CreateMatchPageClient({
     const [fee, setFee] = useState<number>(0)
     const [isPublic, setIsPublic] = useState(true)
     const [matchFormat, setMatchFormat] = useState<MatchFormat>("DOUBLE")
+    const [genderPreference, setGenderPreference] = useState<GenderPreference>("ANY")
+    const [hostApprovalRequired, setHostApprovalRequired] = useState(false)
+    const [title, setTitle] = useState("")
+    const [description, setDescription] = useState("")
+    const [matchDate, setMatchDate] = useState(() => new Date().toISOString().split("T")[0])
+    const [startTime, setStartTime] = useState("18:00")
+    const [endTime, setEndTime] = useState("20:00")
+    const [venueName, setVenueName] = useState("")
+    const [venueAddress, setVenueAddress] = useState("")
+    const [submitError, setSubmitError] = useState<string | null>(null)
+    const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const modeConfig = useMemo(() => {
         const normalized = mode.toUpperCase()
@@ -55,8 +68,102 @@ export default function CreateMatchPageClient({
         }
     }, [mode])
 
+    const minParticipantsBase = matchFormat === "SINGLE" ? 1 : 3
+    const minParticipantsTotal = minParticipantsBase + (hostCounts ? 1 : 0)
+
     const incrementParticipants = () => setParticipants((prev) => Math.min(prev + 1, 16))
-    const decrementParticipants = () => setParticipants((prev) => Math.max(prev - 1, 2))
+    const decrementParticipants = () => setParticipants((prev) => Math.max(prev - 1, minParticipantsTotal))
+
+    useEffect(() => {
+        if (participants < minParticipantsTotal) {
+            setParticipants(minParticipantsTotal)
+        }
+    }, [participants, minParticipantsTotal])
+
+    const handleSubmit = async () => {
+        setSubmitError(null)
+        setSubmitSuccess(null)
+
+        if (!communityId) {
+            setSubmitError("Community is required to create this activity.")
+            return
+        }
+
+        if (!title.trim()) {
+            setSubmitError("Activity name is required.")
+            return
+        }
+
+        if (!venueName.trim()) {
+            setSubmitError("Venue name is required.")
+            return
+        }
+
+        if (!matchDate || !startTime || !endTime) {
+            setSubmitError("Date and time are required.")
+            return
+        }
+
+        const timeToMinutes = (value: string) => {
+            const [h, m] = value.split(":").map(Number)
+            return (h || 0) * 60 + (m || 0)
+        }
+
+        if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+            setSubmitError("End time must be after start time.")
+            return
+        }
+
+        if (participants < minParticipantsTotal) {
+            setSubmitError(`Participants must be at least ${minParticipantsTotal}.`)
+            return
+        }
+
+        const normalizedMode = mode.toUpperCase() === "SPARRING" ? "CASUAL" : mode.toUpperCase()
+
+        setIsSubmitting(true)
+
+        try {
+            const response = await fetch("/api/play-together", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    communityId,
+                    title: title.trim(),
+                    description: description.trim() || null,
+                    matchDate,
+                    startTime,
+                    endTime,
+                    venueName: venueName.trim(),
+                    venueAddress: venueAddress.trim() || null,
+                    pricePerPerson: fee,
+                    mode: normalizedMode,
+                    gameFormat: matchFormat,
+                    skillPreference,
+                    maxParticipants: participants,
+                    hostCounts,
+                    isPublic,
+                    coachingSession,
+                    genderPreference,
+                    hostApprovalRequired
+                })
+            })
+
+            const result = await response.json()
+            if (!response.ok) {
+                setSubmitError(result?.error || "Failed to create activity.")
+                return
+            }
+
+            setSubmitSuccess("Activity created successfully.")
+            router.push(`/communities/${communityId}`)
+        } catch (error) {
+            console.error(error)
+            setSubmitError("Failed to create activity.")
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
 
     return (
         <div className="bg-background-light dark:bg-background-dark font-body text-black dark:text-white min-h-screen pb-28">
@@ -88,6 +195,8 @@ export default function CreateMatchPageClient({
                             className="w-full bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-4 py-3 font-bold placeholder-gray-400 focus:ring-0 shadow-hard focus:translate-y-0.5 focus:shadow-hard-sm transition-all dark:text-white dark:placeholder-gray-500"
                             placeholder="contoh: Main Bareng Mingguan"
                             type="text"
+                            value={title}
+                            onChange={(event) => setTitle(event.target.value)}
                         />
                     </div>
                     <div className="group relative">
@@ -96,6 +205,8 @@ export default function CreateMatchPageClient({
                             className="w-full bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-4 py-3 font-medium placeholder-gray-400 focus:ring-0 shadow-hard focus:translate-y-0.5 focus:shadow-hard-sm transition-all dark:text-white dark:placeholder-gray-500 resize-none"
                             placeholder="Tulis gaya main, aturan, atau info penting lainnya."
                             rows={3}
+                            value={description}
+                            onChange={(event) => setDescription(event.target.value)}
                         />
                     </div>
                 </section>
@@ -181,17 +292,20 @@ export default function CreateMatchPageClient({
                             <input
                                 type="date"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-2 py-2 text-xs font-bold"
-                                defaultValue={new Date().toISOString().split("T")[0]}
+                                value={matchDate}
+                                onChange={(event) => setMatchDate(event.target.value)}
                             />
                             <input
                                 type="time"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-2 py-2 text-xs font-bold"
-                                defaultValue="18:00"
+                                value={startTime}
+                                onChange={(event) => setStartTime(event.target.value)}
                             />
                             <input
                                 type="time"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-2 py-2 text-xs font-bold"
-                                defaultValue="20:00"
+                                value={endTime}
+                                onChange={(event) => setEndTime(event.target.value)}
                             />
                         </div>
                     </div>
@@ -211,11 +325,15 @@ export default function CreateMatchPageClient({
                                 type="text"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-3 py-2 text-xs font-bold"
                                 placeholder="Nama GOR / Venue"
+                                value={venueName}
+                                onChange={(event) => setVenueName(event.target.value)}
                             />
                             <input
                                 type="text"
                                 className="w-full bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-lg px-3 py-2 text-xs font-medium"
                                 placeholder="Alamat (opsional)"
+                                value={venueAddress}
+                                onChange={(event) => setVenueAddress(event.target.value)}
                             />
                         </div>
                     </div>
@@ -364,15 +482,78 @@ export default function CreateMatchPageClient({
                     <span className="material-icons-round animate-spin-slow">settings</span>
                     <span className="font-display font-bold uppercase tracking-wide text-sm">Pengaturan Lanjutan</span>
                 </div>
+
+                <section className="bg-white dark:bg-surface-dark border-2 border-black dark:border-white rounded-xl p-4 shadow-hard space-y-4">
+                    <div>
+                        <p className="font-bold text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Gender</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {([
+                                { value: "ANY" as GenderPreference, label: "Tidak ada batasan" },
+                                { value: "MALE" as GenderPreference, label: "Laki-laki" },
+                                { value: "FEMALE" as GenderPreference, label: "Perempuan" }
+                            ]).map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setGenderPreference(option.value)}
+                                    className={cn(
+                                        "px-3 py-2 text-xs font-black uppercase border-2 rounded-lg transition-all",
+                                        genderPreference === option.value
+                                            ? "bg-black text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                            : "bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white"
+                                    )}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-bold text-sm uppercase tracking-wide">Host Approval</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Peserta baru harus disetujui admin terlebih dulu.
+                                </p>
+                            </div>
+                            <div className="relative inline-block w-12 h-7 align-middle select-none transition duration-200 ease-in">
+                                <input
+                                    checked={hostApprovalRequired}
+                                    onChange={(event) => setHostApprovalRequired(event.target.checked)}
+                                    className="peer toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 border-black appearance-none cursor-pointer translate-x-0.5 top-0.5 checked:translate-x-5 transition-transform duration-200 z-10"
+                                    id="host-approval-toggle"
+                                    type="checkbox"
+                                />
+                                <label
+                                    htmlFor="host-approval-toggle"
+                                    className="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 dark:bg-gray-600 border-2 border-black dark:border-white cursor-pointer peer-checked:bg-secondary"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             <div className="fixed bottom-0 left-0 right-0 p-5 bg-background-light dark:bg-background-dark border-t-2 border-black dark:border-white z-40">
                 <div className="max-w-md mx-auto">
+                    {submitError && (
+                        <div className="mb-3 rounded-lg border-2 border-red-600 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+                            {submitError}
+                        </div>
+                    )}
+                    {submitSuccess && (
+                        <div className="mb-3 rounded-lg border-2 border-green-600 bg-green-50 px-3 py-2 text-xs font-bold text-green-700">
+                            {submitSuccess}
+                        </div>
+                    )}
                     <button
                         type="button"
-                        className="w-full bg-primary text-black font-display font-bold text-lg uppercase tracking-wider py-4 rounded-xl border-2 border-black shadow-hard active:shadow-none active:translate-y-1 transition-all"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="w-full bg-primary text-black font-display font-bold text-lg uppercase tracking-wider py-4 rounded-xl border-2 border-black shadow-hard active:shadow-none active:translate-y-1 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        Konfirmasi &amp; Buat Aktivitas
+                        {isSubmitting ? "Membuat Aktivitas..." : "Konfirmasi & Buat Aktivitas"}
                     </button>
                 </div>
             </div>
