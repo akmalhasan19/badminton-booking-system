@@ -656,7 +656,7 @@ export type CommunityActivity = {
     price_per_person: number | null
     mode: 'RANKED' | 'CASUAL' | 'DRILLING'
     participant_count: number
-    max_participants: number // Infer or fetch? usually 4 for doubles per court, but let's assume standard
+    max_participants: number
     users: {
         avatar_url: string | null
         full_name: string | null
@@ -703,7 +703,8 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
                 end_time,
                 price_per_person,
                 mode,
-                host_user_id
+                host_user_id,
+                max_participants
             `)
             .eq('community_id', communityId)
             .eq('status', 'OPEN')
@@ -763,7 +764,7 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
                     price_per_person: room.price_per_person,
                     mode: room.mode,
                     participant_count: count || 0,
-                    max_participants: 8, // Default hardcoded for now, or could be dynamic
+                    max_participants: room.max_participants ?? 8,
                     users: users
                 }
             })

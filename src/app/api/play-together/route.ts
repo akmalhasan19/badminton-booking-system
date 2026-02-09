@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 type PlayTogetherRequest = {
@@ -161,5 +162,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: message }, { status: 400 })
     }
 
+    revalidatePath(`/communities/${communityId}`)
     return NextResponse.json({ success: true, roomId })
 }

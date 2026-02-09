@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 
 interface CreateMatchPageClientProps {
     communityId: string | null
@@ -14,6 +15,12 @@ interface CreateMatchPageClientProps {
 type SkillPreference = "ALL" | "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
 type MatchFormat = "SINGLE" | "DOUBLE" | "MIXED"
 type GenderPreference = "ANY" | "MALE" | "FEMALE"
+
+const DEFAULT_MIN_PARTICIPANTS = {
+    single: 1,
+    double: 3,
+    mixed: 3
+}
 
 export default function CreateMatchPageClient({
     communityId,
@@ -41,6 +48,8 @@ export default function CreateMatchPageClient({
     const [submitError, setSubmitError] = useState<string | null>(null)
     const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [minParticipantsSettings, setMinParticipantsSettings] = useState(DEFAULT_MIN_PARTICIPANTS)
+    const [settingsError, setSettingsError] = useState<string | null>(null)
 
     const modeConfig = useMemo(() => {
         const normalized = mode.toUpperCase()
@@ -68,7 +77,11 @@ export default function CreateMatchPageClient({
         }
     }, [mode])
 
-    const minParticipantsBase = matchFormat === "SINGLE" ? 1 : 3
+    const minParticipantsBase = matchFormat === "SINGLE"
+        ? minParticipantsSettings.single
+        : matchFormat === "DOUBLE"
+            ? minParticipantsSettings.double
+            : minParticipantsSettings.mixed
     const minParticipantsTotal = minParticipantsBase + (hostCounts ? 1 : 0)
 
     const incrementParticipants = () => setParticipants((prev) => Math.min(prev + 1, 16))
@@ -79,6 +92,46 @@ export default function CreateMatchPageClient({
             setParticipants(minParticipantsTotal)
         }
     }, [participants, minParticipantsTotal])
+
+    useEffect(() => {
+        let isActive = true
+
+        const fetchSettings = async () => {
+            if (!communityId) return
+            setSettingsError(null)
+
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('main_bareng_settings')
+                .select('min_participants_single, min_participants_double, min_participants_mixed')
+                .eq('community_id', communityId)
+                .maybeSingle()
+
+            if (!isActive) return
+
+            if (error) {
+                console.error('Failed to fetch main bareng settings:', error)
+                setSettingsError('Failed to fetch settings.')
+                return
+            }
+
+            if (data) {
+                setMinParticipantsSettings({
+                    single: data.min_participants_single ?? DEFAULT_MIN_PARTICIPANTS.single,
+                    double: data.min_participants_double ?? DEFAULT_MIN_PARTICIPANTS.double,
+                    mixed: data.min_participants_mixed ?? DEFAULT_MIN_PARTICIPANTS.mixed
+                })
+            } else {
+                setMinParticipantsSettings(DEFAULT_MIN_PARTICIPANTS)
+            }
+        }
+
+        fetchSettings()
+
+        return () => {
+            isActive = false
+        }
+    }, [communityId])
 
     const handleSubmit = async () => {
         setSubmitError(null)
@@ -395,6 +448,14 @@ export default function CreateMatchPageClient({
                         />
                         <span className="font-bold text-sm leading-tight">Host dihitung sebagai peserta</span>
                     </label>
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                        Minimum peserta (termasuk host): {minParticipantsTotal}
+                    </p>
+                    {settingsError && (
+                        <p className="text-xs font-bold text-red-600">
+                            Gagal memuat pengaturan, memakai default.
+                        </p>
+                    )}
                 </section>
 
                 <section className="bg-surface-light dark:bg-surface-dark border-2 border-black dark:border-white rounded-xl p-4 shadow-hard">
