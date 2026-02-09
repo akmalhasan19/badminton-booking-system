@@ -47,54 +47,6 @@ function MemberAvatar({ member }: { member: Member }) {
         <div className={`w-full h-full ${colors[colorIndex]} flex items-center justify-center text-white text-xs font-bold`}>
             {initials}
         </div>
-        {isMembersModalOpen && (
-            <div className="fixed inset-0 z-50">
-                <div
-                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                    onClick={() => setIsMembersModalOpen(false)}
-                />
-                <div className="absolute inset-0 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-lg max-h-[80vh] rounded-3xl border-3 border-black shadow-hard overflow-hidden flex flex-col">
-                        <div className="p-5 border-b-3 border-black flex items-center justify-between bg-neo-yellow">
-                            <div>
-                                <h3 className="text-lg font-black uppercase tracking-wider">Members</h3>
-                                <p className="text-xs text-gray-700 font-medium">
-                                    {totalMembersCount} member{totalMembersCount === 1 ? "" : "s"}
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsMembersModalOpen(false)}
-                                className="w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
-                                aria-label="Close members list"
-                            >
-                                <X className="w-4 h-4 stroke-[3px]" />
-                            </button>
-                        </div>
-                        <div className="p-5 overflow-y-auto">
-                            {isMembersModalLoading ? (
-                                <div className="text-center py-10 text-gray-500 font-medium">Loading members...</div>
-                            ) : membersModalError ? (
-                                <div className="text-center py-10 text-red-500 font-medium">{membersModalError}</div>
-                            ) : allMembers.length === 0 ? (
-                                <div className="text-center py-10 text-gray-500 font-medium">Belum ada member.</div>
-                            ) : (
-                                <ul className="space-y-2">
-                                    {allMembers.map(member => (
-                                        <li key={member.id} className="flex items-center gap-3 p-3 border-2 border-black/10 rounded-xl">
-                                            <div className="w-10 h-10 rounded-full border-2 border-black overflow-hidden bg-gray-200">
-                                                <MemberAvatar member={member} />
-                                            </div>
-                                            <div className="font-bold text-sm">{member.full_name}</div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
     )
 }
 
@@ -279,7 +231,8 @@ export function CommunityStats({
     }
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 mb-8">
+        <>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 mb-8">
             {/* Members Card - Left Column spanning full height of this row */}
             <div className="bg-white border-3 border-black shadow-hard rounded-xl p-5 flex flex-col justify-between relative overflow-hidden h-full min-h-[180px]">
                 {/* Divider Line - Horizontal di mobile, Vertical di desktop */}
@@ -378,6 +331,55 @@ export function CommunityStats({
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+            {isMembersModalOpen && (
+                <div className="fixed inset-0 z-50">
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={() => setIsMembersModalOpen(false)}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <div className="bg-white w-full max-w-lg max-h-[80vh] rounded-3xl border-3 border-black shadow-hard overflow-hidden flex flex-col">
+                            <div className="p-5 border-b-3 border-black flex items-center justify-between bg-neo-yellow">
+                                <div>
+                                    <h3 className="text-lg font-black uppercase tracking-wider">Members</h3>
+                                    <p className="text-xs text-gray-700 font-medium">
+                                        {totalMembersCount} member{totalMembersCount === 1 ? "" : "s"}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMembersModalOpen(false)}
+                                    className="w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
+                                    aria-label="Close members list"
+                                >
+                                    <X className="w-4 h-4 stroke-[3px]" />
+                                </button>
+                            </div>
+                            <div className="p-5 overflow-y-auto">
+                                {isMembersModalLoading ? (
+                                    <div className="text-center py-10 text-gray-500 font-medium">Loading members...</div>
+                                ) : membersModalError ? (
+                                    <div className="text-center py-10 text-red-500 font-medium">{membersModalError}</div>
+                                ) : allMembers.length === 0 ? (
+                                    <div className="text-center py-10 text-gray-500 font-medium">Belum ada member.</div>
+                                ) : (
+                                    <ul className="space-y-2">
+                                        {allMembers.map(member => (
+                                            <li key={member.id} className="flex items-center gap-3 p-3 border-2 border-black/10 rounded-xl">
+                                                <div className="w-10 h-10 rounded-full border-2 border-black overflow-hidden bg-gray-200">
+                                                    <MemberAvatar member={member} />
+                                                </div>
+                                                <div className="font-bold text-sm">{member.full_name}</div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     )
 }
