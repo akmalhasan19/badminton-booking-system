@@ -47,6 +47,32 @@ export function MessageList({
         }
     }, [hasMore, onLoadMore])
 
+    // Scroll to bottom on initial load
+    useEffect(() => {
+        if (!isLoading && messages.length > 0) {
+            scrollToBottom()
+        }
+    }, [isLoading]) // Only run when loading finishes initially. We might want to be smarter about this.
+
+    // Scroll to bottom if user was near bottom when new message arrived
+    useEffect(() => {
+        // Simple implementation: just scroll to bottom when messages change and it's not a "load more" action
+        // But since we prepend messages on load more, we need to be careful.
+        // Actually, the user wants "open feature chat directly open bottom".
+        // The above useEffect handles the "open feature" part.
+
+        // For new messages (which are at the bottom now), we should auto-scroll if we are already at the bottom.
+        // However, standard chat behavior is often just to scroll to bottom on new message if sent by self.
+
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1]
+            if (lastMessage.user_id === currentUserId) {
+                scrollToBottom()
+            }
+        }
+    }, [messages, currentUserId, scrollToBottom])
+
+
     useEffect(() => {
         const scrollContainer = scrollRef.current
         if (scrollContainer) {

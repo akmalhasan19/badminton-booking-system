@@ -55,9 +55,9 @@ export function DMChat({
     useRealtimeSubscription({
         table: "dm_messages",
         filter: `conversation_id=eq.${conversationId}`,
-        event: "INSERT",
+        event: "*",
         onInsert: (newMsg: any) => {
-            setMessages(prev => [...prev, {
+            setMessages(prev => [{
                 id: newMsg.id,
                 conversation_id: newMsg.conversation_id,
                 sender_id: newMsg.sender_id,
@@ -67,11 +67,11 @@ export function DMChat({
                 updated_at: newMsg.updated_at,
                 deleted_at: newMsg.deleted_at,
                 is_deleted: false
-            }])
+            }, ...prev])
         },
         onUpdate: (updatedMsg: any) => {
-            setMessages(prev => prev.map(m => 
-                m.id === updatedMsg.id 
+            setMessages(prev => prev.map(m =>
+                m.id === updatedMsg.id
                     ? { ...m, ...updatedMsg, is_deleted: !!updatedMsg.deleted_at }
                     : m
             ))

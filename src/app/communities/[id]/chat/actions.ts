@@ -329,7 +329,7 @@ export async function deleteCommunityMessage(
             .eq("user_id", user.id)
             .single()
 
-        const isAdmin = memberCheck?.role === "admin"
+        const isAdmin = memberCheck?.role === "admin" || memberCheck?.role === "owner"
         const isOwner = message.user_id === user.id
 
         if (!isAdmin && !isOwner) {

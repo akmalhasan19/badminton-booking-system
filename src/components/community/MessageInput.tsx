@@ -32,7 +32,7 @@ export function MessageInput({ communityId, onMessageSent }: MessageInputProps) 
                 console.log("Message sent successfully!")
                 setContent("")
                 onMessageSent?.()
-                toast.success("Message sent!")
+                // toast.success("Message sent!") - Removed for seamless experience
             }
         } catch (error) {
             console.error("Unexpected error:", error)

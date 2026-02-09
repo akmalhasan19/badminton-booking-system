@@ -63,58 +63,71 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
         setIsLoading(true)
         const result = await getCommunityMessages(communityId, 30, cursor)
         if (!result.error) {
-            setMessages(prev => [...(result.data || []), ...prev])
+            setMessages(prev => [...prev, ...(result.data || [])])
             setCursor(result.nextCursor)
             setHasMore(result.hasMore || false)
         }
         setIsLoading(false)
     }, [communityId, cursor, hasMore])
 
+    // Stable callback for handling new messages
+    const handleNewMessage = useCallback(async (newMessage: any) => {
+        console.log('📩 New message received:', newMessage)
+
+        // Fetch full message data with user info
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+
+        const { data: userData } = await supabase
+            .from("users")
+            .select("id, full_name, avatar_url")
+            .eq("id", newMessage.user_id)
+            .single()
+
+        const fullMessage: CommunityMessage = {
+            id: newMessage.id,
+            community_id: newMessage.community_id,
+            user_id: newMessage.user_id,
+            content: newMessage.content,
+            image_url: newMessage.image_url,
+            created_at: newMessage.created_at,
+            updated_at: newMessage.updated_at,
+            deleted_at: newMessage.deleted_at,
+            user: userData || undefined,
+            reactions: [],
+            is_deleted: false
+        }
+
+        console.log('✅ Adding message to state:', fullMessage)
+
+        setMessages(prev => {
+            // Check if message already exists (prevent duplicates)
+            if (prev.some(m => m.id === fullMessage.id)) {
+                console.log('⚠️ Message already exists, skipping')
+                return prev
+            }
+            console.log('➕ Message added to state')
+            return [fullMessage, ...prev]
+        })
+    }, [])
+
+    // Stable callback for handling message updates
+    const handleUpdateMessage = useCallback((updatedMessage: any) => {
+        console.log('📝 Message updated:', updatedMessage)
+        setMessages(prev => prev.map(m =>
+            m.id === updatedMessage.id
+                ? { ...m, ...updatedMessage, is_deleted: !!updatedMessage.deleted_at }
+                : m
+        ))
+    }, [])
+
     // Real-time subscription for new messages
     useRealtimeSubscription({
         table: "community_messages",
         filter: `community_id=eq.${communityId}`,
-        event: "INSERT",
-        onInsert: async (newMessage: any) => {
-            // Fetch full message data with user info
-            const { createClient } = await import('@/lib/supabase/client')
-            const supabase = createClient()
-
-            const { data: userData } = await supabase
-                .from("users")
-                .select("id, full_name, avatar_url")
-                .eq("id", newMessage.user_id)
-                .single()
-
-            const fullMessage: CommunityMessage = {
-                id: newMessage.id,
-                community_id: newMessage.community_id,
-                user_id: newMessage.user_id,
-                content: newMessage.content,
-                image_url: newMessage.image_url,
-                created_at: newMessage.created_at,
-                updated_at: newMessage.updated_at,
-                deleted_at: newMessage.deleted_at,
-                user: userData || undefined,
-                reactions: [],
-                is_deleted: false
-            }
-
-            setMessages(prev => {
-                // Check if message already exists (prevent duplicates)
-                if (prev.some(m => m.id === fullMessage.id)) {
-                    return prev
-                }
-                return [...prev, fullMessage]
-            })
-        },
-        onUpdate: (updatedMessage: any) => {
-            setMessages(prev => prev.map(m =>
-                m.id === updatedMessage.id
-                    ? { ...m, ...updatedMessage, is_deleted: !!updatedMessage.deleted_at }
-                    : m
-            ))
-        }
+        event: "*",
+        onInsert: handleNewMessage,
+        onUpdate: handleUpdateMessage
     })
 
     if (isLoading && messages.length === 0) {
