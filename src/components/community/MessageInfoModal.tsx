@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Loader2, CheckCheck, Check, X } from "lucide-react"
-import { getMessageReadReceipts, type ReadReceipts } from "@/app/communities/[id]/chat/actions"
+import { getMessageReadReceipts, type ReadReceipts, type CommunityMessage } from "@/app/communities/[id]/chat/actions"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 
@@ -13,6 +13,8 @@ interface MessageInfoModalProps {
     messageId: string
     content: string
     senderName: string
+    currentUserId?: string
+    messageLookup?: Map<string, CommunityMessage>
 }
 
 export function MessageInfoModal({
@@ -21,7 +23,9 @@ export function MessageInfoModal({
     communityId,
     messageId,
     content,
-    senderName
+    senderName,
+    currentUserId,
+    messageLookup
 }: MessageInfoModalProps) {
     const [loading, setLoading] = useState(true)
     const [receipts, setReceipts] = useState<ReadReceipts | null>(null)
@@ -50,26 +54,43 @@ export function MessageInfoModal({
                 const replyPart = messageContent.substring(firstNewLineIndex + 2)
 
                 let quoteSenderName = ""
+                let quoteSenderId = ""
+                let quoteMessageId = ""
                 let quoteContent = fullQuote
 
-                const idMatch = fullQuote.match(/^\[(.*?)\] \[id:(.*?)\] ([\s\S]*)/)
-                if (idMatch) {
-                    quoteSenderName = idMatch[1]
-                    quoteContent = idMatch[3]
+                const idWithUserMatch = fullQuote.match(/^\[(.*?)\]\s+\[id:(.*?)\]\s+\[uid:(.*?)\]\s+([\s\S]*)/)
+                if (idWithUserMatch) {
+                    quoteSenderName = idWithUserMatch[1]
+                    quoteMessageId = idWithUserMatch[2]
+                    quoteSenderId = idWithUserMatch[3]
+                    quoteContent = idWithUserMatch[4]
                 } else {
-                    const nameMatch = fullQuote.match(/^\[(.*?)\] ([\s\S]*)/)
-                    if (nameMatch) {
-                        quoteSenderName = nameMatch[1]
-                        quoteContent = nameMatch[2]
+                    const idMatch = fullQuote.match(/^\[(.*?)\]\s+\[id:(.*?)\]\s+([\s\S]*)/)
+                    if (idMatch) {
+                        quoteSenderName = idMatch[1]
+                        quoteMessageId = idMatch[2]
+                        quoteContent = idMatch[3]
+                    } else {
+                        const nameMatch = fullQuote.match(/^\[(.*?)\]\s+([\s\S]*)/)
+                        if (nameMatch) {
+                            quoteSenderName = nameMatch[1]
+                            quoteContent = nameMatch[2]
+                        }
                     }
                 }
+
+                const isQuotedFromCurrentUser = Boolean(
+                    (quoteSenderId && currentUserId && quoteSenderId === currentUserId) ||
+                    (quoteMessageId && currentUserId && messageLookup?.get(quoteMessageId)?.user_id === currentUserId)
+                )
+                const displayQuoteSenderName = isQuotedFromCurrentUser ? "You" : quoteSenderName
 
                 return (
                     <div className="flex flex-col gap-2">
                         <div className="border-l-4 border border-[#171717] bg-white p-3 rounded shadow-sm">
-                            {quoteSenderName && (
+                            {displayQuoteSenderName && (
                                 <p className="text-xs font-bold text-[#171717] mb-1">
-                                    {quoteSenderName}
+                                    {displayQuoteSenderName}
                                 </p>
                             )}
                             <p className="text-sm text-[#171717] whitespace-pre-wrap break-words">

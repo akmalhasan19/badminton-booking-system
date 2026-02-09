@@ -41,7 +41,7 @@ export function MessageInput({
             let finalContent = content
             if (replyingTo) {
                 const senderName = replyingTo.user?.full_name || "Unknown"
-                const quote = `> [${senderName}] [id:${replyingTo.id}] ${replyingTo.content}\n\n`
+                const quote = `> [${senderName}] [id:${replyingTo.id}] [uid:${replyingTo.user_id}] ${replyingTo.content}\n\n`
                 finalContent = quote + content
             }
 

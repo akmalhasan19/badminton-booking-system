@@ -16,6 +16,7 @@ interface MessageItemProps {
     isAdmin?: boolean
     communityId: string
     onReply?: (message: CommunityMessage) => void
+    messageLookup?: Map<string, CommunityMessage>
 }
 
 export function MessageItem({
@@ -23,7 +24,8 @@ export function MessageItem({
     currentUserId,
     isAdmin,
     communityId,
-    onReply
+    onReply,
+    messageLookup
 }: MessageItemProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [editContent, setEditContent] = useState(message.content)
@@ -79,22 +81,38 @@ export function MessageItem({
 
                 let senderName = ""
                 let messageId = ""
+                let senderId = ""
                 let quoteContent = fullQuote
 
-                // Check for [Name] [id:ID] format
-                const idMatch = fullQuote.match(/^\[(.*?)\] \[id:(.*?)\] ([\s\S]*)/)
-                if (idMatch) {
-                    senderName = idMatch[1]
-                    messageId = idMatch[2]
-                    quoteContent = idMatch[3]
+                // Check for [Name] [id:ID] [uid:USER_ID] format
+                const idWithUserMatch = fullQuote.match(/^\[(.*?)\]\s+\[id:(.*?)\]\s+\[uid:(.*?)\]\s+([\s\S]*)/)
+                if (idWithUserMatch) {
+                    senderName = idWithUserMatch[1]
+                    messageId = idWithUserMatch[2]
+                    senderId = idWithUserMatch[3]
+                    quoteContent = idWithUserMatch[4]
                 } else {
-                    // Fallback for [Name] only format
-                    const nameMatch = fullQuote.match(/^\[(.*?)\] ([\s\S]*)/)
-                    if (nameMatch) {
-                        senderName = nameMatch[1]
-                        quoteContent = nameMatch[2]
+                    // Check for [Name] [id:ID] format
+                    const idMatch = fullQuote.match(/^\[(.*?)\]\s+\[id:(.*?)\]\s+([\s\S]*)/)
+                    if (idMatch) {
+                        senderName = idMatch[1]
+                        messageId = idMatch[2]
+                        quoteContent = idMatch[3]
+                    } else {
+                        // Fallback for [Name] only format
+                        const nameMatch = fullQuote.match(/^\[(.*?)\]\s+([\s\S]*)/)
+                        if (nameMatch) {
+                            senderName = nameMatch[1]
+                            quoteContent = nameMatch[2]
+                        }
                     }
                 }
+
+                const isQuotedFromCurrentUser = Boolean(
+                    (senderId && currentUserId && senderId === currentUserId) ||
+                    (messageId && currentUserId && messageLookup?.get(messageId)?.user_id === currentUserId)
+                )
+                const displaySenderName = isQuotedFromCurrentUser ? "You" : senderName
 
                 const handleScrollToMessage = () => {
                     if (messageId) {
@@ -118,9 +136,9 @@ export function MessageItem({
                             onClick={messageId ? handleScrollToMessage : undefined}
                             className={`border-l-4 border border-[#171717] ${isOwn ? 'border-l-yellow-600/50' : 'border-l-emerald-500'} bg-white p-3 mb-1 rounded shadow-[2px_2px_0px_0px_#171717] ${messageId ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors' : ''}`}
                         >
-                            {senderName && (
+                            {displaySenderName && (
                                 <p className="text-xs font-bold text-[#171717] mb-0.5">
-                                    {senderName}
+                                    {displaySenderName}
                                 </p>
                             )}
                             <p className="text-xs italic line-clamp-1 whitespace-pre-wrap break-all text-[#171717]">
@@ -336,6 +354,8 @@ export function MessageItem({
                 messageId={message.id}
                 content={message.content}
                 senderName={infoSenderName}
+                currentUserId={currentUserId}
+                messageLookup={messageLookup}
             />
         </>
     )

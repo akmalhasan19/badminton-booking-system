@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 import { Loader2 } from "lucide-react"
@@ -92,6 +92,9 @@ export function MessageList({
 
     // Reverse messages for display (newest at bottom)
     const displayMessages = [...messages].reverse()
+    const messageLookup = useMemo(() => {
+        return new Map(messages.map(message => [message.id, message]))
+    }, [messages])
 
     return (
         <div
@@ -121,6 +124,7 @@ export function MessageList({
                     isAdmin={isAdmin}
                     communityId={communityId}
                     onReply={onReply}
+                    messageLookup={messageLookup}
                 />
             ))}
 
