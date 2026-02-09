@@ -663,6 +663,7 @@ export type CommunityActivity = {
 export type CommunityActivitiesResult = {
     data: CommunityActivity[]
     count: number
+    totalCount?: number
     error?: string
 }
 
@@ -687,8 +688,7 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
             })
         const startOfToday = getStartOfTodayISO(timeZone)
 
-        // Fetch match_rooms for this community
-        const { data: rooms, error } = await supabase
+        const roomsQuery = supabase
             .from('match_rooms')
             .select(`
                 id,
@@ -706,10 +706,24 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
             //.gte('match_date', new Date().toISOString()) // Only future events?
             .order('match_date', { ascending: true })
 
-        if (error) throw error
+        const totalCountQuery = supabase
+            .from('match_rooms')
+            .select('id', { count: 'exact', head: true })
+            .eq('community_id', communityId)
+
+        const [
+            { data: rooms, error: roomsError },
+            { count: totalCount, error: totalCountError }
+        ] = await Promise.all([roomsQuery, totalCountQuery])
+
+        if (roomsError) throw roomsError
+
+        if (totalCountError) {
+            console.error("Error fetching community activities total count:", totalCountError)
+        }
 
         if (!rooms || rooms.length === 0) {
-            return { data: [], count: 0 }
+            return { data: [], count: 0, totalCount: totalCount || 0 }
         }
 
         // For each room, get participant count and some avatars (parallelized)
@@ -750,7 +764,7 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
             })
         )
 
-        return { data: activities, count: activities.length }
+        return { data: activities, count: activities.length, totalCount: totalCount || activities.length }
 
     } catch (error) {
         console.error("Error fetching community activities:", error)

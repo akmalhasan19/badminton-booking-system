@@ -9,7 +9,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
     const { id } = await params
     const [
         { data: community, error },
-        { data: activities, count: activitiesCount }
+        { data: activities, count: activitiesCount, totalCount: totalActivitiesCount }
     ] = await Promise.all([
         getCommunityById(id),
         getCommunityActivities(id)
@@ -50,6 +50,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                                 <CommunityStats
                                     membersCount={community.members_count || 0}
                                     activeEventsCount={activitiesCount ?? activities?.length ?? 0}
+                                    totalEventsCount={totalActivitiesCount ?? 0}
                                     community_id={id}
                                 />
                             </div>

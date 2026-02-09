@@ -14,6 +14,7 @@ interface Member {
 interface CommunityStatsProps {
     membersCount: number;
     activeEventsCount?: number;
+    totalEventsCount?: number;
     rating?: number;
     community_id: string;
 }
@@ -77,9 +78,20 @@ function MemberGrid({ members, maxDisplay = 12, gapX = 1, gapY = 1 }: { members:
     )
 }
 
-export function CommunityStats({ membersCount, activeEventsCount = 0, rating = 4.9, community_id }: CommunityStatsProps) {
+export function CommunityStats({
+    membersCount,
+    activeEventsCount = 0,
+    totalEventsCount,
+    rating = 4.9,
+    community_id
+}: CommunityStatsProps) {
     const router = useRouter()
     const supabase = createClient()
+    const safeActiveEvents = Math.max(activeEventsCount, 0)
+    const safeTotalEvents = Math.max(totalEventsCount ?? safeActiveEvents, safeActiveEvents, 0)
+    const activityBarPercent = safeTotalEvents > 0
+        ? Math.min((safeActiveEvents / safeTotalEvents) * 100, 100)
+        : 0
 
     const [members, setMembers] = useState<Member[]>([])
     const [totalMembersCount, setTotalMembersCount] = useState(membersCount)
@@ -226,8 +238,15 @@ export function CommunityStats({ membersCount, activeEventsCount = 0, rating = 4
                     <div>
                         <span className="text-5xl font-black tracking-tighter leading-none">{activeEventsCount}</span>
                     </div>
-                    <div className="w-full bg-black/20 h-3 rounded-full overflow-hidden mt-2 border border-black/10">
-                        <div className="bg-primary h-full w-3/4 border-r-2 border-black"></div>
+                    <div
+                        className="w-full bg-black/20 h-3 rounded-full overflow-hidden mt-2 border border-black/10"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={safeTotalEvents}
+                        aria-valuenow={safeActiveEvents}
+                        aria-label={`Active activities: ${safeActiveEvents} of ${safeTotalEvents}`}
+                    >
+                        <div className="bg-primary h-full border-r-2 border-black" style={{ width: `${activityBarPercent}%` }}></div>
                     </div>
                 </div>
 
