@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, User, Users, LogOut, ChevronDown, Calendar, CreditCard, Bell, HelpCircle, Settings, Star, Gift } from "lucide-react"
+import { Menu, X, User, Users, LogOut, ChevronDown, Calendar, CreditCard, Bell, HelpCircle, Settings, Star, Gift, Trophy } from "lucide-react"
 import { Tab } from "@/types"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser, signOut } from "@/lib/auth/actions"
@@ -362,6 +362,16 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                                         </button>
 
                                                         <button
+                                                            onClick={() => { setShowUserDropdown(false); router.push('/partner/coach'); }}
+                                                            className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-pastel-acid/30 rounded-lg flex items-center justify-center group-hover:bg-pastel-acid/50 transition-colors">
+                                                                <Trophy className="w-4.5 h-4.5 text-gray-700" />
+                                                            </div>
+                                                            <span>Be a Coach</span>
+                                                        </button>
+
+                                                        <button
                                                             onClick={() => { setShowUserDropdown(false); router.push('/payment-methods'); }}
                                                             className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group"
                                                         >
@@ -482,6 +492,14 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 className="text-4xl font-bold text-pastel-yellow hover:text-yellow-600 transition-colors"
                             >
                                 {t.join_us}
+                            </motion.button>
+
+                            <motion.button
+                                variants={itemVariants}
+                                onClick={() => { setMobileMenuOpen(false); router.push('/partner/coach'); }}
+                                className="text-4xl font-bold text-pastel-mint hover:text-green-600 transition-colors"
+                            >
+                                Be a Coach
                             </motion.button>
 
                             {/* Show user profile card or login based on auth state */}

@@ -62,6 +62,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                                 activities={activities || []}
                                 role={community.role}
                                 communityId={id}
+                                timeZone={community.timezone || 'Asia/Jakarta'}
                             />
                         </div>
                     </div>

@@ -3,32 +3,47 @@
 import { Clock, ArrowRight, Trophy, Bolt, Users, Plus, Calendar } from "lucide-react"
 import { CommunityActivity } from "@/app/communities/actions"
 import Link from "next/link"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { CreateActivityModal } from "./CreateActivityModal"
 
 interface CommunityActivitiesProps {
     activities?: CommunityActivity[]
     role?: string | null
     communityId?: string
+    timeZone?: string | null
 }
 
-export function CommunityActivities({ activities = [], role, communityId }: CommunityActivitiesProps) {
+export function CommunityActivities({ activities = [], role, communityId, timeZone }: CommunityActivitiesProps) {
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const activityTimeZone = timeZone || 'Asia/Jakarta'
+
+    const dateFormatter = useMemo(() => (
+        new Intl.DateTimeFormat('id-ID', {
+            weekday: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: activityTimeZone
+        })
+    ), [activityTimeZone])
+
+    const dayFormatter = useMemo(() => (
+        new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            timeZone: activityTimeZone
+        })
+    ), [activityTimeZone])
 
     // Helper to format date
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return new Intl.DateTimeFormat('id-ID', { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(date)
+        return dateFormatter.format(new Date(dateString))
     }
 
     // Helper to check if date is today
     const isToday = (dateString: string) => {
-        const date = new Date(dateString)
-        const today = new Date()
-        return date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear()
+        return dayFormatter.format(new Date(dateString)) === dayFormatter.format(new Date())
     }
     return (
         <div className="flex flex-col">

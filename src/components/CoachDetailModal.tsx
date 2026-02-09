@@ -34,7 +34,7 @@ export function CoachDetailModal({ isOpen, onClose, coach }: CoachDetailModalPro
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-md"
+                className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-md"
                 onClick={onClose}
             >
                 <motion.div
@@ -42,10 +42,10 @@ export function CoachDetailModal({ isOpen, onClose, coach }: CoachDetailModalPro
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden border-4 border-black shadow-2xl max-h-[90vh] flex flex-col"
+                    className="w-full md:max-w-2xl bg-white rounded-3xl overflow-hidden border-4 border-black shadow-2xl max-h-[75vh] md:max-h-[90vh] flex flex-col"
                 >
                     {/* Header Image Area */}
-                    <div className="relative h-48 md:h-64 bg-gray-200 shrink-0">
+                    <div className="relative h-40 md:h-64 bg-gray-200 shrink-0">
                         <img
                             src={coach.image}
                             alt={coach.name}
