@@ -9,6 +9,7 @@ interface Member {
     id: string;
     avatar_url: string | null;
     full_name: string;
+    role?: 'admin' | 'member' | string;
 }
 
 interface CommunityStatsProps {
@@ -145,6 +146,7 @@ export function CommunityStats({
                     .select(`
                         id,
                         user_id,
+                        role,
                         users (
                             id,
                             avatar_url,
@@ -162,7 +164,8 @@ export function CommunityStats({
                 const transformedMembers: Member[] = (data || []).map((member: any) => ({
                     id: member.users?.id || member.user_id,
                     avatar_url: member.users?.avatar_url || null,
-                    full_name: member.users?.full_name || 'Unknown Member'
+                    full_name: member.users?.full_name || 'Unknown Member',
+                    role: member.role
                 }))
 
                 setMembers(transformedMembers)
@@ -191,6 +194,7 @@ export function CommunityStats({
                     .select(`
                         id,
                         user_id,
+                        role,
                         users (
                             id,
                             avatar_url,
@@ -206,7 +210,8 @@ export function CommunityStats({
                 const transformedMembers: Member[] = (data || []).map((member: any) => ({
                     id: member.users?.id || member.user_id,
                     avatar_url: member.users?.avatar_url || null,
-                    full_name: member.users?.full_name || 'Unknown Member'
+                    full_name: member.users?.full_name || 'Unknown Member',
+                    role: member.role
                 }))
 
                 if (!isActive) return
@@ -370,7 +375,14 @@ export function CommunityStats({
                                                 <div className="w-10 h-10 rounded-full border-2 border-black overflow-hidden bg-gray-200">
                                                     <MemberAvatar member={member} />
                                                 </div>
-                                                <div className="font-bold text-sm">{member.full_name}</div>
+                                                <div className="flex-1 flex items-center justify-between gap-2">
+                                                    <div className="font-bold text-sm">{member.full_name}</div>
+                                                    {member.role === 'admin' && (
+                                                        <span className="text-[10px] font-black uppercase tracking-widest bg-black text-white px-2 py-1 rounded-full border border-black">
+                                                            Admin
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>
