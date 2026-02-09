@@ -822,7 +822,7 @@ export function BookingSection() {
                                     router.push(`/?${params.toString()}`, { scroll: false })
                                 }}
                                 className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${bookingType === 'COACH'
-                                    ? 'bg-pastel-lilac text-black border-2 border-black shadow-hard-sm transform -translate-y-1'
+                                    ? 'bg-black text-white shadow-md'
                                     : 'text-gray-500 hover:bg-gray-100'
                                     }`}
                             >
