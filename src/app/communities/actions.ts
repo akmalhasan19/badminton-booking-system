@@ -660,7 +660,13 @@ export type CommunityActivity = {
     }[]
 }
 
-export async function getCommunityActivities(communityId: string) {
+export type CommunityActivitiesResult = {
+    data: CommunityActivity[]
+    count: number
+    error?: string
+}
+
+export async function getCommunityActivities(communityId: string): Promise<CommunityActivitiesResult> {
     const supabase = await createClient()
 
     try {
@@ -748,6 +754,6 @@ export async function getCommunityActivities(communityId: string) {
 
     } catch (error) {
         console.error("Error fetching community activities:", error)
-        return { error: "Failed to fetch activities" }
+        return { data: [], count: 0, error: "Failed to fetch activities" }
     }
 }
