@@ -1,9 +1,35 @@
 "use client"
 
-import { ArrowLeft, Star, Edit, Calendar } from "lucide-react"
+import { ArrowLeft, Star, Edit, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { use } from "react"
+
+const DESKTOP_REVIEW_THEMES = [
+    {
+        card: "bg-secondary dark:bg-red-700",
+        text: "text-black dark:text-white",
+        time: "text-black/70 dark:text-white/70",
+        tag: "bg-white/30 dark:bg-white/20 text-black dark:text-white border-black/20 dark:border-white/20",
+        badge: "bg-white dark:bg-zinc-900",
+        badgeText: "text-black dark:text-white"
+    },
+    {
+        card: "bg-neo-blue dark:bg-blue-700",
+        text: "text-white",
+        time: "text-white/70",
+        tag: "bg-white/20 text-white border-white/30",
+        badge: "bg-white dark:bg-zinc-900",
+        badgeText: "text-black dark:text-white"
+    },
+    {
+        card: "bg-primary dark:bg-yellow-600",
+        text: "text-black dark:text-white",
+        time: "text-black/70 dark:text-white/70",
+        tag: "bg-black/10 dark:bg-black/30 text-black dark:text-white border-black/20 dark:border-white/20",
+        badge: "bg-white dark:bg-zinc-900",
+        badgeText: "text-black dark:text-white"
+    }
+]
 
 export default function CommunityReviewsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
@@ -61,17 +87,18 @@ export default function CommunityReviewsPage({ params }: { params: Promise<{ id:
     return (
         <main className="min-h-screen bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-200">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-primary dark:bg-red-900 border-b-3 border-black dark:border-gray-700 px-4 py-4 flex items-center shadow-neo dark:shadow-none">
+            <header className="sticky top-0 z-50 bg-primary dark:bg-red-900 border-b-3 border-black dark:border-gray-700 px-4 py-4 lg:px-6 lg:py-5 flex items-center shadow-neo dark:shadow-none">
                 <button
                     onClick={() => router.back()}
                     className="p-2 bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-lg shadow-neo-sm active:translate-y-0.5 active:shadow-none transition-all mr-4"
                 >
                     <ArrowLeft className="text-black dark:text-white w-6 h-6" />
                 </button>
-                <h1 className="text-xl font-bold text-black dark:text-white tracking-wide">Ulasan Komunitas</h1>
+                <h1 className="text-xl lg:text-2xl font-bold text-black dark:text-white tracking-wide">Ulasan Komunitas</h1>
             </header>
 
-            <div className="p-4 max-w-md mx-auto pb-20">
+            <div className="lg:hidden">
+                <div className="p-4 max-w-md mx-auto pb-20">
                 {/* Rating Summary Card */}
                 <div className="bg-white dark:bg-gray-800 border-3 border-black dark:border-gray-600 rounded-xl p-5 shadow-neo mb-6 relative overflow-hidden">
                     {/* Decorative Corner */}
@@ -214,6 +241,160 @@ export default function CommunityReviewsPage({ params }: { params: Promise<{ id:
                             </div>
                         </div>
                     ))}
+                </div>
+            </div>
+            </div>
+
+            <div className="hidden lg:block">
+                <div className="relative">
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div className="absolute -top-20 -right-16 w-[420px] h-[420px] bg-primary/30 rounded-full blur-3xl" />
+                        <div className="absolute -bottom-24 -left-10 w-[360px] h-[360px] bg-neo-blue/30 rounded-full blur-3xl" />
+                    </div>
+                    <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-12 gap-8 relative z-10">
+                        <aside className="col-span-4 space-y-6">
+                            <div className="sticky top-28 bg-white/90 dark:bg-zinc-900/80 border-4 border-black dark:border-gray-600 rounded-2xl p-6 shadow-neo-lg relative overflow-hidden backdrop-blur">
+                                <div className="absolute -top-10 -right-10 w-24 h-24 bg-secondary rounded-full border-4 border-black dark:border-gray-600"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-end gap-3 mb-2">
+                                        <span className="text-6xl font-black text-black dark:text-white">{reviewsData.overallRating}</span>
+                                        <span className="text-2xl text-gray-500 dark:text-gray-400 font-bold mb-2">/5</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-secondary dark:text-yellow-500 mb-1">
+                                        {[...Array(4)].map((_, i) => (
+                                            <Star key={i} className="w-5 h-5 fill-current" />
+                                        ))}
+                                        <Star className="w-5 h-5 fill-current opacity-50" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-6">
+                                        Based on {reviewsData.totalReviews} reviews
+                                    </p>
+
+                                    <div className="grid grid-cols-2 gap-4 mb-8">
+                                        {reviewsData.categories.map((category, index) => (
+                                            <div
+                                                key={index}
+                                                className={`${category.isActive
+                                                    ? "bg-primary text-black"
+                                                    : "bg-white dark:bg-zinc-800 text-black dark:text-white"
+                                                    } p-3 rounded-xl border-2 border-black dark:border-gray-600 shadow-neo-sm`}
+                                            >
+                                                <div className={`text-xs font-black uppercase mb-1 ${category.isActive ? "text-black" : "text-gray-500 dark:text-gray-300"}`}>
+                                                    {category.name}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xl font-black">{category.rating}</span>
+                                                    <span className={`${category.isActive ? "bg-black/10 text-black" : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                                                        } px-1.5 py-0.5 rounded text-[10px] font-bold`}>
+                                                        {category.count}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {reviewsData.criteria.map((criterion, index) => (
+                                            <div key={index}>
+                                                <div className="flex justify-between mb-1">
+                                                    <span className="text-sm font-bold text-black dark:text-white">{criterion.name}</span>
+                                                    <span className={`text-sm font-black ${criterion.color === 'bg-neo-blue' ? 'text-neo-blue dark:text-blue-400' :
+                                                        criterion.color === 'bg-secondary' ? 'text-secondary dark:text-yellow-400' :
+                                                            criterion.color === 'bg-green-500' ? 'text-green-500 dark:text-green-400' :
+                                                                'text-primary dark:text-red-400'
+                                                        }`}>
+                                                        {criterion.rating}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 border-2 border-black dark:border-gray-600">
+                                                    <div className={`${criterion.color} h-full rounded-l-full border-r-2 border-black dark:border-gray-600`} style={{ width: `${criterion.percentage}%` }}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <section className="col-span-8">
+                            <div className="mb-8 space-y-4">
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="w-5 h-5 text-gray-500" />
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder="Cari ulasan (e.g. 'Lapangan', 'Admin')..."
+                                        className="block w-full pl-10 pr-3 py-3 border-2 border-black dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-800 placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-black focus:shadow-neo-sm sm:text-sm font-bold transition-shadow"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <button className="bg-black text-white px-5 py-2 rounded-full border-2 border-black font-bold shadow-neo-sm hover:-translate-y-0.5 transition-transform text-sm">
+                                        Semua
+                                    </button>
+                                    <button className="bg-white dark:bg-zinc-800 text-black dark:text-white px-5 py-2 rounded-full border-2 border-black dark:border-gray-600 font-bold shadow-neo-sm hover:bg-gray-50 dark:hover:bg-zinc-700 hover:-translate-y-0.5 transition-transform text-sm">
+                                        Terbaru
+                                    </button>
+                                    <button className="bg-white dark:bg-zinc-800 text-black dark:text-white px-5 py-2 rounded-full border-2 border-black dark:border-gray-600 font-bold shadow-neo-sm hover:bg-gray-50 dark:hover:bg-zinc-700 hover:-translate-y-0.5 transition-transform text-sm">
+                                        Rating Tinggi
+                                    </button>
+                                    <button className="bg-white dark:bg-zinc-800 text-black dark:text-white px-5 py-2 rounded-full border-2 border-black dark:border-gray-600 font-bold shadow-neo-sm hover:bg-gray-50 dark:hover:bg-zinc-700 hover:-translate-y-0.5 transition-transform text-sm">
+                                        Dengan Foto
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6 pb-24">
+                                {reviewsData.reviews.map((review, index) => {
+                                    const theme = DESKTOP_REVIEW_THEMES[index % DESKTOP_REVIEW_THEMES.length]
+
+                                    return (
+                                        <article
+                                            key={review.id}
+                                            className={`${theme.card} border-4 border-black dark:border-gray-600 rounded-2xl p-6 shadow-neo-lg hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-neo-sm transition-all duration-200`}
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 rounded-full border-2 border-black dark:border-gray-600 bg-white overflow-hidden flex items-center justify-center">
+                                                        {review.avatar ? (
+                                                            <img
+                                                                src={review.avatar}
+                                                                alt={review.userName}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span className="font-black text-gray-500">{review.initials}</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className={`font-black text-lg leading-tight ${theme.text}`}>{review.userName}</h3>
+                                                        <p className={`text-xs font-bold ${theme.time}`}>{review.timeAgo}</p>
+                                                    </div>
+                                                </div>
+                                                <div className={`border-2 border-black dark:border-gray-600 px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm ${theme.badge}`}>
+                                                    <Star className="text-yellow-500 w-4 h-4 fill-current" />
+                                                    <span className={`font-black text-sm ${theme.badgeText}`}>{review.rating}</span>
+                                                </div>
+                                            </div>
+                                            <p className={`font-bold text-base mb-4 leading-relaxed ${theme.text}`}>
+                                                {review.comment}
+                                            </p>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {review.tags.map((tag, tagIndex) => (
+                                                    <span
+                                                        key={tagIndex}
+                                                        className={`inline-block px-3 py-1 rounded-lg text-xs font-black border ${theme.tag}`}
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </article>
+                                    )
+                                })}
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
 

@@ -1,89 +1,79 @@
-# Debugging Advice: Duplicate Booking Error
+# Debugging Note: Mismatch Jam Operasional (SmashCourts vs SmashPartner)
 
-**Issue:** `Failed to save booking to local DB`
-**Error Code:** `23505` (Unique Constraint Violation)
-**Constraint:** `unique_booking` on `(court_id, booking_date, start_time)`
+## Ringkas
+Di PWA `https://smashcourts.online` jam operasional yang ditampilkan (atau jumlah slot per hari) berbeda dengan jam operasional di dashboard venue `https://smashpartner.online`. Dari sisi PWA, **jam operasional tidak dihitung lokal**; PWA hanya menampilkan data dari **Smash Partner API**. Jadi mismatch hampir pasti berasal dari **data di Partner API** atau **mapping antara data dashboard vs response API**.
 
----
+## Fakta dari kode PWA (SmashCourts)
+Sumber data jam/slot berasal dari API Partner:
 
-## 🔍 Analysis
+1) **Daftar venue**  
+   - Endpoint: `GET /v1/venues`  
+   - Field yang dipakai: `operating_hours_start`, `operating_hours_end`  
+   - Kode: `src/lib/smash-api.ts` (interface `SmashVenue`)  
+   - Fetch: `src/lib/api/actions.ts` -> `fetchVenues()` -> `smashApi.getVenues()`
 
-The error indicates that **your PWA application** is trying to **INSERT** a booking into your local database, but a booking for that **same court, date, and time already exists**.
+2) **Availability harian**  
+   - Endpoint: `GET /v1/venues/:id/availability?date=YYYY-MM-DD`  
+   - Field response: `operating_hours { start, end }` + `slots[]`  
+   - Kode: `src/lib/smash-api.ts` (interface `SmashAvailabilityResponse`)  
+   - Fetch: `src/lib/api/actions.ts` -> `fetchAvailableSlots()` -> `smashApi.checkAvailability()`  
+   - UI: `src/components/BookingSection.tsx` menampilkan `slots` langsung (tanpa perhitungan jam operasional lokal).
 
-### Likely Causes
+Implikasi:  
+Jika jam operasional yang ditampilkan PWA berbeda, maka **data yang dikirim Partner API sudah berbeda** (atau dihitung dengan logika berbeda dari dashboard).
 
-1.  **Slot Already Reserved (Pending Booking):**
-    *   Many booking flows work like this: `Select Slot` -> `Create Pending Booking` -> `Pay`.
-    *   If you already created a "Pending" booking when the user selected the slot, and now `CreateBooking` tries to **INSERT** a new record (instead of UPDATING the existing one), it will fail because the slot is taken by the pending booking.
+## Dugaan Root Cause di Partner
+Mohon dicek di backend/DB SmashPartner:
 
-2.  **Race Condition / Double Click:**
-    *   The user might have clicked the "Book" button twice.
-    *   The first click created the booking.
-    *   The second click tried to create it again and failed.
+1) **Sumber jam operasional berbeda**
+   - Dashboard mungkin memakai tabel `operational_hours` (per-day).
+   - API `GET /venues` mungkin memakai kolom `venues.operating_hours_start/end` (global).
+   - Jika dashboard update `operational_hours` tapi **tidak mengupdate** `operating_hours_start/end`, maka PWA akan tampil beda.
 
-3.  **Flow Logic Flaw:**
-    *   **Current Flow (Suspected):** `Create Invoice` -> `INSERT Booking`
-    *   If `INSERT` fails, you are left with an orphan Xendit Invoice but no saved booking.
+2) **Jam operasional per-day vs global**
+   - Dashboard bisa set jam berbeda per hari.
+   - API `availability` bisa memakai jam global (start/end) sehingga tidak match untuk hari tertentu.
 
----
+3) **Timezone / konversi TIME**
+   - Jam di DB (TIME) mungkin dibaca/di-serialize sebagai UTC atau ada offset.
+   - Hasilnya start/end bisa bergeser 1-2 jam di response API.
 
-## 🛠️ Recommended Fixes
+4) **Off-by-one slot generation**
+   - Jika close_time = 22:00, slot seharusnya berakhir di 21:00 (total = end-start).
+   - Jika API memasukkan slot 22:00, maka jumlah jam tampil **+1**.
 
-### Fix 1: Use UPSERT (Insert or Update)
+5) **Close time lewat tengah malam**
+   - Jika venue tutup lewat tengah malam (misal 01:00), perhitungan berbasis jam sederhana bisa memotong jam operasional jadi kecil (misalnya 22 -> 1).
 
-Instead of a plain `INSERT`, use an `UPSERT` logic. If the booking slot exists, update it (e.g., with the new Invoice ID).
+## Checklist untuk AI Agent SmashPartner
+Mohon jalankan cek berikut di Partner:
 
-```typescript
-// Supabase Example
-const { data, error } = await supabase
-  .from('bookings')
-  .upsert({ 
-    court_id, 
-    booking_date, 
-    start_time,
-    // ... other fields
-    xendit_invoice_id: invoice.id 
-  }, { 
-    onConflict: 'court_id, booking_date, start_time' 
-  })
-```
+1) **Ambil data dashboard**
+   - Lihat jam operasional venue X di dashboard (per-day).
 
-### Fix 2: Check & Update Pattern
+2) **Bandingkan dengan API**
+   - `GET /v1/venues/:id` -> lihat `operating_hours_start/end`
+   - `GET /v1/venues/:id/availability?date=YYYY-MM-DD` -> lihat `operating_hours` dan jumlah `slots`
 
-If you want to be stricter (only allow if it's the SAME user's pending booking):
+3) **Bandingkan dengan DB**
+   - Pastikan `operational_hours` (per-day) sama dengan `operating_hours_start/end` (global) jika memang keduanya digunakan.
+   - Jika dashboard hanya mengubah `operational_hours`, pastikan API memakai tabel ini (bukan kolom global).
 
-```typescript
-// 1. Check if slot is taken
-const { data: existing } = await supabase
-  .from('bookings')
-  .select('*')
-  .eq('court_id', ...)
-  .eq('booking_date', ...)
-  .eq('start_time', ...)
-  .single();
+## Saran Fix (di Partner)
+Pilih salah satu dan konsisten:
 
-if (existing) {
-  // 2. If it's the same user and PENDING, update it
-  if (existing.user_id === currentUser.id && existing.status === 'pending') {
-     return await updateBooking(existing.id, { xendit_invoice_id: invoice.id });
-  } else {
-     throw new Error("Slot already taken by another user");
-  }
-} else {
-  // 3. Insert new
-  return await insertBooking(...);
-}
-```
+1) **Satu sumber kebenaran**  
+   - Gunakan `operational_hours` (per-day) untuk:
+     - `GET /venues/:id/availability`
+     - `GET /venues` (set `operating_hours_*` sesuai hari yang diminta atau hilangkan field global).
 
-### Fix 3: Reserve First, Then Pay
+2) **Sync otomatis**
+   - Jika tetap ada `operating_hours_start/end` di tabel `venues`, update otomatis saat `operational_hours` diubah.
 
-Ensure your flow is:
-1.  **Reserve:** Insert Booking (Status: Pending) -> *Occupies the slot*
-2.  **Pay:** Create Invoice
-3.  **Update:** Update Booking with Invoice ID
+3) **Uji regresi**
+   - Test: jika open=08:00 close=22:00, maka `slots.length` harus 14, slot terakhir 21:00.
+   - Test: jam berbeda per hari.
+   - Test: close_time setelah tengah malam (opsional).
 
-If step 1 fails (Duplicate Key), tell the user "Slot unavailable".
-
----
-
-**Note:** This error is happening in **your PWA's local database**, not the Partner database. You need to adjust your `createBooking` logic in the PWA code.
+## Catatan
+PWA **tidak** melakukan normalisasi jam operasional lokal. Semua mismatch harus diselesaikan di Partner API atau data source-nya.

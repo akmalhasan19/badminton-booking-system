@@ -214,7 +214,16 @@ export function PartnerOnboarding({ onComplete }: PartnerOnboardingProps) {
                                     </div>
                                     <h2 className="text-3xl md:text-4xl font-display font-bold">
                                         {t.ready_to} <br />
-                                        <span className="bg-pastel-acid px-2">{t.level_up}</span> 🚀
+                                        <span className="bg-pastel-acid px-2">{t.level_up}</span>
+                                        <span className="inline-flex items-center ml-2 align-middle">
+                                            <Image
+                                                src="/design-2d-roket.svg"
+                                                width={32}
+                                                height={32}
+                                                alt="Rocket"
+                                                className="inline-block"
+                                            />
+                                        </span>
                                     </h2>
                                     <p className="text-gray-600 text-lg">
                                         {t.boost_msg}
