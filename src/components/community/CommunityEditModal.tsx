@@ -1,12 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Search, MoreVertical, Shield, User, UserMinus, ShieldAlert, ShieldCheck } from "lucide-react"
+import { X, Search, MoreVertical, Shield, User, UserMinus, ShieldAlert, ShieldCheck, Clock, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
 import { Community } from "@/app/communities/actions"
 import { updateCommunityDetails, getCommunityMembers, updateMemberRole, removeMember, CommunityMember } from "@/app/communities/actions"
 import { useRouter } from "next/navigation"
+
+const TIMEZONE_OPTIONS = [
+    { value: "Asia/Jakarta", label: "WIB (Asia/Jakarta)" },
+    { value: "Asia/Makassar", label: "WITA (Asia/Makassar)" },
+    { value: "Asia/Jayapura", label: "WIT (Asia/Jayapura)" }
+] as const
 
 interface CommunityEditModalProps {
     isOpen: boolean
@@ -32,6 +38,8 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
     const [isLoadingMembers, setIsLoadingMembers] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [activeMemberMenu, setActiveMemberMenu] = useState<string | null>(null)
+    const [showTimezoneOptions, setShowTimezoneOptions] = useState(false)
+    const timezoneWrapperRef = useRef<HTMLDivElement>(null)
 
     // Reset form when community changes or modal opens
     useEffect(() => {
@@ -45,6 +53,17 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
             fetchMembers()
         }
     }, [isOpen, community])
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (timezoneWrapperRef.current && !timezoneWrapperRef.current.contains(event.target as Node)) {
+                setShowTimezoneOptions(false)
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
 
     const fetchMembers = async () => {
         setIsLoadingMembers(true)
@@ -105,6 +124,7 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
         member.profile.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
+    const selectedTimezoneLabel = TIMEZONE_OPTIONS.find(option => option.value === formData.timezone)?.label ?? "Select timezone"
 
     return (
         <AnimatePresence>
@@ -183,26 +203,51 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
                                         </div>
                                         <div>
                                             <label className="block text-sm font-bold uppercase tracking-wide mb-2">Timezone</label>
-                                            <select
-                                                value={formData.timezone}
-                                                onChange={e =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        timezone:
-                                                            e.target.value as
-                                                                | "Asia/Jakarta"
-                                                                | "Asia/Makassar"
-                                                                | "Asia/Jayapura",
-                                                    })
-                                                }
-                                                className="w-full px-4 py-3 border-3 border-black rounded-xl font-medium focus:outline-none focus:ring-4 focus:ring-neo-yellow/50 transition-all bg-white"
-                                            >
-                                                <option value="Asia/Jakarta">WIB (Asia/Jakarta)</option>
-                                                <option value="Asia/Makassar">WITA (Asia/Makassar)</option>
-                                                <option value="Asia/Jayapura">WIT (Asia/Jayapura)</option>
-                                            </select>
+                                            <div className="relative group" ref={timezoneWrapperRef}>
+                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                    <Clock className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowTimezoneOptions((prev) => !prev)}
+                                                    className="block w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold focus:outline-none focus:border-black focus:shadow-hard-sm transition-all text-left"
+                                                    aria-haspopup="listbox"
+                                                    aria-expanded={showTimezoneOptions}
+                                                >
+                                                    {selectedTimezoneLabel}
+                                                </button>
+                                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                    <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showTimezoneOptions ? "rotate-180" : ""}`} />
+                                                </div>
+
+                                                {showTimezoneOptions && (
+                                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-black rounded-xl shadow-hard z-50 overflow-hidden">
+                                                        <ul role="listbox" aria-label="Timezone options">
+                                                            {TIMEZONE_OPTIONS.map(option => {
+                                                                const isSelected = option.value === formData.timezone
+                                                                return (
+                                                                    <li key={option.value}>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setFormData({ ...formData, timezone: option.value })
+                                                                                setShowTimezoneOptions(false)
+                                                                            }}
+                                                                            className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-gray-100 font-bold transition-colors ${isSelected ? "bg-pastel-mint/30" : "hover:bg-pastel-mint/30"}`}
+                                                                            role="option"
+                                                                            aria-selected={isSelected}
+                                                                        >
+                                                                            {option.label}
+                                                                        </button>
+                                                                    </li>
+                                                                )
+                                                            })}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-gray-500 mt-2">
-                                                Zona waktu dipakai untuk menentukan “hari ini” saat menampilkan aktivitas aktif.
+                                                Zona waktu dipakai untuk menentukan "hari ini" saat menampilkan aktivitas aktif.
                                             </p>
                                         </div>
                                         <div>
