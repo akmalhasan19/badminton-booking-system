@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import useRealtimeSubscription from "../../hooks/useRealtimeSubscription"
-import { getCommunityMessages, type CommunityMessage } from "@/app/communities/[id]/chat/actions"
+import { getCommunityMessages, markCommunityAsRead, type CommunityMessage } from "@/app/communities/[id]/chat/actions"
 import { MessageList } from "@/components/community/MessageList"
 import { MessageInput } from "@/components/community/MessageInput"
 import { Loader2 } from "lucide-react"
@@ -19,6 +19,11 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
     const [hasMore, setHasMore] = useState(true)
     const [cursor, setCursor] = useState<string | undefined>()
     const [replyingTo, setReplyingTo] = useState<CommunityMessage | null>(null)
+
+    // Mark as read on mount and when communityId changes
+    useEffect(() => {
+        markCommunityAsRead(communityId)
+    }, [communityId])
 
     // Debug: Check auth status
     useEffect(() => {
@@ -122,6 +127,8 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
                 return prev
             }
             console.log('➕ Message added to state')
+            // valid to mark as read here since user is viewing the chat
+            markCommunityAsRead(newMessage.community_id)
             return [fullMessage, ...prev]
         })
     }, [])

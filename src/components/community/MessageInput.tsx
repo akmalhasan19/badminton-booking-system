@@ -40,7 +40,8 @@ export function MessageInput({
         try {
             let finalContent = content
             if (replyingTo) {
-                const quote = `> ${replyingTo.content}\n\n`
+                const senderName = replyingTo.user?.full_name || "Unknown"
+                const quote = `> [${senderName}] [id:${replyingTo.id}] ${replyingTo.content}\n\n`
                 finalContent = quote + content
             }
 
@@ -109,9 +110,10 @@ export function MessageInput({
                         className="w-full bg-white border border-[#171717] rounded py-3 px-4 pr-12 text-sm font-medium text-[#171717] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#171717] focus:border-[#171717] transition-all shadow-sm disabled:opacity-50"
                     />
                     <button
+                        type="button"
                         onClick={handleSendMessage}
                         disabled={isLoading || !content.trim()}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171717] hover:text-[#EF4444] transition-colors disabled:opacity-30 inline-flex items-center justify-center h-10 w-10"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-[#171717] hover:text-[#EF4444] transition-colors disabled:opacity-30 inline-flex items-center justify-center h-10 w-10"
                     >
                         {isLoading ? (
                             <Loader2 className="w-5 h-5 animate-spin" />

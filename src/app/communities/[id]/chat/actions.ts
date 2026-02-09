@@ -737,3 +737,104 @@ export async function updateUserPresence(
         return { error: "Failed to update presence" }
     }
 }
+
+export async function markCommunityAsRead(communityId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: "Not authenticated" }
+
+    try {
+        const { error } = await supabase
+            .from("community_members")
+            .update({ last_read_at: new Date().toISOString() })
+            .eq("community_id", communityId)
+            .eq("user_id", user.id)
+
+        if (error) throw error
+        return { success: true }
+    } catch (error) {
+        console.error("Error marking community as read:", error)
+        return { error: "Failed to mark as read" }
+    }
+}
+
+export type ReadReceipts = {
+    read: {
+        id: string
+        full_name: string
+        avatar_url: string | null
+        read_at: string
+    }[]
+    delivered: {
+        id: string
+        full_name: string
+        avatar_url: string | null
+    }[]
+}
+
+export async function getMessageReadReceipts(communityId: string, messageId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: "Not authenticated" }
+
+    try {
+        // 1. Get message details to know when it was created
+        const { data: message, error: messageError } = await supabase
+            .from("community_messages")
+            .select("created_at")
+            .eq("id", messageId)
+            .single()
+
+        if (messageError || !message) throw new Error("Message not found")
+
+        // 2. Get all community members
+        const { data: members, error: membersError } = await supabase
+            .from("community_members")
+            .select(`
+                user_id,
+                last_read_at,
+                users:users (
+                    id,
+                    full_name,
+                    avatar_url
+                )
+            `)
+            .eq("community_id", communityId)
+
+        if (membersError) throw membersError
+
+        const receipts: ReadReceipts = {
+            read: [],
+            delivered: []
+        }
+
+        members?.forEach((member: any) => {
+            // Skip the current user (sender or viewer shouldn't see themselves in "Read by" usually? 
+            // The prompt asks "read by whom", usually excludes self if self is sender. 
+            // Let's include everyone else.)
+            if (member.user_id === user.id) return
+
+            const userData = {
+                id: member.users.id,
+                full_name: member.users.full_name,
+                avatar_url: member.users.avatar_url
+            }
+
+            if (member.last_read_at && new Date(member.last_read_at) >= new Date(message.created_at)) {
+                receipts.read.push({
+                    ...userData,
+                    read_at: member.last_read_at
+                })
+            } else {
+                receipts.delivered.push(userData)
+            }
+        })
+
+        return { data: receipts }
+    } catch (error) {
+        console.error("Error fetching read receipts:", error)
+        return { error: "Failed to fetch read receipts" }
+    }
+}

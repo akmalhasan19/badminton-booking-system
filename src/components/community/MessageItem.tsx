@@ -1,15 +1,14 @@
-"use client"
-
 import { useState } from "react"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
-import { Loader2, Edit2, Trash2 } from "lucide-react"
+import { Loader2, Edit2, Trash2, Info } from "lucide-react"
 import { CommunityMessage, editCommunityMessage, deleteCommunityMessage, addReaction } from "@/app/communities/[id]/chat/actions"
 import { MessageReactions } from "@/components/community/MessageReactions"
 import { ReactionPicker } from "@/components/community/ReactionPicker"
 import { useLongPress } from "@/hooks/useLongPress"
 import { MobileMessageMenu } from "@/components/community/MobileMessageMenu"
 import { toast } from "sonner"
+import { MessageInfoModal } from "./MessageInfoModal"
 
 interface MessageItemProps {
     message: CommunityMessage
@@ -30,8 +29,10 @@ export function MessageItem({
     const [editContent, setEditContent] = useState(message.content)
     const [isHovered, setIsHovered] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
 
     const isOwnMessage = currentUserId === message.user_id
+    const infoSenderName = isOwnMessage ? "You" : (message.user?.full_name || "Unknown")
 
     const handleEditMessage = async () => {
         if (!editContent.trim()) {
@@ -70,18 +71,60 @@ export function MessageItem({
     // Helper to render message content with quotes
     const renderMessageContent = (content: string, isOwn: boolean) => {
         // Check for blockquote pattern: starts with "> " and has a double newline separation
-        // We use a simple split strategy to handle the specific format we generate
         if (content.startsWith("> ")) {
             const firstNewLineIndex = content.indexOf("\n\n")
             if (firstNewLineIndex !== -1) {
-                const quotePart = content.substring(2, firstNewLineIndex)
+                const fullQuote = content.substring(2, firstNewLineIndex)
                 const replyPart = content.substring(firstNewLineIndex + 2)
+
+                let senderName = ""
+                let messageId = ""
+                let quoteContent = fullQuote
+
+                // Check for [Name] [id:ID] format
+                const idMatch = fullQuote.match(/^\[(.*?)\] \[id:(.*?)\] ([\s\S]*)/)
+                if (idMatch) {
+                    senderName = idMatch[1]
+                    messageId = idMatch[2]
+                    quoteContent = idMatch[3]
+                } else {
+                    // Fallback for [Name] only format
+                    const nameMatch = fullQuote.match(/^\[(.*?)\] ([\s\S]*)/)
+                    if (nameMatch) {
+                        senderName = nameMatch[1]
+                        quoteContent = nameMatch[2]
+                    }
+                }
+
+                const handleScrollToMessage = () => {
+                    if (messageId) {
+                        const element = document.getElementById(`message-${messageId}`)
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                            // Add highlight effect
+                            element.classList.add('bg-yellow-100/30')
+                            setTimeout(() => {
+                                element.classList.remove('bg-yellow-100/30')
+                            }, 2000)
+                        } else {
+                            toast.error("Message not found or too old to load")
+                        }
+                    }
+                }
 
                 return (
                     <div className="flex flex-col gap-1">
-                        <div className={`border-l-4 border border-[#171717] ${isOwn ? 'border-l-yellow-600/50' : 'border-l-emerald-500'} bg-white p-3 mb-1 rounded shadow-[2px_2px_0px_0px_#171717]`}>
+                        <div
+                            onClick={messageId ? handleScrollToMessage : undefined}
+                            className={`border-l-4 border border-[#171717] ${isOwn ? 'border-l-yellow-600/50' : 'border-l-emerald-500'} bg-white p-3 mb-1 rounded shadow-[2px_2px_0px_0px_#171717] ${messageId ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors' : ''}`}
+                        >
+                            {senderName && (
+                                <p className="text-xs font-bold text-[#171717] mb-0.5">
+                                    {senderName}
+                                </p>
+                            )}
                             <p className="text-xs italic line-clamp-1 whitespace-pre-wrap break-all text-[#171717]">
-                                {quotePart}
+                                {quoteContent}
                             </p>
                         </div>
                         <p className="text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
@@ -102,6 +145,7 @@ export function MessageItem({
     return (
         <>
             <div
+                id={`message-${message.id}`}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={(e) => {
                     setIsHovered(false)
@@ -157,9 +201,19 @@ export function MessageItem({
                                     renderMessageContent(message.content, true)
                                 )}
                             </div>
-                            <span className="text-[10px] font-bold text-[#171717] mr-1 mt-0.5">
-                                {format(new Date(message.created_at), "HH:mm", { locale: idLocale })} • You
-                            </span>
+                            <div className="flex items-center gap-1 justify-end">
+                                <span className="text-[10px] font-bold text-[#171717] mr-1 mt-0.5">
+                                    {format(new Date(message.created_at), "HH:mm", { locale: idLocale })} • You
+                                </span>
+                                {/* Info Button for Own Message Desktop */}
+                                <button
+                                    onClick={() => setIsInfoModalOpen(true)}
+                                    className={`p-0.5 hover:bg-gray-100 rounded text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity`}
+                                    title="Message Info"
+                                >
+                                    <Info className="w-3 h-3" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -272,6 +326,16 @@ export function MessageItem({
                     setEditContent(message.content)
                 }}
                 onDelete={handleDeleteMessage}
+                onInfo={() => setIsInfoModalOpen(true)}
+            />
+
+            <MessageInfoModal
+                isOpen={isInfoModalOpen}
+                onClose={() => setIsInfoModalOpen(false)}
+                communityId={communityId}
+                messageId={message.id}
+                content={message.content}
+                senderName={infoSenderName}
             />
         </>
     )

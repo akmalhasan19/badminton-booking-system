@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Copy, Flag, MessageCircle, SmilePlus, Trash2, Edit2 } from "lucide-react"
+import { Copy, Flag, MessageCircle, SmilePlus, Trash2, Edit2, Info } from "lucide-react"
 import { createPortal } from "react-dom"
 import { useEffect, useState } from "react"
 import { CommunityMessage } from "@/app/communities/[id]/chat/actions"
@@ -15,6 +15,7 @@ interface MobileMessageMenuProps {
     onCopy: () => void
     onEdit?: () => void
     onDelete?: () => void
+    onInfo?: () => void
     message: CommunityMessage
     currentUserId?: string
 }
@@ -30,6 +31,7 @@ export function MobileMessageMenu({
     onCopy,
     onEdit,
     onDelete,
+    onInfo,
     message,
     currentUserId
 }: MobileMessageMenuProps) {
@@ -95,6 +97,7 @@ export function MobileMessageMenu({
 
                             {isOwnMessage ? (
                                 <>
+                                    <MenuButton icon={Info} label="Message Info" onClick={() => { onInfo?.(); onClose(); }} />
                                     <MenuButton icon={Edit2} label="Edit Message" onClick={() => { onEdit?.(); onClose(); }} />
                                     <MenuButton
                                         icon={Trash2}
