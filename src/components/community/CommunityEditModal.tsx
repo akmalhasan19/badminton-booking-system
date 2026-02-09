@@ -23,7 +23,8 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
     const [formData, setFormData] = useState({
         name: community.name,
         description: community.description || "",
-        city: community.city || ""
+        city: community.city || "",
+        timezone: community.timezone || "Asia/Jakarta"
     })
 
     // Members State
@@ -38,7 +39,8 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
             setFormData({
                 name: community.name,
                 description: community.description || "",
-                city: community.city || ""
+                city: community.city || "",
+                timezone: community.timezone || "Asia/Jakarta"
             })
             fetchMembers()
         }
@@ -61,6 +63,7 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
         data.append('name', formData.name)
         data.append('description', formData.description)
         data.append('city', formData.city)
+        data.append('timezone', formData.timezone)
 
         const result = await updateCommunityDetails(community.id, data)
         setIsLoading(false)
@@ -177,6 +180,21 @@ export function CommunityEditModal({ isOpen, onClose, community }: CommunityEdit
                                                 className="w-full px-4 py-3 border-3 border-black rounded-xl font-medium focus:outline-none focus:ring-4 focus:ring-neo-yellow/50 transition-all"
                                                 placeholder="e.g. Jakarta"
                                             />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold uppercase tracking-wide mb-2">Timezone</label>
+                                            <select
+                                                value={formData.timezone}
+                                                onChange={e => setFormData({ ...formData, timezone: e.target.value })}
+                                                className="w-full px-4 py-3 border-3 border-black rounded-xl font-medium focus:outline-none focus:ring-4 focus:ring-neo-yellow/50 transition-all bg-white"
+                                            >
+                                                <option value="Asia/Jakarta">WIB (Asia/Jakarta)</option>
+                                                <option value="Asia/Makassar">WITA (Asia/Makassar)</option>
+                                                <option value="Asia/Jayapura">WIT (Asia/Jayapura)</option>
+                                            </select>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                Zona waktu dipakai untuk menentukan “hari ini” saat menampilkan aktivitas aktif.
+                                            </p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-bold uppercase tracking-wide mb-2">Description</label>

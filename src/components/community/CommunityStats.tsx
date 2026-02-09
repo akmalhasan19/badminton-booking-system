@@ -77,7 +77,7 @@ function MemberGrid({ members, maxDisplay = 12, gapX = 1, gapY = 1 }: { members:
     )
 }
 
-export function CommunityStats({ membersCount, activeEventsCount = 24, rating = 4.9, community_id }: CommunityStatsProps) {
+export function CommunityStats({ membersCount, activeEventsCount = 0, rating = 4.9, community_id }: CommunityStatsProps) {
     const router = useRouter()
     const supabase = createClient()
 

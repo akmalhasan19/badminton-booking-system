@@ -3,6 +3,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
+const COMMUNITY_TIMEZONES = ['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'] as const
+type CommunityTimeZone = typeof COMMUNITY_TIMEZONES[number]
+
 export type Community = {
     id: string
     name: string
@@ -11,9 +14,82 @@ export type Community = {
     logo_url: string | null
     cover_url?: string | null
     city?: string | null
+    timezone?: CommunityTimeZone | null
     privacy?: 'public' | 'private'
     members_count?: number
     role?: string
+}
+
+const TIMEZONE_OFFSETS: Record<CommunityTimeZone, string> = {
+    'Asia/Jakarta': '+07:00',
+    'Asia/Makassar': '+08:00',
+    'Asia/Jayapura': '+09:00'
+}
+
+const WITA_CITY_KEYWORDS = [
+    'bali', 'denpasar',
+    'lombok', 'mataram', 'bima', 'ntb',
+    'ntt', 'kupang', 'ende', 'labuan bajo',
+    'sulawesi', 'makassar', 'manado', 'kendari', 'palu', 'gorontalo', 'mamuju',
+    'kalimantan timur', 'kaltim', 'samarinda', 'balikpapan', 'bontang',
+    'kalimantan selatan', 'kalsel', 'banjarmasin', 'banjarbaru',
+    'kalimantan utara', 'kaltara', 'tarakan', 'nunukan'
+]
+
+const WIT_CITY_KEYWORDS = [
+    'papua', 'papua barat', 'papua selatan', 'papua pegunungan', 'papua tengah',
+    'jayapura', 'timika', 'merauke', 'biak', 'nabire', 'wamena',
+    'sorong', 'manokwari', 'fakfak', 'raja ampat',
+    'maluku', 'maluku utara', 'ambon', 'ternate', 'tidore'
+]
+
+function resolveTimeZoneFromCity(city?: string | null): CommunityTimeZone | null {
+    if (!city) return null
+    const normalized = city.toLowerCase()
+
+    if (WIT_CITY_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+        return 'Asia/Jayapura'
+    }
+
+    if (WITA_CITY_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+        return 'Asia/Makassar'
+    }
+
+    return null
+}
+
+function resolveTimeZoneFromCoordinates(longitude?: number | null): CommunityTimeZone | null {
+    if (typeof longitude !== 'number' || Number.isNaN(longitude)) return null
+
+    // Rough Indonesia timezone boundaries by longitude:
+    // WIB: < 112.5E, WITA: 112.5E - 127.5E, WIT: >= 127.5E
+    if (longitude >= 127.5) return 'Asia/Jayapura'
+    if (longitude >= 112.5) return 'Asia/Makassar'
+    return 'Asia/Jakarta'
+}
+
+function getCommunityTimeZone(input: { city?: string | null; longitude?: number | null }): CommunityTimeZone {
+    return (
+        resolveTimeZoneFromCoordinates(input.longitude) ||
+        resolveTimeZoneFromCity(input.city) ||
+        'Asia/Jakarta'
+    )
+}
+
+function isCommunityTimeZone(value: string | null | undefined): value is CommunityTimeZone {
+    if (!value) return false
+    return COMMUNITY_TIMEZONES.includes(value as CommunityTimeZone)
+}
+
+function getStartOfTodayISO(timeZone: CommunityTimeZone) {
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date())
+
+    return `${today}T00:00:00${TIMEZONE_OFFSETS[timeZone]}`
 }
 
 export async function getCommunityById(id: string) {
@@ -32,6 +108,7 @@ export async function getCommunityById(id: string) {
                 logo_url,
                 cover_url,
                 city,
+                timezone,
                 privacy,
                 created_by
             `)
@@ -144,6 +221,7 @@ export async function createCommunity(formData: FormData) {
     const description = formData.get('description') as string
     const sport = formData.get('sport') as string || 'Badminton'
     const city = formData.get('city') as string
+    const timezoneInput = formData.get('timezone') as string | null
     const privacy = formData.get('privacy') as string || 'public'
 
     if (!name) {
@@ -154,6 +232,14 @@ export async function createCommunity(formData: FormData) {
         return { error: "City is required" }
     }
 
+    if (timezoneInput && !isCommunityTimeZone(timezoneInput)) {
+        return { error: "Invalid timezone" }
+    }
+
+    const timezone = isCommunityTimeZone(timezoneInput)
+        ? timezoneInput
+        : getCommunityTimeZone({ city })
+
     try {
         // Create the community
         const { data: community, error: createError } = await supabase
@@ -163,6 +249,7 @@ export async function createCommunity(formData: FormData) {
                 description,
                 sport,
                 city,
+                timezone,
                 privacy,
                 created_by: user.id
             })
@@ -365,10 +452,19 @@ export async function updateCommunityDetails(communityId: string, formData: Form
     const name = formData.get('name') as string
     const description = formData.get('description') as string
     const city = formData.get('city') as string
+    const timezoneInput = formData.get('timezone') as string | null
 
     if (!name || !city) {
         return { error: "Name and City are required" }
     }
+
+    if (timezoneInput && !isCommunityTimeZone(timezoneInput)) {
+        return { error: "Invalid timezone" }
+    }
+
+    const timezone = isCommunityTimeZone(timezoneInput)
+        ? timezoneInput
+        : getCommunityTimeZone({ city })
 
     try {
         // Verify user is admin
@@ -389,6 +485,7 @@ export async function updateCommunityDetails(communityId: string, formData: Form
                 name,
                 description,
                 city,
+                timezone,
                 updated_at: new Date().toISOString()
             })
             .eq('id', communityId)
@@ -567,6 +664,23 @@ export async function getCommunityActivities(communityId: string) {
     const supabase = await createClient()
 
     try {
+        // Resolve timezone per community (fallback to Asia/Jakarta)
+        const { data: community, error: communityError } = await supabase
+            .from('communities')
+            .select('city, longitude, timezone')
+            .eq('id', communityId)
+            .single()
+
+        if (communityError) throw communityError
+
+        const timeZone = isCommunityTimeZone(community?.timezone)
+            ? community.timezone
+            : getCommunityTimeZone({
+                city: community?.city,
+                longitude: community?.longitude
+            })
+        const startOfToday = getStartOfTodayISO(timeZone)
+
         // Fetch match_rooms for this community
         const { data: rooms, error } = await supabase
             .from('match_rooms')
@@ -581,52 +695,56 @@ export async function getCommunityActivities(communityId: string) {
                 host_user_id
             `)
             .eq('community_id', communityId)
+            .eq('status', 'OPEN')
+            .gte('match_date', startOfToday)
             //.gte('match_date', new Date().toISOString()) // Only future events?
             .order('match_date', { ascending: true })
 
         if (error) throw error
 
         if (!rooms || rooms.length === 0) {
-            return { data: [] }
+            return { data: [], count: 0 }
         }
 
-        // For each room, get participant count and some avatars
-        const activities: CommunityActivity[] = []
-
-        for (const room of rooms) {
-            // Get participants
-            const { data: participants, count } = await supabase
-                .from('room_participants')
-                .select(`
-                    user_id,
-                    users:users (
-                        avatar_url,
-                        full_name
+        // For each room, get participant count and some avatars (parallelized)
+        const activities: CommunityActivity[] = await Promise.all(
+            rooms.map(async (room) => {
+                const { data: participants, count } = await supabase
+                    .from('room_participants')
+                    .select(
+                        `
+                        user_id,
+                        users:users (
+                            avatar_url,
+                            full_name
+                        )
+                    `,
+                        { count: 'exact' }
                     )
-                `, { count: 'exact' })
-                .eq('room_id', room.id)
-                .limit(3) // Get first 3 for avatars
+                    .eq('room_id', room.id)
+                    .limit(3) // Get first 3 for avatars
 
-            const users = participants?.map((p: any) => ({
-                avatar_url: p.users?.avatar_url,
-                full_name: p.users?.full_name
-            })) || []
+                const users = participants?.map((p: any) => ({
+                    avatar_url: p.users?.avatar_url,
+                    full_name: p.users?.full_name
+                })) || []
 
-            activities.push({
-                id: room.id,
-                title: room.title,
-                match_date: room.match_date,
-                start_time: room.start_time,
-                end_time: room.end_time,
-                price_per_person: room.price_per_person,
-                mode: room.mode,
-                participant_count: count || 0,
-                max_participants: 8, // Default hardcoded for now, or could be dynamic
-                users: users
+                return {
+                    id: room.id,
+                    title: room.title,
+                    match_date: room.match_date,
+                    start_time: room.start_time,
+                    end_time: room.end_time,
+                    price_per_person: room.price_per_person,
+                    mode: room.mode,
+                    participant_count: count || 0,
+                    max_participants: 8, // Default hardcoded for now, or could be dynamic
+                    users: users
+                }
             })
-        }
+        )
 
-        return { data: activities }
+        return { data: activities, count: activities.length }
 
     } catch (error) {
         console.error("Error fetching community activities:", error)

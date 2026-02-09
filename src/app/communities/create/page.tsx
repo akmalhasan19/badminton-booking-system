@@ -125,6 +125,25 @@ export default function CreateCommunityPage() {
                                     />
                                 </div>
 
+                                {/* Timezone */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-gray-600" htmlFor="timezone">Zona Waktu</label>
+                                    <select
+                                        name="timezone"
+                                        id="timezone"
+                                        defaultValue="Asia/Jakarta"
+                                        required
+                                        className="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-black focus:outline-none transition-all font-medium bg-white"
+                                    >
+                                        <option value="Asia/Jakarta">WIB (Asia/Jakarta)</option>
+                                        <option value="Asia/Makassar">WITA (Asia/Makassar)</option>
+                                        <option value="Asia/Jayapura">WIT (Asia/Jayapura)</option>
+                                    </select>
+                                    <p className="text-xs text-gray-500">
+                                        Zona waktu dipakai untuk menentukan “hari ini” saat menampilkan aktivitas aktif.
+                                    </p>
+                                </div>
+
                                 {/* Description */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-gray-600" htmlFor="description">Deskripsi</label>

@@ -7,8 +7,13 @@ import { Search, MapPin, ChevronDown, Home, Calendar, Plus, MessageCircle, User 
 
 export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
-    const { data: community, error } = await getCommunityById(id)
-    const { data: activities } = await getCommunityActivities(id)
+    const [
+        { data: community, error },
+        { data: activities, count: activitiesCount }
+    ] = await Promise.all([
+        getCommunityById(id),
+        getCommunityActivities(id)
+    ])
 
     if (error || !community) {
         notFound()
@@ -44,6 +49,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                             <div className="lg:col-span-4 h-full px-4 md:px-0">
                                 <CommunityStats
                                     membersCount={community.members_count || 0}
+                                    activeEventsCount={activitiesCount ?? activities?.length ?? 0}
                                     community_id={id}
                                 />
                             </div>
