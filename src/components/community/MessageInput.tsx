@@ -8,10 +8,16 @@ import { toast } from "sonner"
 interface MessageInputProps {
     communityId: string
     onMessageSent?: () => void
+    value?: string
+    onChange?: (value: string) => void
 }
 
-export function MessageInput({ communityId, onMessageSent }: MessageInputProps) {
-    const [content, setContent] = useState("")
+export function MessageInput({ communityId, onMessageSent, value, onChange }: MessageInputProps) {
+    // Fallback local state if no props provided (backwards compatibility)
+    const [localContent, setLocalContent] = useState("")
+    const content = value !== undefined ? value : localContent
+    const setContent = onChange || setLocalContent
+
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSendMessage = async () => {

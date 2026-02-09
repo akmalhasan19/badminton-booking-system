@@ -70,6 +70,18 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
         setIsLoading(false)
     }, [communityId, cursor, hasMore])
 
+    // Lifted input state
+    const [messageInput, setMessageInput] = useState("")
+
+    // Handle reply action from MessageList
+    const handleReply = useCallback((message: CommunityMessage) => {
+        const quote = `> ${message.content}\n\n`
+        setMessageInput(prev => prev + quote)
+
+        // Optional: Focus input (handled by binding state to input)
+        // If we want to auto-focus, we might need a ref to the input component
+    }, [])
+
     // Stable callback for handling new messages
     const handleNewMessage = useCallback(async (newMessage: any) => {
         console.log('📩 New message received:', newMessage)
@@ -149,11 +161,14 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
                 currentUserId={currentUserId}
                 isAdmin={isAdmin}
                 communityId={communityId}
+                onReply={handleReply}
             />
 
             {/* Input - Fixed at bottom */}
             <MessageInput
                 communityId={communityId}
+                value={messageInput}
+                onChange={setMessageInput}
                 onMessageSent={() => {
                     // Messages will be loaded via realtime
                 }}
