@@ -22,9 +22,9 @@ export function LanguageSwitcher() {
         <div className="relative z-50">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg font-bold text-sm bg-white border-2 border-black shadow-hard-sm hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                className="flex items-center gap-1.5 md:gap-2 px-2 py-1.5 md:px-3 md:py-2.5 rounded-lg font-bold text-xs md:text-sm bg-white border-2 border-black shadow-hard-sm hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
             >
-                <Globe className="w-4 h-4" />
+                <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 <span className="uppercase">{language}</span>
             </button>
 

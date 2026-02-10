@@ -171,10 +171,10 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                         className="flex items-center space-x-2 cursor-pointer group"
                         onClick={() => handleTabClick(Tab.HOME, "/")}
                     >
-                        <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-110">
+                        <div className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center transition-transform group-hover:scale-110">
                             <SmashLogo className="w-full h-full bg-black" />
                         </div>
-                        <span className="text-2xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
+                        <span className="text-xl md:text-2xl font-display font-bold tracking-tight">Smash<span className="text-pastel-lilac">.</span></span>
                     </div>
 
                     {/* Desktop Menu */}
@@ -446,10 +446,10 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                     <div className="md:hidden flex items-center gap-2">
                         <LanguageSwitcher />
                         <button
-                            className="p-2 text-black bg-white border-2 border-black rounded-lg shadow-hard-sm"
+                            className="p-1.5 text-black bg-white border-2 border-black rounded-lg shadow-hard-sm"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         >
-                            {mobileMenuOpen ? <X /> : <Menu />}
+                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                     </div>
                 </div>
