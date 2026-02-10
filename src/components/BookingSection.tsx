@@ -747,7 +747,7 @@ export function BookingSection() {
     }
 
     return (
-        <section className="relative w-full min-h-screen overflow-hidden pt-32 pb-20">
+        <section className="relative w-full min-h-screen overflow-hidden pt-24 sm:pt-28 md:pt-32 pb-20">
             {/* Grid Background */}
             <div
                 className="absolute inset-0 z-0 h-full w-full pointer-events-none"
