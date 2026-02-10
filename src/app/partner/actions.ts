@@ -36,7 +36,7 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
         const reviewToken = generateReviewToken()
 
         // 1. Save to Supabase
-        const { error: dbError } = await supabase.from('partner_applications').insert({
+        const dbInsertPromise = supabase.from('partner_applications').insert({
             owner_name: data.ownerName,
             email: data.email,
             phone: data.phone,
@@ -53,6 +53,8 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
             review_token: reviewToken,
             status: 'pending'
         })
+
+        const { error: dbError } = await dbInsertPromise
 
         if (dbError) {
             console.error('Supabase Error:', dbError)
@@ -71,7 +73,7 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
         }
 
         // 3. Send Email Notification via Resend
-        const { data: emailData, error: emailError } = await resend.emails.send({
+        const adminEmailPromise = resend.emails.send({
             from: 'Smash Partner <onboarding@smashcourts.online>', // Use verified domain
             to: ['smash.email.web@gmail.com'],
             subject: `New Partner Application: ${data.ownerName}`,
@@ -185,13 +187,8 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
             `
         })
 
-        if (emailError) {
-            console.error('Resend Error (Admin):', emailError)
-            // We don't fail the whole request if email fails, but we log it
-        }
-
         // 4. Send Confirmation Email to Partner
-        const { error: partnerEmailError } = await resend.emails.send({
+        const partnerEmailPromise = resend.emails.send({
             from: 'Smash Partner <onboarding@smashcourts.online>',
             to: [data.email],
             subject: '✅ Aplikasi Partner Diterima - Smash & Serve',
@@ -299,6 +296,16 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
 </html>
             `
         })
+
+        const [{ error: emailError }, { error: partnerEmailError }] = await Promise.all([
+            adminEmailPromise,
+            partnerEmailPromise
+        ])
+
+        if (emailError) {
+            console.error('Resend Error (Admin):', emailError)
+            // We don't fail the whole request if email fails, but we log it
+        }
 
         if (partnerEmailError) {
             console.error('Resend Error (Partner Confirmation):', partnerEmailError)

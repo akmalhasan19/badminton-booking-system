@@ -11,8 +11,13 @@ import { useRouter } from "next/navigation"
 import { CommunityProfileImage } from "@/components/CommunityProfileImage"
 import { joinCommunity, leaveCommunity } from "@/app/communities/actions"
 import { motion, AnimatePresence } from "framer-motion"
+import dynamic from "next/dynamic"
 import { CommunityEditModal } from "./CommunityEditModal"
-import { ReportModal } from "./ReportModal"
+
+const ReportModal = dynamic(
+    () => import("./ReportModal").then((mod) => mod.ReportModal),
+    { ssr: false }
+)
 
 interface CommunityHeroProps {
     community: Community;
@@ -398,11 +403,13 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
             />
 
             {/* Report Modal */}
-            <ReportModal
-                isOpen={isReportModalOpen}
-                onClose={() => setIsReportModalOpen(false)}
-                communityName={community.name}
-            />
+            {isReportModalOpen && (
+                <ReportModal
+                    isOpen={true}
+                    onClose={() => setIsReportModalOpen(false)}
+                    communityName={community.name}
+                />
+            )}
         </div>
     )
 }

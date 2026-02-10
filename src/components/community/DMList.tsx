@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { getDMConversations, type DMConversation } from "@/app/communities/[id]/chat/actions"
 import { Loader2 } from "lucide-react"
 
@@ -18,18 +18,21 @@ export function DMList({
     const [conversations, setConversations] = useState<DMConversation[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    useEffect(() => {
-        const loadConversations = async () => {
-            setIsLoading(true)
+    const loadConversations = useCallback(async () => {
+        setIsLoading(true)
+        try {
             const result = await getDMConversations(communityId)
             if (!result.error) {
                 setConversations(result.data || [])
             }
+        } finally {
             setIsLoading(false)
         }
-
-        loadConversations()
     }, [communityId])
+
+    useEffect(() => {
+        loadConversations()
+    }, [loadConversations])
 
     return (
         <div className="w-full lg:w-80 border-r-2 border-black dark:border-white bg-white dark:bg-gray-800 flex flex-col">
@@ -60,11 +63,10 @@ export function DMList({
                             <button
                                 key={conversation.id}
                                 onClick={() => onSelectConversation(conversation)}
-                                className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                                    selectedConversationId === conversation.id
+                                className={`w-full p-3 rounded-lg border-2 transition-all text-left ${selectedConversationId === conversation.id
                                         ? "bg-neo-green border-black dark:border-white shadow-hard"
                                         : "border-gray-200 dark:border-gray-700 hover:border-black dark:hover:border-white bg-white dark:bg-gray-700"
-                                }`}
+                                    }`}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0 overflow-hidden border-2 border-black dark:border-white">

@@ -14,6 +14,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
+    optimizePackageImports: ["lucide-react"],
     serverActions: {
       allowedOrigins: ["postscholastic-periscopic-matias.ngrok-free.dev"],
     },

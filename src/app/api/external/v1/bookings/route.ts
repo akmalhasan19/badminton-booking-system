@@ -41,14 +41,16 @@ export async function POST(request: Request) {
 
         const supabase = createServiceClient()
 
-        // 1. Validate Operational Hours
-        const opsCheck = await validateOperationalHours(supabase, bookingDate, startTime, duration)
+        // 1. Validate Operational Hours + Calculate Price in parallel
+        const [opsCheck, priceCalc] = await Promise.all([
+            validateOperationalHours(supabase, bookingDate, startTime, duration),
+            calculateBookingPrice(supabase, courtId, bookingDate, duration)
+        ])
+
         if (!opsCheck.isValid) {
             return NextResponse.json({ error: opsCheck.error }, { status: 400 })
         }
 
-        // 2. Calculate Price Correctly
-        const priceCalc = await calculateBookingPrice(supabase, courtId, bookingDate, duration)
         if (priceCalc.error) {
             return NextResponse.json({ error: priceCalc.error }, { status: 400 })
         }

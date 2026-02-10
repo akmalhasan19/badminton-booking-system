@@ -8,7 +8,7 @@ import { fetchNotifications, markAllNotificationsAsRead, markNotificationAsRead,
 import { Bell, Info, AlertTriangle, Check, CreditCard, Calendar, Gift, Loader2, BellOff } from "lucide-react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 // Map notification types to icons
 const getNotificationIcon = (type: NotificationType) => {
@@ -116,7 +116,10 @@ export default function NotificationsPage() {
         }
     }
 
-    const unreadCount = notifications.filter(n => !n.read).length
+    const unreadCount = useMemo(
+        () => notifications.filter((n) => !n.read).length,
+        [notifications]
+    )
 
     return (
         <main className="min-h-screen bg-white pt-0 md:pt-6 pb-12 relative overflow-hidden">

@@ -1,10 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { motion } from "framer-motion"
 import { Search, MapPin, Filter, User, Star, Trophy, Calendar, Clock, ChevronRight } from "lucide-react"
 import { useSearchParams } from "next/navigation"
-import { CoachDetailModal, type Coach } from "./CoachDetailModal"
+import type { Coach } from "./CoachDetailModal"
+
+const CoachDetailModal = dynamic(
+    () => import("./CoachDetailModal").then((mod) => mod.CoachDetailModal),
+    { ssr: false }
+)
+
+const COACHES: Coach[] = [
+    {
+        id: 1,
+        name: "Coach Budi Santoso",
+        title: "Ex-National Player",
+        location: "Jakarta Selatan",
+        rating: 4.9,
+        reviews: 128,
+        price: 150000,
+        image: "https://images.unsplash.com/photo-1542596594-649edbc13630?q=80&w=1000&auto=format&fit=crop",
+        specialization: "Doubles Strategy",
+        level: "Advanced",
+        about: "Former national team player with over 10 years of competitive experience. Specializes in advanced doubles tactics, rotation, and high-pressure game psychology. Has coached multiple regional champions.",
+        experience: "15 Years",
+        achievements: ["National Doubles Champion 2015", "Certified BWF Level 2 Coach", "Head Coach at PB Jaya"]
+    },
+    {
+        id: 2,
+        name: "Siti Rahmawati",
+        title: "Certified BWF Level 1",
+        location: "Bandung",
+        rating: 4.8,
+        reviews: 85,
+        price: 100000,
+        image: "https://images.unsplash.com/photo-1626244422523-26330452377d?q=80&w=1000&auto=format&fit=crop",
+        specialization: "Basics & Footwork",
+        level: "Beginner",
+        about: "Patient and detailed-oriented coach perfect for beginners and children. Focuses on building a strong foundation with correct footwork and stroke mechanics to prevent injury and ensure long-term progress.",
+        experience: "5 Years",
+        achievements: ["West Java Provincial Silver Medalist", "Best Youth Coach Award 2023"]
+    },
+    {
+        id: 3,
+        name: "Rizky Firmansyah",
+        title: "Club Pro Coach",
+        location: "Surabaya",
+        rating: 4.7,
+        reviews: 56,
+        price: 125000,
+        image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1000&auto=format&fit=crop",
+        specialization: "Smash Power",
+        level: "Intermediate",
+        about: "Known for his explosive playstyle, Rizky teaches players how to generate maximum power in their smashes and clears. Also covers physical conditioning specifically for badminton power.",
+        experience: "8 Years",
+        achievements: ["Surabaya Open Winner 2019", "Physical Trainer Certificate"]
+    }
+]
 
 export function CoachSection() {
     const searchParams = useSearchParams()
@@ -12,60 +66,15 @@ export function CoachSection() {
     const [cityFilter, setCityFilter] = useState(searchParams.get('city') || "")
     const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null)
 
-    // Mock Data for Coaches
-    const coaches = [
-        {
-            id: 1,
-            name: "Coach Budi Santoso",
-            title: "Ex-National Player",
-            location: "Jakarta Selatan",
-            rating: 4.9,
-            reviews: 128,
-            price: 150000,
-            image: "https://images.unsplash.com/photo-1542596594-649edbc13630?q=80&w=1000&auto=format&fit=crop",
-            specialization: "Doubles Strategy",
-            level: "Advanced",
-            about: "Former national team player with over 10 years of competitive experience. Specializes in advanced doubles tactics, rotation, and high-pressure game psychology. Has coached multiple regional champions.",
-            experience: "15 Years",
-            achievements: ["National Doubles Champion 2015", "Certified BWF Level 2 Coach", "Head Coach at PB Jaya"]
-        },
-        {
-            id: 2,
-            name: "Siti Rahmawati",
-            title: "Certified BWF Level 1",
-            location: "Bandung",
-            rating: 4.8,
-            reviews: 85,
-            price: 100000,
-            image: "https://images.unsplash.com/photo-1626244422523-26330452377d?q=80&w=1000&auto=format&fit=crop",
-            specialization: "Basics & Footwork",
-            level: "Beginner",
-            about: "Patient and detailed-oriented coach perfect for beginners and children. Focuses on building a strong foundation with correct footwork and stroke mechanics to prevent injury and ensure long-term progress.",
-            experience: "5 Years",
-            achievements: ["West Java Provincial Silver Medalist", "Best Youth Coach Award 2023"]
-        },
-        {
-            id: 3,
-            name: "Rizky Firmansyah",
-            title: "Club Pro Coach",
-            location: "Surabaya",
-            rating: 4.7,
-            reviews: 56,
-            price: 125000,
-            image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1000&auto=format&fit=crop",
-            specialization: "Smash Power",
-            level: "Intermediate",
-            about: "Known for his explosive playstyle, Rizky teaches players how to generate maximum power in their smashes and clears. Also covers physical conditioning specifically for badminton power.",
-            experience: "8 Years",
-            achievements: ["Surabaya Open Winner 2019", "Physical Trainer Certificate"]
-        }
-    ]
+    const normalizedQuery = searchQuery.toLowerCase()
 
-    const filteredCoaches = coaches.filter(coach => {
-        const matchesSearch = coach.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            coach.location.toLowerCase().includes(searchQuery.toLowerCase())
-        return matchesSearch
-    })
+    const filteredCoaches = useMemo(() => {
+        return COACHES.filter((coach) => {
+            const matchesSearch = coach.name.toLowerCase().includes(normalizedQuery) ||
+                coach.location.toLowerCase().includes(normalizedQuery)
+            return matchesSearch
+        })
+    }, [normalizedQuery])
 
     return (
         <div className="w-full">
@@ -179,11 +188,13 @@ export function CoachSection() {
             )}
 
 
-            <CoachDetailModal
-                isOpen={!!selectedCoach}
-                onClose={() => setSelectedCoach(null)}
-                coach={selectedCoach}
-            />
+            {selectedCoach && (
+                <CoachDetailModal
+                    isOpen={true}
+                    onClose={() => setSelectedCoach(null)}
+                    coach={selectedCoach}
+                />
+            )}
         </div >
     )
 }

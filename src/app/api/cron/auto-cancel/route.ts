@@ -16,16 +16,17 @@ export async function GET(req: Request) {
         // In Vercel Cron, the request comes from an authorized source. 
         // You might want to add a CRON_SECRET check here if strictly needed.
 
-        // Find pending bookings older than 15 minutes
-        const { data: bookings, error: fetchError } = await supabase
+        // Update pending bookings older than 15 minutes (single round-trip)
+        const { data: bookings, error } = await supabase
             .from('bookings')
-            .select('id, created_at, status')
+            .update({ status: 'cancelled' })
             .eq('status', 'pending')
-            .lt('created_at', fifteenMinutesAgo);
+            .lt('created_at', fifteenMinutesAgo)
+            .select('id');
 
-        if (fetchError) {
-            logger.error({ error: fetchError }, 'Error fetching expired bookings');
-            return NextResponse.json({ error: fetchError.message }, { status: 500 });
+        if (error) {
+            logger.error({ error }, 'Error updating expired bookings');
+            return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
         if (!bookings || bookings.length === 0) {
@@ -33,17 +34,6 @@ export async function GET(req: Request) {
         }
 
         const bookingIds = bookings.map(b => b.id);
-
-        // Update status to cancelled
-        const { error: updateError } = await supabase
-            .from('bookings')
-            .update({ status: 'cancelled' })
-            .in('id', bookingIds);
-
-        if (updateError) {
-            logger.error({ error: updateError, count: bookingIds.length }, 'Error updating expired bookings');
-            return NextResponse.json({ error: updateError.message }, { status: 500 });
-        }
 
         return NextResponse.json({
             message: 'Successfully cancelled expired bookings',

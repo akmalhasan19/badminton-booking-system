@@ -10,7 +10,12 @@ import { getUserActiveBookings } from "./actions"
 import { SmashLogo } from "@/components/SmashLogo"
 
 import { useRouter } from "next/navigation"
-import { TicketModal } from "@/components/TicketModal"
+import dynamic from "next/dynamic"
+
+const TicketModal = dynamic(
+    () => import("@/components/TicketModal").then((mod) => mod.TicketModal),
+    { ssr: false }
+)
 
 export default function BookingSayaPage() {
     const router = useRouter()
@@ -282,12 +287,14 @@ export default function BookingSayaPage() {
                     </div>
                 </div>
             </div>
-            <TicketModal
-                isOpen={isTicketModalOpen}
-                onClose={() => setIsTicketModalOpen(false)}
-                booking={selectedBooking}
-                user={user}
-            />
+            {isTicketModalOpen && selectedBooking && (
+                <TicketModal
+                    isOpen={true}
+                    onClose={() => setIsTicketModalOpen(false)}
+                    booking={selectedBooking}
+                    user={user}
+                />
+            )}
         </main>
     )
 }

@@ -3,25 +3,28 @@
 import { Tag, Star, ArrowRight, ShoppingBag, Heart } from "lucide-react"
 import { MOCK_PRODUCTS } from "@/constants"
 import { Marquee } from "./Marquee"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
+
+const CATEGORIES = ["All", "Rackets", "Shoes", "Apparel", "Accessories"]
+
+const CATEGORY_MAP: Record<string, string> = {
+    Rackets: "Racket",
+    Shoes: "Shoes",
+    Apparel: "Apparel",
+    Accessories: "Accessory"
+}
 
 export function ShopSection() {
     const [activeCategory, setActiveCategory] = useState("All")
-    const categories = ["All", "Rackets", "Shoes", "Apparel", "Accessories"]
 
-    const filteredProducts = activeCategory === "All"
-        ? MOCK_PRODUCTS
-        : MOCK_PRODUCTS.filter(p => {
-            // Map display categories to data structure
-            const categoryMap: Record<string, string> = {
-                "Rackets": "Racket",
-                "Shoes": "Shoes",
-                "Apparel": "Apparel",
-                "Accessories": "Accessory"
-            }
-            return p.category === categoryMap[activeCategory]
-        })
+    const filteredProducts = useMemo(() => {
+        if (activeCategory === "All") {
+            return MOCK_PRODUCTS
+        }
+
+        return MOCK_PRODUCTS.filter((product) => product.category === CATEGORY_MAP[activeCategory])
+    }, [activeCategory])
 
     return (
         <div className="w-full bg-white pb-20 font-sans">
@@ -78,7 +81,7 @@ export function ShopSection() {
                 {/* 2. Category Navigation */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8">
                     <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto scrollbar-hide">
-                        {categories.map((cat) => (
+                        {CATEGORIES.map((cat) => (
                             <button
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
