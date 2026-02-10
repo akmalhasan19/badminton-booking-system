@@ -105,8 +105,8 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 <button
                     onClick={() => setActiveTab('court')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'court'
-                            ? 'bg-pastel-mint border-2 border-black shadow-hard-sm transform -translate-y-1'
-                            : 'bg-transparent hover:bg-gray-100 text-gray-500'
+                        ? 'bg-pastel-mint border-2 border-black shadow-hard-sm transform -translate-y-1'
+                        : 'bg-transparent hover:bg-gray-100 text-gray-500'
                         }`}
                 >
                     {activeTab === 'court' && <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>}
@@ -115,8 +115,8 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 <button
                     onClick={() => setActiveTab('coach')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'coach'
-                            ? 'bg-pastel-lilac border-2 border-black shadow-hard-sm transform -translate-y-1'
-                            : 'bg-transparent hover:bg-gray-100 text-gray-500'
+                        ? 'bg-pastel-lilac border-2 border-black shadow-hard-sm transform -translate-y-1'
+                        : 'bg-transparent hover:bg-gray-100 text-gray-500'
                         }`}
                 >
                     {activeTab === 'coach' && <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>}
@@ -126,11 +126,11 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
 
             <div className="bg-gray-50 rounded-2xl p-4 border-2 border-gray-100 flex flex-col md:flex-row gap-4 items-end">
                 {/* Search Input */}
-                <div className="flex-1 w-full">
+                <div className="flex-1 w-full min-w-0">
                     <label className="block text-xs font-bold uppercase text-gray-400 mb-2 ml-1">
                         {activeTab === 'court' ? 'Venue / Location' : 'Coach Name / Location'}
                     </label>
-                    <div className="relative group" ref={wrapperRef}>
+                    <div className="relative group min-w-0" ref={wrapperRef}>
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             {activeTab === 'court' ? (
                                 <MapPin className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
@@ -146,7 +146,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                                 setShowSuggestions(true)
                             }}
                             onFocus={() => setShowSuggestions(true)}
-                            className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-black/10 rounded-xl text-black font-bold placeholder-gray-300 focus:outline-none focus:border-black focus:shadow-hard-sm transition-all"
+                            className="block w-full min-w-0 max-w-full pl-12 pr-4 py-4 bg-white border-2 border-black/10 rounded-xl text-black font-bold placeholder-gray-300 focus:outline-none focus:border-black focus:shadow-hard-sm transition-all"
                             placeholder={activeTab === 'court' ? "Find name or location..." : "Find coach by name..."}
                         />
 
@@ -183,11 +183,11 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 </div>
 
                 {/* Date Input */}
-                <div className="flex-1 w-full md:max-w-xs">
+                <div className="flex-1 w-full min-w-0 md:max-w-xs">
                     <label className="block text-xs font-bold uppercase text-gray-400 mb-2 ml-1">
                         Date
                     </label>
-                    <div className="relative group">
+                    <div className="relative group min-w-0">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Calendar className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
                         </div>
@@ -196,7 +196,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold focus:outline-none focus:border-black focus:shadow-hard-sm transition-all cursor-pointer"
+                            className="block w-full min-w-0 max-w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold focus:outline-none focus:border-black focus:shadow-hard-sm transition-all cursor-pointer"
                         />
                     </div>
                 </div>
