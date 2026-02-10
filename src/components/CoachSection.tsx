@@ -74,7 +74,7 @@ export function CoachSection() {
                 <div className="bg-pastel-lilac/10 border-2 border-black rounded-2xl p-6">
                     <h2 className="text-3xl font-display font-black uppercase mb-4">Find Your Mentor</h2>
 
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
                         {/* Search Input */}
                         <div className="flex-1 relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-black rounded-lg flex items-center justify-center pointer-events-none">
@@ -89,21 +89,23 @@ export function CoachSection() {
                             />
                         </div>
 
-                        {/* Date Picker (Mock) */}
-                        <div className="md:w-48 relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-black rounded-lg flex items-center justify-center pointer-events-none">
-                                <Calendar className="w-4 h-4 text-black" />
+                        <div className="flex w-full items-center gap-4 md:w-auto">
+                            {/* Date Picker (Mock) */}
+                            <div className="flex-1 md:flex-none md:w-48 relative">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-black rounded-lg flex items-center justify-center pointer-events-none">
+                                    <Calendar className="w-4 h-4 text-black" />
+                                </div>
+                                <input
+                                    type="date"
+                                    className="w-full h-12 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl focus:translate-x-1 focus:translate-y-1 focus:shadow-none shadow-hard transition-all outline-none"
+                                />
                             </div>
-                            <input
-                                type="date"
-                                className="w-full h-12 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl focus:translate-x-1 focus:translate-y-1 focus:shadow-none shadow-hard transition-all outline-none"
-                            />
-                        </div>
 
-                        {/* Filter Button */}
-                        <button className="h-12 w-12 bg-white border-2 border-black rounded-xl shadow-hard flex items-center justify-center hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group shrink-0">
-                            <Filter className="w-5 h-5 text-black" />
-                        </button>
+                            {/* Filter Button */}
+                            <button className="h-12 w-12 bg-white border-2 border-black rounded-xl shadow-hard flex items-center justify-center hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group shrink-0">
+                                <Filter className="w-5 h-5 text-black" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
