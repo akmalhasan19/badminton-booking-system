@@ -53,7 +53,7 @@ export function AICoach() {
             {/* Floating Action Button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className={`fixed bottom-6 right-6 group z-50 transition-all duration-300 hover:-translate-y-1
+                className={`fixed bottom-6 right-6 group z-40 transition-all duration-300 hover:-translate-y-1
           ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
             >
                 <div className="bg-black text-white p-4 rounded-2xl border-2 border-white shadow-hard flex items-center justify-center group-hover:bg-pastel-acid group-hover:text-black group-hover:border-black transition-colors">
@@ -63,7 +63,7 @@ export function AICoach() {
             </button>
 
             {/* Chat Interface */}
-            <div className={`fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-3xl border-2 border-black shadow-hard-lg z-50 overflow-hidden transition-all duration-500 transform origin-bottom-right
+            <div className={`fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-3xl border-2 border-black shadow-hard-lg z-40 overflow-hidden transition-all duration-500 transform origin-bottom-right
         ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}>
 
                 {/* Header */}

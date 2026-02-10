@@ -471,7 +471,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             initial="hidden"
                             animate="visible"
                             exit="exit"
-                            className="flex flex-col items-center space-y-6"
+                            className="flex flex-col items-center space-y-4"
                         >
 
                             {menuItems.map((item) => (
@@ -479,7 +479,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                     key={item.tab}
                                     variants={itemVariants}
                                     onClick={() => handleTabClick(item.tab, item.path)}
-                                    className={`text-4xl font-bold text-black hover:text-${item.color} transition-colors`}
+                                    className={`text-2xl font-bold text-black hover:text-${item.color} transition-colors`}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -489,7 +489,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             <motion.button
                                 variants={itemVariants}
                                 onClick={() => { setMobileMenuOpen(false); router.push('/partner/register'); }}
-                                className="text-4xl font-bold text-pastel-yellow hover:text-yellow-600 transition-colors"
+                                className="text-2xl font-bold text-pastel-yellow hover:text-yellow-600 transition-colors"
                             >
                                 {t.join_us}
                             </motion.button>
@@ -497,7 +497,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                             <motion.button
                                 variants={itemVariants}
                                 onClick={() => { setMobileMenuOpen(false); router.push('/partner/coach'); }}
-                                className="text-4xl font-bold text-pastel-mint hover:text-green-600 transition-colors"
+                                className="text-2xl font-bold text-pastel-mint hover:text-green-600 transition-colors"
                             >
                                 Be a Coach
                             </motion.button>
@@ -508,26 +508,26 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                     <motion.div
                                         variants={itemVariants}
                                         onClick={() => { setMobileMenuOpen(false); router.push('/account'); }}
-                                        className="flex flex-col items-center gap-2 py-4 px-6 bg-gray-50 rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-colors"
+                                        className="flex flex-col items-center gap-2 py-3 px-5 bg-gray-50 rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-colors mt-2"
                                     >
-                                        <div className="w-16 h-16 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
+                                        <div className="w-12 h-12 bg-pastel-acid rounded-full border-2 border-black flex items-center justify-center overflow-hidden">
                                             {user.avatar_url ? (
                                                 <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <User className="w-8 h-8" />
+                                                <User className="w-6 h-6" />
                                             )}
                                         </div>
-                                        <span className="text-lg font-bold text-black">{user.name}</span>
-                                        <span className="text-sm text-gray-500">{user.email}</span>
+                                        <span className="text-base font-bold text-black">{user.name}</span>
+                                        <span className="text-xs text-gray-500">{user.email}</span>
                                     </motion.div>
                                     <motion.button
                                         variants={itemVariants}
                                         onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
-                                        className="text-3xl font-bold text-red-500 hover:text-red-700 transition-colors flex items-center gap-2"
+                                        className="text-xl font-bold text-red-500 hover:text-red-700 transition-colors flex items-center gap-2 mt-2"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                     >
-                                        <LogOut className="w-8 h-8" />
+                                        <LogOut className="w-5 h-5" />
                                         {t.logout}
                                     </motion.button>
                                 </>
@@ -535,7 +535,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                                 <motion.button
                                     variants={itemVariants}
                                     onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
-                                    className="text-4xl font-bold text-gray-500 hover:text-black transition-colors"
+                                    className="text-3xl font-bold text-gray-500 hover:text-black transition-colors"
                                 >
                                     {t.login}
                                 </motion.button>
