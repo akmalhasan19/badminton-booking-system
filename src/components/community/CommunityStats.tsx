@@ -297,7 +297,7 @@ export function CommunityStats({
             {/* Right Column - Stacked Cards */}
             <div className="flex flex-col gap-3">
                 {/* Activities Card */}
-                <div className="bg-neo-blue border-3 border-black shadow-hard rounded-xl p-5 text-white relative flex-1 flex flex-col justify-between">
+                <div className="bg-neo-blue border-3 border-black shadow-hard rounded-xl py-5 pr-5 pl-4 text-white relative flex-1 flex flex-col justify-between">
                     <div className="flex justify-between items-start">
                         <h3 className="text-sm font-black uppercase tracking-widest">Activities</h3>
                         <Calendar className="w-6 h-6 stroke-[3px]" />
@@ -320,14 +320,14 @@ export function CommunityStats({
                 {/* Rating Card */}
                 <div
                     onClick={handleRatingClick}
-                    className="bg-primary border-3 border-black shadow-hard rounded-xl p-5 text-black relative flex-1 flex flex-col justify-between cursor-pointer active:translate-y-[2px] active:shadow-neo-sm transition-all hover:shadow-neo-lg"
+                    className="bg-primary border-3 border-black shadow-hard rounded-xl py-5 pr-5 pl-4 text-black relative flex-1 flex flex-col justify-between cursor-pointer active:translate-y-[2px] active:shadow-neo-sm transition-all hover:shadow-neo-lg"
                 >
                     <div className="flex justify-between items-start">
                         <h3 className="text-sm font-black uppercase tracking-widest">Rating</h3>
                         <Trophy className="w-6 h-6 stroke-[3px]" />
                     </div>
                     <div className="flex items-end gap-2 mt-1">
-                        <span className="text-[2.75rem] font-black tracking-tighter leading-none">{rating}</span>
+                        <span className="text-[2.5rem] font-black tracking-tighter leading-none">{rating}</span>
                         <div className="flex pb-2 gap-0.5">
                             {[...Array(4)].map((_, i) => (
                                 <Star key={i} className="w-4 h-4 fill-black text-black" />
