@@ -124,7 +124,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 </button>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-4 border-2 border-gray-100 flex flex-col md:flex-row gap-4 items-end">
+            <div className="bg-gray-50 rounded-2xl p-4 border-2 border-gray-100 flex flex-col md:flex-row gap-4 items-stretch md:items-end">
                 {/* Search Input */}
                 <div className="flex-1 w-full min-w-0">
                     <label className="block text-xs font-bold uppercase text-gray-400 mb-2 ml-1">
@@ -196,7 +196,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="block w-full min-w-0 max-w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold focus:outline-none focus:border-black focus:shadow-hard-sm transition-all cursor-pointer"
+                            className="block w-full min-w-0 max-w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 rounded-xl text-black font-bold focus:outline-none focus:border-black focus:shadow-hard-sm transition-all cursor-pointer appearance-none text-left"
                         />
                     </div>
                 </div>
