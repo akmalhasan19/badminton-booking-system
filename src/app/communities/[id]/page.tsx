@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { getCommunityById, getCommunityActivities } from "../actions"
+import { getCommunityById, getCommunityActivities, getCommunityStats } from "../actions"
 import { CommunityHero } from "@/components/community/CommunityHero"
 import { CommunityStats } from "@/components/community/CommunityStats"
 import { CommunityActivities } from "@/components/community/CommunityActivities"
@@ -9,10 +9,12 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
     const { id } = await params
     const [
         { data: community, error },
-        { data: activities, count: activitiesCount, totalCount: totalActivitiesCount }
+        { data: activities, count: activitiesCount, totalCount: totalActivitiesCount },
+        { data: stats }
     ] = await Promise.all([
         getCommunityById(id),
-        getCommunityActivities(id)
+        getCommunityActivities(id),
+        getCommunityStats(id)
     ])
 
     if (error || !community) {
@@ -52,6 +54,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                                     activeEventsCount={activitiesCount ?? activities?.length ?? 0}
                                     totalEventsCount={totalActivitiesCount ?? 0}
                                     community_id={id}
+                                    rating={stats?.overallRating || 0}
                                 />
                             </div>
                         </div>

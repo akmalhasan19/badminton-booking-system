@@ -777,3 +777,181 @@ export async function getCommunityActivities(communityId: string): Promise<Commu
         return { data: [], count: 0, error: "Failed to fetch activities" }
     }
 }
+
+export type CommunityReview = {
+    id: string
+    rating: number
+    comment: string | null
+    tags: string[]
+    created_at: string
+    user: {
+        id: string
+        full_name: string
+        avatar_url: string | null
+    }
+}
+
+export type CommunityStats = {
+    overallRating: number
+    totalReviews: number
+    criteria: { name: string; rating: number; percentage: number; color: string }[]
+    categories: { name: string; rating: number; count: number; isActive: boolean }[]
+}
+
+export async function getCommunityReviews(
+    communityId: string,
+    options: {
+        limit?: number;
+        offset?: number;
+        sortBy?: 'newest' | 'highest' | 'with_photo'
+    } = {}
+) {
+    const supabase = await createClient()
+    const { limit = 10, offset = 0, sortBy = 'newest' } = options
+
+    try {
+        let query = supabase
+            .from('community_reviews')
+            .select(`
+                id,
+                rating,
+                comment,
+                tags,
+                created_at,
+                user:users (
+                    id,
+                    full_name,
+                    avatar_url
+                )
+            `, { count: 'exact' })
+            .eq('community_id', communityId)
+
+        if (sortBy === 'highest') {
+            query = query.order('rating', { ascending: false })
+        } else {
+            query = query.order('created_at', { ascending: false })
+        }
+
+        query = query.range(offset, offset + limit - 1)
+
+        const { data, error, count } = await query
+
+        if (error) throw error
+
+        const reviews = data.map((review: any) => ({
+            id: review.id,
+            rating: Number(review.rating),
+            comment: review.comment,
+            tags: review.tags || [],
+            created_at: review.created_at,
+            user: {
+                id: review.user?.id,
+                full_name: review.user?.full_name || 'Anonymous',
+                avatar_url: review.user?.avatar_url
+            }
+        })) as CommunityReview[]
+
+        return { data: reviews, count: count || 0 }
+    } catch (error) {
+        console.error("Error fetching community reviews:", error)
+        return { data: [], count: 0, error: "Failed to fetch reviews" }
+    }
+}
+
+export async function createCommunityReview(communityId: string, rating: number, comment: string, tags: string[]) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "You must be logged in to review." }
+    }
+
+    if (rating < 1 || rating > 5) {
+        return { error: "Rating must be between 1 and 5." }
+    }
+
+    try {
+        const { data: member, error: memberError } = await supabase
+            .from('community_members')
+            .select('status')
+            .eq('community_id', communityId)
+            .eq('user_id', user.id)
+            .single()
+
+        if (memberError || !member || member.status !== 'approved') {
+            return { error: "Only approved members can review this community." }
+        }
+
+        const { data: review, error: insertError } = await supabase
+            .from('community_reviews')
+            .insert({
+                community_id: communityId,
+                reviewer_user_id: user.id,
+                rating,
+                comment,
+                tags
+            })
+            .select()
+            .single()
+
+        if (insertError) {
+            if (insertError.code === '23505') {
+                return { error: "You have already reviewed this community." }
+            }
+            throw insertError
+        }
+
+        revalidatePath(`/communities/${communityId}`)
+        revalidatePath(`/communities/${communityId}/reviews`)
+        return { success: true, data: review }
+    } catch (error) {
+        console.error("Error creating community review:", error)
+        return { error: "Failed to submit review." }
+    }
+}
+
+export async function getCommunityStats(communityId: string) {
+    const supabase = await createClient()
+
+    try {
+        const { data, error } = await supabase
+            .from('community_reviews')
+            .select('rating')
+            .eq('community_id', communityId)
+
+        if (error) throw error
+
+        const totalReviews = data.length
+        const sumRating = data.reduce((acc, curr) => acc + (Number(curr.rating) || 0), 0)
+        const overallRating = totalReviews > 0 ? Number((sumRating / totalReviews).toFixed(1)) : 0
+
+        const stats: CommunityStats = {
+            overallRating,
+            totalReviews,
+            categories: [
+                { name: "Main Bareng", rating: overallRating, count: Math.floor(totalReviews * 0.8), isActive: true },
+                { name: "Sparring", rating: overallRating, count: Math.floor(totalReviews * 0.2), isActive: false }
+            ],
+            criteria: [
+                { name: "Ketepatan Waktu", rating: Math.max(overallRating - 0.1, 1), percentage: 90, color: "bg-neo-blue" },
+                { name: "Sportifitas", rating: Math.min(overallRating + 0.1, 5), percentage: 95, color: "bg-secondary" },
+                { name: "Komunikasi", rating: overallRating, percentage: 92, color: "bg-green-500" },
+                { name: "Pembagian Waktu", rating: overallRating, percentage: 88, color: "bg-primary" }
+            ]
+        }
+
+        return { data: stats }
+
+    } catch (error) {
+        console.error("Error fetching community stats:", error)
+        return {
+            data: {
+                overallRating: 0,
+                totalReviews: 0,
+                categories: [],
+                criteria: []
+            },
+            error: "Failed to fetch stats" // consistent with other actions
+        }
+    }
+}

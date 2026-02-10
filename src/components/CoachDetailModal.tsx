@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, MapPin, Star, Trophy, Calendar, Clock, ChevronRight, User, Award, CheckCircle2 } from "lucide-react"
 
 export interface Coach {
-    id: number
+    id: string
     name: string
     title: string
     location: string

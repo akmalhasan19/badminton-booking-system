@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { syncBookingToPartner } from '@/lib/partner-sync'
 import { logger } from '@/lib/logger'
+import { createBookingEventNotification } from '@/lib/notifications/service'
+
+type XenditWebhookPayload = {
+    external_id?: string
+    status?: string
+    paid_amount?: number
+    payment_method?: string
+    id?: string
+    [key: string]: unknown
+}
 
 export async function POST(req: Request) {
-    let body: any = {}
+    let body: XenditWebhookPayload = {}
     let external_id = ''
     let status = ''
 
@@ -29,10 +39,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
         }
 
-        body = await req.json()
-        external_id = body.external_id
-        status = body.status
-        const { paid_amount, payment_method, id: invoice_id } = body
+        body = await req.json() as XenditWebhookPayload
+        external_id = typeof body.external_id === 'string' ? body.external_id : ''
+        status = typeof body.status === 'string' ? body.status : ''
+        const paid_amount = typeof body.paid_amount === 'number' ? body.paid_amount : 0
+        const payment_method = typeof body.payment_method === 'string' ? body.payment_method : ''
+        const invoice_id = typeof body.id === 'string' ? body.id : ''
 
         // Log incoming webhook
         logger.info({
@@ -80,6 +92,19 @@ export async function POST(req: Request) {
                 logger.error({ bookingId: external_id, error: fetchError }, '[Webhook] Failed to fetch booking details for sync')
                 // We don't fail the webhook, but we log the sync failure
             } else {
+                await createBookingEventNotification({
+                    type: 'booking_confirmed',
+                    booking: {
+                        id: bookingData.id,
+                        user_id: bookingData.user_id,
+                        booking_date: bookingData.booking_date,
+                        start_time: bookingData.start_time,
+                        venue_name: bookingData.venue_name,
+                        court_name: bookingData.court_name
+                    },
+                    supabase
+                })
+
                 // 4. Sync to Partner API via Webhook (New Methodology)
                 const customerName = bookingData.users?.full_name || 'PWA User'
                 const customerPhone = bookingData.users?.phone
@@ -94,18 +119,6 @@ export async function POST(req: Request) {
                     paidAmount: paid_amount,
                     revenue
                 }, `[Webhook] Processing payment for booking ${external_id}`)
-
-                // Fetch court name with robust error handling
-                const { data: courtData } = await supabase
-                    .from('courts')
-                    .select('name')
-                    .eq('id', bookingData.court_id)
-                    .single();
-
-                const courtName = courtData?.name || `Court ${bookingData.court_id?.slice(0, 8) || 'Unknown'}`;
-                const itemName = courtData?.name
-                    ? `Booking ${courtData.name} - ${bookingData.start_time}`
-                    : `Booking ${bookingData.start_time}`;
 
                 // Validate venue_id before sync (CRITICAL)
                 if (!bookingData.venue_id) {
@@ -164,7 +177,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ message: 'Webhook received' }, { status: 200 })
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         logger.error({ error }, 'Webhook Error')
 
         // Log Failure
@@ -173,7 +187,7 @@ export async function POST(req: Request) {
             payload: body,
             status: 'failed',
             response_code: 500,
-            error_message: error.message || 'Unknown error'
+            error_message: errorMessage
         })
 
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 })

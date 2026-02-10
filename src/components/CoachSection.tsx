@@ -1,80 +1,76 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { motion } from "framer-motion"
 import { Search, MapPin, Filter, User, Star, Trophy, Calendar, Clock, ChevronRight } from "lucide-react"
 import { useSearchParams } from "next/navigation"
-import type { Coach } from "./CoachDetailModal"
+import type { Coach as CoachType } from "@/lib/coaches/actions"
 
 const CoachDetailModal = dynamic(
     () => import("./CoachDetailModal").then((mod) => mod.CoachDetailModal),
     { ssr: false }
 )
 
-const COACHES: Coach[] = [
-    {
-        id: 1,
-        name: "Coach Budi Santoso",
-        title: "Ex-National Player",
-        location: "Jakarta Selatan",
-        rating: 4.9,
-        reviews: 128,
-        price: 150000,
-        image: "https://images.unsplash.com/photo-1542596594-649edbc13630?q=80&w=1000&auto=format&fit=crop",
-        specialization: "Doubles Strategy",
-        level: "Advanced",
-        about: "Former national team player with over 10 years of competitive experience. Specializes in advanced doubles tactics, rotation, and high-pressure game psychology. Has coached multiple regional champions.",
-        experience: "15 Years",
-        achievements: ["National Doubles Champion 2015", "Certified BWF Level 2 Coach", "Head Coach at PB Jaya"]
-    },
-    {
-        id: 2,
-        name: "Siti Rahmawati",
-        title: "Certified BWF Level 1",
-        location: "Bandung",
-        rating: 4.8,
-        reviews: 85,
-        price: 100000,
-        image: "https://images.unsplash.com/photo-1626244422523-26330452377d?q=80&w=1000&auto=format&fit=crop",
-        specialization: "Basics & Footwork",
-        level: "Beginner",
-        about: "Patient and detailed-oriented coach perfect for beginners and children. Focuses on building a strong foundation with correct footwork and stroke mechanics to prevent injury and ensure long-term progress.",
-        experience: "5 Years",
-        achievements: ["West Java Provincial Silver Medalist", "Best Youth Coach Award 2023"]
-    },
-    {
-        id: 3,
-        name: "Rizky Firmansyah",
-        title: "Club Pro Coach",
-        location: "Surabaya",
-        rating: 4.7,
-        reviews: 56,
-        price: 125000,
-        image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1000&auto=format&fit=crop",
-        specialization: "Smash Power",
-        level: "Intermediate",
-        about: "Known for his explosive playstyle, Rizky teaches players how to generate maximum power in their smashes and clears. Also covers physical conditioning specifically for badminton power.",
-        experience: "8 Years",
-        achievements: ["Surabaya Open Winner 2019", "Physical Trainer Certificate"]
-    }
-]
+// Transform DB coach data to UI coach format
+interface UICoach {
+    id: string
+    name: string
+    title: string
+    location: string
+    rating: number
+    reviews: number
+    price: number
+    image: string
+    specialization: string
+    level: string
+    about?: string
+    experience?: string
+    achievements?: string[]
+}
 
-export function CoachSection() {
+function transformCoachToUI(coach: CoachType): UICoach {
+    return {
+        id: coach.id,
+        name: coach.name,
+        title: `${coach.level.charAt(0).toUpperCase() + coach.level.slice(1)} Coach`,
+        location: coach.district ? `${coach.city}, ${coach.district}` : coach.city,
+        rating: coach.average_rating || 0,
+        reviews: coach.total_reviews || 0,
+        price: coach.price_per_hour,
+        image: coach.avatar_url || `https://images.unsplash.com/photo-1542596594-649edbc13630?q=80&w=1000&auto=format&fit=crop`,
+        specialization: coach.specialization[0] || "General Training",
+        level: coach.level.charAt(0).toUpperCase() + coach.level.slice(1),
+        about: coach.bio || undefined,
+        experience: coach.experience_years > 0 ? `${coach.experience_years} Years` : undefined,
+        achievements: coach.certifications.length > 0 ? coach.certifications : undefined
+    }
+}
+
+interface CoachSectionProps {
+    coaches?: CoachType[]
+}
+
+export function CoachSection({ coaches = [] }: CoachSectionProps) {
     const searchParams = useSearchParams()
     const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || "")
     const [cityFilter, setCityFilter] = useState(searchParams.get('city') || "")
-    const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null)
+    const [selectedCoach, setSelectedCoach] = useState<UICoach | null>(null)
+
+    // Transform backend coaches to UI format
+    const uiCoaches = useMemo(() => {
+        return coaches.map(transformCoachToUI)
+    }, [coaches])
 
     const normalizedQuery = searchQuery.toLowerCase()
 
     const filteredCoaches = useMemo(() => {
-        return COACHES.filter((coach) => {
+        return uiCoaches.filter((coach: UICoach) => {
             const matchesSearch = coach.name.toLowerCase().includes(normalizedQuery) ||
                 coach.location.toLowerCase().includes(normalizedQuery)
             return matchesSearch
         })
-    }, [normalizedQuery])
+    }, [normalizedQuery, uiCoaches])
 
     return (
         <div className="w-full">

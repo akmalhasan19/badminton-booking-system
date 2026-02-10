@@ -2,11 +2,12 @@
 
 import { PageHeader } from "@/components/PageHeader"
 import { NeoToggle } from "@/components/NeoToggle"
-import { Info } from "lucide-react"
-import { useState } from "react"
+import { getNotificationPreferences, NotificationPreferences, updateNotificationPreferences } from "@/lib/api/actions"
+import { Info, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
 
 export default function NotificationSettingsPage() {
-    const [settings, setSettings] = useState({
+    const [settings, setSettings] = useState<NotificationPreferences>({
         accountEmail: true,
         accountPush: false,
         exclusiveEmail: true,
@@ -14,9 +15,50 @@ export default function NotificationSettingsPage() {
         reminderEmail: true,
         reminderPush: false,
     })
+    const [isLoading, setIsLoading] = useState(true)
+    const [savingKey, setSavingKey] = useState<keyof NotificationPreferences | null>(null)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-    const toggle = (key: keyof typeof settings) => {
-        setSettings(prev => ({ ...prev, [key]: !prev[key] }))
+    useEffect(() => {
+        const loadPreferences = async () => {
+            setIsLoading(true)
+            setErrorMessage(null)
+
+            try {
+                const data = await getNotificationPreferences()
+                setSettings(data)
+            } catch (error) {
+                console.error('Failed to load notification settings:', error)
+                setErrorMessage('Gagal memuat pengaturan notifikasi.')
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        loadPreferences()
+    }, [])
+
+    const toggle = async (key: keyof NotificationPreferences) => {
+        const previousValue = settings[key]
+        const nextValue = !previousValue
+
+        setSettings(prev => ({ ...prev, [key]: nextValue }))
+        setSavingKey(key)
+        setErrorMessage(null)
+
+        try {
+            const result = await updateNotificationPreferences({ [key]: nextValue })
+            if (!result.success) {
+                setSettings(prev => ({ ...prev, [key]: previousValue }))
+                setErrorMessage(result.error || 'Gagal menyimpan pengaturan.')
+            }
+        } catch (error) {
+            console.error('Failed to update notification setting:', error)
+            setSettings(prev => ({ ...prev, [key]: previousValue }))
+            setErrorMessage('Gagal menyimpan pengaturan.')
+        } finally {
+            setSavingKey(null)
+        }
     }
 
     return (
@@ -35,6 +77,17 @@ export default function NotificationSettingsPage() {
                             Push notification tidak aktif. Kamu perlu mengaktifkan notifikasi di browser-mu dulu.
                         </p>
                     </div>
+                    {errorMessage && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm font-medium">
+                            {errorMessage}
+                        </div>
+                    )}
+                    {isLoading && (
+                        <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Memuat preferensi notifikasi...
+                        </div>
+                    )}
 
                     {/* Aktivitas Akun */}
                     <section>
@@ -45,11 +98,11 @@ export default function NotificationSettingsPage() {
                         <div className="bg-white border-2 border-black rounded-xl overflow-hidden shadow-hard divide-y-2 divide-gray-100">
                             <div className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <span className="font-bold">Email</span>
-                                <NeoToggle active={settings.accountEmail} onToggle={() => toggle('accountEmail')} />
+                                <NeoToggle active={settings.accountEmail} onToggle={() => toggle('accountEmail')} disabled={isLoading || savingKey === 'accountEmail'} />
                             </div>
                             <div className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <span className="font-bold">Push Notification</span>
-                                <NeoToggle active={settings.accountPush} onToggle={() => toggle('accountPush')} />
+                                <NeoToggle active={settings.accountPush} onToggle={() => toggle('accountPush')} disabled={isLoading || savingKey === 'accountPush'} />
                             </div>
                         </div>
                     </section>
@@ -63,11 +116,11 @@ export default function NotificationSettingsPage() {
                         <div className="bg-white border-2 border-black rounded-xl overflow-hidden shadow-hard divide-y-2 divide-gray-100">
                             <div className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <span className="font-bold">Email</span>
-                                <NeoToggle active={settings.exclusiveEmail} onToggle={() => toggle('exclusiveEmail')} />
+                                <NeoToggle active={settings.exclusiveEmail} onToggle={() => toggle('exclusiveEmail')} disabled={isLoading || savingKey === 'exclusiveEmail'} />
                             </div>
                             <div className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <span className="font-bold">Push Notification</span>
-                                <NeoToggle active={settings.exclusivePush} onToggle={() => toggle('exclusivePush')} />
+                                <NeoToggle active={settings.exclusivePush} onToggle={() => toggle('exclusivePush')} disabled={isLoading || savingKey === 'exclusivePush'} />
                             </div>
                         </div>
                     </section>
@@ -81,11 +134,11 @@ export default function NotificationSettingsPage() {
                         <div className="bg-white border-2 border-black rounded-xl overflow-hidden shadow-hard divide-y-2 divide-gray-100">
                             <div className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <span className="font-bold">Email</span>
-                                <NeoToggle active={settings.reminderEmail} onToggle={() => toggle('reminderEmail')} />
+                                <NeoToggle active={settings.reminderEmail} onToggle={() => toggle('reminderEmail')} disabled={isLoading || savingKey === 'reminderEmail'} />
                             </div>
                             <div className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <span className="font-bold">Push Notification</span>
-                                <NeoToggle active={settings.reminderPush} onToggle={() => toggle('reminderPush')} />
+                                <NeoToggle active={settings.reminderPush} onToggle={() => toggle('reminderPush')} disabled={isLoading || savingKey === 'reminderPush'} />
                             </div>
                         </div>
                     </section>

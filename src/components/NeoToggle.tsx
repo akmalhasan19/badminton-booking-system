@@ -6,12 +6,14 @@ interface NeoToggleProps {
     active: boolean
     onToggle: () => void
     color?: string
+    disabled?: boolean
 }
 
-export const NeoToggle = ({ active, onToggle, color = 'bg-blue-500' }: NeoToggleProps) => (
+export const NeoToggle = ({ active, onToggle, color = 'bg-blue-500', disabled = false }: NeoToggleProps) => (
     <button
         onClick={onToggle}
-        className={`w-14 h-8 rounded-full border-2 border-black p-1 transition-colors relative ${active ? color : 'bg-gray-200'}`}
+        disabled={disabled}
+        className={`w-14 h-8 rounded-full border-2 border-black p-1 transition-colors relative ${active ? color : 'bg-gray-200'} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
         <motion.div
             layout

@@ -1,12 +1,13 @@
 'use server'
 
 import { getCourts } from './courts'
-import { getAvailableSlots, createBooking as createBookingApi } from './bookings'
 import { revalidatePath } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 import { getCurrentUser } from '@/lib/auth/actions'
-import { createInvoice, getInvoice } from '@/lib/xendit/client'
+import { createInvoice } from '@/lib/xendit/client'
 import { getSetting } from '@/lib/api/settings'
+import { createClient } from '@/lib/supabase/server'
+import { createBookingEventNotification } from '@/lib/notifications/service'
 
 
 
@@ -202,7 +203,7 @@ export async function createBooking(data: {
             // Case 1: Slot taken by same user (Pending/Failed) -> UPDATE it
             if (existingBooking.user_id === user.id && existingBooking.status === 'pending') {
                 console.log(`[CreateBooking] Updating existing pending booking ${existingBooking.id} with new invoice`)
-                const { error: updateError } = await supabase
+                await supabase
                     .from('bookings')
                     .update({
                         id: bookingId, // Update ID to match new invoice ID (if we want to sync them) OR keep old ID and just update invoice ref
@@ -266,11 +267,11 @@ export async function createBooking(data: {
             paymentUrl: invoice.invoice_url
         }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to create payment invoice:', error)
         // Return success but with warning/no payment URL
         // User will see booking in "Pending" state in their history
-        const errorMessage = error?.message || 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return {
             success: true,
             data: apiResult.data,
@@ -290,7 +291,7 @@ export async function confirmBookingPayment(bookingId: string) {
 
         const { data: booking, error: bookingError } = await supabase
             .from('bookings')
-            .select('venue_id, status')
+            .select('venue_id, status, user_id, venue_name, court_name, booking_date, start_time')
             .eq('id', bookingId)
             .single()
 
@@ -324,6 +325,18 @@ export async function confirmBookingPayment(bookingId: string) {
 
             // Force update local DB
             await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+            await createBookingEventNotification({
+                type: 'booking_confirmed',
+                booking: {
+                    id: bookingId,
+                    user_id: booking.user_id,
+                    booking_date: booking.booking_date,
+                    start_time: booking.start_time,
+                    venue_name: booking.venue_name,
+                    court_name: booking.court_name
+                },
+                supabase
+            })
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'confirmed' }
@@ -332,6 +345,18 @@ export async function confirmBookingPayment(bookingId: string) {
             console.log('[ManualCheck] Invoice EXPIRED')
             await updateBookingStatus(bookingId, 'cancelled')
             await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+            await createBookingEventNotification({
+                type: 'booking_cancelled',
+                booking: {
+                    id: bookingId,
+                    user_id: booking.user_id,
+                    booking_date: booking.booking_date,
+                    start_time: booking.start_time,
+                    venue_name: booking.venue_name,
+                    court_name: booking.court_name
+                },
+                supabase
+            })
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'cancelled' }
@@ -342,10 +367,11 @@ export async function confirmBookingPayment(bookingId: string) {
             status: invoice?.status || 'pending'
         }
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Manual payment check failed", e)
         // If 404, it might mean we looked in the wrong account or ID is wrong
-        return { success: false, error: e.message || 'Check failed' }
+        const message = e instanceof Error ? e.message : 'Check failed'
+        return { success: false, error: message }
     }
 }
 
@@ -373,14 +399,59 @@ export interface Notification {
         booking_id?: string
         court_name?: string
         booking_date?: string
+        venue_name?: string
         points?: number
         promo_code?: string
+        notification_source?: string
+        [key: string]: string | number | boolean | null | undefined
     }
 }
 
+export interface NotificationPreferences {
+    accountEmail: boolean
+    accountPush: boolean
+    exclusiveEmail: boolean
+    exclusivePush: boolean
+    reminderEmail: boolean
+    reminderPush: boolean
+}
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+    accountEmail: true,
+    accountPush: false,
+    exclusiveEmail: true,
+    exclusivePush: false,
+    reminderEmail: true,
+    reminderPush: false,
+}
+
+const mapPreferenceDbToClient = (row: {
+    account_email: boolean
+    account_push: boolean
+    exclusive_email: boolean
+    exclusive_push: boolean
+    reminder_email: boolean
+    reminder_push: boolean
+}): NotificationPreferences => ({
+    accountEmail: row.account_email,
+    accountPush: row.account_push,
+    exclusiveEmail: row.exclusive_email,
+    exclusivePush: row.exclusive_push,
+    reminderEmail: row.reminder_email,
+    reminderPush: row.reminder_push
+})
+
+const mapPreferenceClientToDb = (preferences: NotificationPreferences) => ({
+    account_email: preferences.accountEmail,
+    account_push: preferences.accountPush,
+    exclusive_email: preferences.exclusiveEmail,
+    exclusive_push: preferences.exclusivePush,
+    reminder_email: preferences.reminderEmail,
+    reminder_push: preferences.reminderPush
+})
+
 /**
  * Server action to fetch user notifications
- * TODO: Connect to real API once notifications endpoint is available
  */
 export async function fetchNotifications(): Promise<Notification[]> {
     const user = await getCurrentUser()
@@ -389,16 +460,24 @@ export async function fetchNotifications(): Promise<Notification[]> {
         return []
     }
 
-    // TODO: Replace with actual API call when ready
-    // Example: return await smashApi.getNotifications(user.id)
+    const supabase = await createClient()
 
-    // For now, return empty array - no dummy data
-    return []
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('id, user_id, type, title, message, metadata, read, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Failed to fetch notifications:', error)
+        return []
+    }
+
+    return (data || []) as Notification[]
 }
 
 /**
  * Server action to mark a notification as read
- * TODO: Connect to real API once notifications endpoint is available
  */
 export async function markNotificationAsRead(notificationId: string): Promise<{ success: boolean }> {
     const user = await getCurrentUser()
@@ -407,15 +486,24 @@ export async function markNotificationAsRead(notificationId: string): Promise<{ 
         return { success: false }
     }
 
-    // TODO: Replace with actual API call when ready
-    // Example: return await smashApi.markNotificationRead(notificationId)
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId)
+        .eq('user_id', user.id)
 
+    if (error) {
+        console.error('Failed to mark notification as read:', error)
+        return { success: false }
+    }
+
+    revalidatePath('/notifications')
     return { success: true }
 }
 
 /**
  * Server action to mark all notifications as read
- * TODO: Connect to real API once notifications endpoint is available
  */
 export async function markAllNotificationsAsRead(): Promise<{ success: boolean }> {
     const user = await getCurrentUser()
@@ -424,8 +512,93 @@ export async function markAllNotificationsAsRead(): Promise<{ success: boolean }
         return { success: false }
     }
 
-    // TODO: Replace with actual API call when ready
-    // Example: return await smashApi.markAllNotificationsRead(user.id)
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id)
+        .eq('read', false)
 
+    if (error) {
+        console.error('Failed to mark all notifications as read:', error)
+        return { success: false }
+    }
+
+    revalidatePath('/notifications')
     return { success: true }
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return DEFAULT_NOTIFICATION_PREFERENCES
+    }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase
+        .from('notification_preferences')
+        .select('account_email, account_push, exclusive_email, exclusive_push, reminder_email, reminder_push')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (error) {
+        console.error('Failed to load notification preferences:', error)
+        return DEFAULT_NOTIFICATION_PREFERENCES
+    }
+
+    if (!data) {
+        const { error: upsertError } = await supabase
+            .from('notification_preferences')
+            .upsert(
+                {
+                    user_id: user.id,
+                    ...mapPreferenceClientToDb(DEFAULT_NOTIFICATION_PREFERENCES)
+                },
+                { onConflict: 'user_id' }
+            )
+
+        if (upsertError) {
+            console.error('Failed to initialize notification preferences:', upsertError)
+        }
+
+        return DEFAULT_NOTIFICATION_PREFERENCES
+    }
+
+    return mapPreferenceDbToClient(data)
+}
+
+export async function updateNotificationPreferences(
+    partialPreferences: Partial<NotificationPreferences>
+): Promise<{ success: boolean; preferences?: NotificationPreferences; error?: string }> {
+    const user = await getCurrentUser()
+
+    if (!user) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    const currentPreferences = await getNotificationPreferences()
+    const nextPreferences: NotificationPreferences = {
+        ...currentPreferences,
+        ...partialPreferences
+    }
+
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('notification_preferences')
+        .upsert(
+            {
+                user_id: user.id,
+                ...mapPreferenceClientToDb(nextPreferences)
+            },
+            { onConflict: 'user_id' }
+        )
+
+    if (error) {
+        console.error('Failed to update notification preferences:', error)
+        return { success: false, error: error.message }
+    }
+
+    revalidatePath('/settings/notifications')
+    return { success: true, preferences: nextPreferences }
 }

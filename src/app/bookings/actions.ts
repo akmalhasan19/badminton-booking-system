@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth/actions'
 import { revalidatePath } from 'next/cache' // Added import
 import { smashApi } from '@/lib/smash-api' // Added import for updateBookingStatus
+import { createBookingEventNotification } from '@/lib/notifications/service'
 
 export interface Booking {
     id: string
@@ -14,6 +15,24 @@ export interface Booking {
     price: number
     status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
     payment_status: string // Assuming derived or part of status
+}
+
+type BookingWithCourtRelation = {
+    id: string
+    booking_date: string
+    start_time: string
+    end_time: string
+    total_price: number
+    status: Booking['status']
+    payment_url?: string | null
+    courts?: { name?: string | null }[] | { name?: string | null } | null
+}
+
+const resolveCourtName = (courts: BookingWithCourtRelation['courts']) => {
+    if (Array.isArray(courts)) {
+        return courts[0]?.name || 'Unknown Court'
+    }
+    return courts?.name || 'Unknown Court'
 }
 
 export async function getUserActiveBookings() {
@@ -57,9 +76,9 @@ export async function getUserActiveBookings() {
     }
 
     // Transform data
-    const bookings = data.map((booking: any) => ({
+    const bookings = (data as BookingWithCourtRelation[]).map((booking) => ({
         id: booking.id,
-        court_name: booking.courts?.name || 'Unknown Court',
+        court_name: resolveCourtName(booking.courts),
         date: booking.booking_date,
         start_time: booking.start_time,
         end_time: booking.end_time,
@@ -110,9 +129,9 @@ export async function getUserBookingHistory() {
     }
 
     // Transform data
-    const bookings = data.map((booking: any) => ({
+    const bookings = (data as BookingWithCourtRelation[]).map((booking) => ({
         id: booking.id,
-        court_name: booking.courts?.name || 'Unknown Court',
+        court_name: resolveCourtName(booking.courts),
         date: booking.booking_date,
         start_time: booking.start_time,
         end_time: booking.end_time,
@@ -180,10 +199,30 @@ export async function confirmBookingPayment(bookingId: string) {
             const { createServiceClient } = await import('@/lib/supabase/server')
             const supabase = createServiceClient()
 
-            await Promise.all([
+            const [, localUpdateResult] = await Promise.all([
                 updateBookingStatus(bookingId, 'confirmed', invoice.amount),
-                supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+                supabase
+                    .from('bookings')
+                    .update({ status: 'confirmed' })
+                    .eq('id', bookingId)
+                    .select('id, user_id, booking_date, start_time, venue_name, court_name')
+                    .single()
             ]);
+
+            if (!localUpdateResult.error && localUpdateResult.data) {
+                await createBookingEventNotification({
+                    type: 'booking_confirmed',
+                    booking: {
+                        id: localUpdateResult.data.id,
+                        user_id: localUpdateResult.data.user_id,
+                        booking_date: localUpdateResult.data.booking_date,
+                        start_time: localUpdateResult.data.start_time,
+                        venue_name: localUpdateResult.data.venue_name,
+                        court_name: localUpdateResult.data.court_name
+                    },
+                    supabase
+                })
+            }
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'confirmed' }
@@ -194,10 +233,30 @@ export async function confirmBookingPayment(bookingId: string) {
             const { createServiceClient } = await import('@/lib/supabase/server')
             const supabase = createServiceClient()
 
-            await Promise.all([
+            const [, localUpdateResult] = await Promise.all([
                 updateBookingStatus(bookingId, 'cancelled'),
-                supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+                supabase
+                    .from('bookings')
+                    .update({ status: 'cancelled' })
+                    .eq('id', bookingId)
+                    .select('id, user_id, booking_date, start_time, venue_name, court_name')
+                    .single()
             ]);
+
+            if (!localUpdateResult.error && localUpdateResult.data) {
+                await createBookingEventNotification({
+                    type: 'booking_cancelled',
+                    booking: {
+                        id: localUpdateResult.data.id,
+                        user_id: localUpdateResult.data.user_id,
+                        booking_date: localUpdateResult.data.booking_date,
+                        start_time: localUpdateResult.data.start_time,
+                        venue_name: localUpdateResult.data.venue_name,
+                        court_name: localUpdateResult.data.court_name
+                    },
+                    supabase
+                })
+            }
 
             revalidatePath('/bookings/history')
             return { success: true, status: 'cancelled' }

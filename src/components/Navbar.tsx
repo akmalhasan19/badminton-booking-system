@@ -133,7 +133,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 opacity: 1
             })
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentTab, t]) // Added t dependency to update highlight when language changes
 
     const getBackgroundColor = (tab: Tab) => {

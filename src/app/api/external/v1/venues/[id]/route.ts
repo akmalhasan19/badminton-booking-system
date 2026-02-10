@@ -1,3 +1,4 @@
+import { createServiceClient } from '@/lib/supabase/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
@@ -12,31 +13,42 @@ export async function GET(
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
-    // TODO: In the future, fetch from 'venues' table in Supabase.
-    // For now, we return the hardcoded configuration for this GOR.
+    const supabase = createServiceClient()
 
-    // Placeholder Data matching the Guide
-    const venueData = {
-        id: id, // Return requested ID or actual ID
-        name: "GOR Smash Juara",
-        address: "Jl. Raya Badminton No. 1, Jakarta Selatan",
-        maps_url: "https://maps.google.com/?q=GOR+Smash+Juara",
-        description: "GOR Badminton standar internasional dengan lantai karpet vinyl berkualitas. Pencahayaan terang dan sirkulasi udara baik.",
-        start_hour: "08:00",
-        end_hour: "23:00",
-        facilities: [
-            "Toilet Bersih",
-            "Musholla",
-            "Parkir Luas (Motor/Mobil)",
-            "Kantin",
-            "Locker Room",
-            "Wifi Gratis"
-        ],
-        photos: [
-            "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=2070&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=2069&auto=format&fit=crop"
-        ]
+    const { data: venue, error } = await supabase
+        .from('venues')
+        .select(`
+            *,
+            courts (
+                id,
+                name,
+                court_number,
+                is_active
+            )
+        `)
+        .eq('id', id)
+        .single()
+
+    if (error) {
+        return NextResponse.json({ error: 'Venue not found' }, { status: 404 })
     }
 
-    return NextResponse.json(venueData)
+    // Transform to match API contract
+    const responseData = {
+        id: venue.id,
+        name: venue.name,
+        address: venue.address,
+        description: venue.description,
+        start_hour: venue.open_hour,
+        end_hour: venue.close_hour,
+        facilities: venue.facilities || [], // Assuming facilities is a JSONB array/column
+        photos: venue.images || [], // Assuming images/photos column exists
+        courts: venue.courts.filter((c: any) => c.is_active).map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            court_number: c.court_number
+        }))
+    }
+
+    return NextResponse.json({ data: responseData })
 }

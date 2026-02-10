@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
+import { createBookingEventNotification } from '@/lib/notifications/service'
 
 export async function PATCH(
     request: Request,
@@ -60,6 +61,21 @@ export async function PATCH(
         if (error) {
             logger.error({ bookingId: id, error }, 'Error updating booking')
             return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+
+        if (internalStatus === 'confirmed' || internalStatus === 'cancelled') {
+            await createBookingEventNotification({
+                type: internalStatus === 'confirmed' ? 'booking_confirmed' : 'booking_cancelled',
+                booking: {
+                    id: data.id,
+                    user_id: data.user_id,
+                    booking_date: data.booking_date,
+                    start_time: data.start_time,
+                    venue_name: data.venue_name,
+                    court_name: data.court_name
+                },
+                supabase
+            })
         }
 
         return NextResponse.json({

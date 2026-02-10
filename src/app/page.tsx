@@ -58,6 +58,8 @@ function HomeContent() {
     if (hasSeenPreloader) {
       setIsLoading(false)
     }
+    // Temporarily disable preloader
+    setIsLoading(false)
   }, [])
 
   const handlePreloaderComplete = () => {
@@ -87,11 +89,11 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-pastel-acid selection:text-black">
-      <AnimatePresence mode="wait">
+      {/* <AnimatePresence mode="wait">
         {isLoading && (
           <Preloader key="preloader" onComplete={handlePreloaderComplete} />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {!isLoading && (
         <>

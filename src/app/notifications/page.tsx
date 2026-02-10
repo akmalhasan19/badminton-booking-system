@@ -5,10 +5,12 @@ import { MobileHeader } from "@/components/MobileHeader"
 import { SmashLogo } from "@/components/SmashLogo"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { fetchNotifications, markAllNotificationsAsRead, markNotificationAsRead, Notification, NotificationType } from "@/lib/api/actions"
-import { Bell, Info, AlertTriangle, Check, CreditCard, Calendar, Gift, Loader2, BellOff } from "lucide-react"
+import { Info, AlertTriangle, Check, CreditCard, Calendar, Gift, Loader2, BellOff } from "lucide-react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
+
+type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>
 
 // Map notification types to icons
 const getNotificationIcon = (type: NotificationType) => {
@@ -65,7 +67,7 @@ const formatRelativeTime = (dateString: string) => {
 
 export default function NotificationsPage() {
     const router = useRouter()
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<CurrentUser>(null)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isMarkingAll, setIsMarkingAll] = useState(false)
@@ -90,29 +92,37 @@ export default function NotificationsPage() {
     }, [])
 
     const handleMarkAllAsRead = async () => {
+        const previousNotifications = notifications
+        if (previousNotifications.length === 0) return
+
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })))
         setIsMarkingAll(true)
         try {
             const result = await markAllNotificationsAsRead()
-            if (result.success) {
-                setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+            if (!result.success) {
+                setNotifications(previousNotifications)
             }
         } catch (error) {
             console.error('Failed to mark all as read:', error)
+            setNotifications(previousNotifications)
         } finally {
             setIsMarkingAll(false)
         }
     }
 
     const handleMarkAsRead = async (notificationId: string) => {
+        const previousNotifications = notifications
+        setNotifications(prev =>
+            prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+        )
         try {
             const result = await markNotificationAsRead(notificationId)
-            if (result.success) {
-                setNotifications(prev =>
-                    prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-                )
+            if (!result.success) {
+                setNotifications(previousNotifications)
             }
         } catch (error) {
             console.error('Failed to mark notification as read:', error)
+            setNotifications(previousNotifications)
         }
     }
 

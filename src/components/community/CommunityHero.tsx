@@ -408,6 +408,7 @@ export function CommunityHero({ community, isEditable }: CommunityHeroProps) {
                     isOpen={true}
                     onClose={() => setIsReportModalOpen(false)}
                     communityName={community.name}
+                    communityId={community.id}
                 />
             )}
         </div>

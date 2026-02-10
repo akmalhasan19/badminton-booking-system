@@ -5,37 +5,40 @@ import { createBookingEventNotification } from '@/lib/notifications/service';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const cronSecret = process.env.CRON_SECRET;
+        const authHeader = req.headers.get('authorization');
+
+        if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = createServiceClient();
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
-        // 15 minutes ago
-        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-
-        // In Vercel Cron, the request comes from an authorized source.
-        // Add CRON_SECRET check if strict header validation is required.
-
-        // Update pending bookings older than 15 minutes (single round-trip)
         const { data: bookings, error } = await supabase
             .from('bookings')
-            .update({ status: 'cancelled' })
+            .select('id, user_id, booking_date, start_time, venue_name, court_name')
             .eq('status', 'pending')
-            .lt('created_at', fifteenMinutesAgo)
-            .select('id, user_id, booking_date, start_time, venue_name, court_name');
+            .lt('created_at', tenMinutesAgo);
 
         if (error) {
-            logger.error({ error }, 'Error updating expired bookings');
+            logger.error({ error }, 'Error fetching pending bookings for payment reminder');
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
         if (!bookings || bookings.length === 0) {
-            return NextResponse.json({ message: 'No expired bookings found', count: 0 });
+            return NextResponse.json({
+                message: 'No pending bookings eligible for reminder',
+                count: 0
+            });
         }
 
-        await Promise.all(
+        const results = await Promise.all(
             bookings.map((booking) =>
                 createBookingEventNotification({
-                    type: 'booking_cancelled',
+                    type: 'payment_reminder',
                     booking: {
                         id: booking.id,
                         user_id: booking.user_id,
@@ -49,16 +52,16 @@ export async function GET() {
             )
         );
 
-        const bookingIds = bookings.map(b => b.id);
+        const createdCount = results.filter(result => result.success && !result.skipped).length;
 
         return NextResponse.json({
-            message: 'Successfully cancelled expired bookings',
-            count: bookingIds.length,
-            ids: bookingIds
+            message: 'Payment reminder cron executed',
+            scanned: bookings.length,
+            created: createdCount
         });
 
     } catch (error) {
-        logger.error({ error }, 'Unexpected error in auto-cancel cron');
+        logger.error({ error }, 'Unexpected error in payment reminder cron');
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

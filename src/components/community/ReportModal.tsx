@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, AlertTriangle, Check, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { submitReport } from "@/app/reports/actions"
 
 interface ReportModalProps {
     isOpen: boolean
     onClose: () => void
     communityName: string
+    communityId: string // Added to identify the target
 }
 
 const REPORT_REASONS = [
@@ -19,10 +21,10 @@ const REPORT_REASONS = [
     { id: 'other', label: 'Other issue', description: 'Something else not listed above' }
 ]
 
-export function ReportModal({ isOpen, onClose, communityName }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, communityName, communityId }: ReportModalProps) {
     const [selectedReason, setSelectedReason] = useState<string>("")
     const [description, setDescription] = useState("")
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isPending, startTransition] = useTransition()
     const [step, setStep] = useState<'reason' | 'description'>('reason')
 
     const handleSubmit = async () => {
@@ -31,27 +33,28 @@ export function ReportModal({ isOpen, onClose, communityName }: ReportModalProps
             return
         }
 
-        setIsSubmitting(true)
+        startTransition(async () => {
+            const result = await submitReport({
+                targetType: 'community',
+                targetId: communityId,
+                reason: selectedReason,
+                description: description || undefined
+            })
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
+            if (result.error) {
+                toast.error(result.error)
+            } else {
+                toast.success("Laporan berhasil dikirim. Terima kasih atas bantuan Anda menjaga komunitas tetap aman.")
+                onClose()
 
-        console.log("Report Submitted:", {
-            community: communityName,
-            reason: selectedReason,
-            description
+                // Reset state after close
+                setTimeout(() => {
+                    setStep('reason')
+                    setSelectedReason("")
+                    setDescription("")
+                }, 300)
+            }
         })
-
-        toast.success("Laporan berhasil dikirim. Terima kasih atas bantuan Anda menjaga komunitas tetap aman.")
-        setIsSubmitting(false)
-        onClose()
-
-        // Reset state after close
-        setTimeout(() => {
-            setStep('reason')
-            setSelectedReason("")
-            setDescription("")
-        }, 300)
     }
 
     return (
@@ -107,8 +110,8 @@ export function ReportModal({ isOpen, onClose, communityName }: ReportModalProps
                                                     key={reason.id}
                                                     onClick={() => setSelectedReason(reason.id)}
                                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between group ${selectedReason === reason.id
-                                                            ? 'border-black bg-pastel-lilac shadow-hard-sm transform -translate-y-1'
-                                                            : 'border-gray-200 hover:border-black hover:bg-gray-50'
+                                                        ? 'border-black bg-pastel-lilac shadow-hard-sm transform -translate-y-1'
+                                                        : 'border-gray-200 hover:border-black hover:bg-gray-50'
                                                         }`}
                                                 >
                                                     <div>
@@ -158,11 +161,11 @@ export function ReportModal({ isOpen, onClose, communityName }: ReportModalProps
                                     </button>
                                 ) : (
                                     <button
-                                        disabled={isSubmitting}
+                                        disabled={isPending}
                                         onClick={handleSubmit}
                                         className="w-full bg-red-500 text-white px-6 py-3.5 rounded-xl border-b-4 border-black active:border-b-0 active:translate-y-1 font-black uppercase tracking-wider transition-all disabled:opacity-70 disabled:cursor-wait shadow-hard"
                                     >
-                                        {isSubmitting ? "Mengirim Laporan..." : "Submit Report"}
+                                        {isPending ? "Mengirim Laporan..." : "Submit Report"}
                                     </button>
                                 )}
                             </div>
