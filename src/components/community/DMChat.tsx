@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react"
 import useRealtimeSubscription from "../../hooks/useRealtimeSubscription"
-import { getDMMessages, type DMMessage, editDMMessage, deleteDMMessage, sendDMMessage } from "@/app/communities/[id]/chat/actions"
+import { getDMMessageById, getDMMessages, type DMMessage, editDMMessage, deleteDMMessage, sendDMMessage } from "@/app/communities/[id]/chat/actions"
 import { Loader2, ArrowLeft, Edit2, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
@@ -51,31 +51,42 @@ export function DMChat({
         loadMessages()
     }, [conversationId])
 
+    const handleRealtimeInsert = useCallback(async (newMsg: any) => {
+        const result = await getDMMessageById(newMsg.id)
+        if (result.error || !result.data) {
+            console.error("Failed to hydrate new DM:", result.error)
+            return
+        }
+
+        setMessages(prev => {
+            if (prev.some(m => m.id === result.data?.id)) {
+                return prev
+            }
+            return [result.data, ...prev]
+        })
+    }, [])
+
+    const handleRealtimeUpdate = useCallback(async (updatedMsg: any) => {
+        const result = await getDMMessageById(updatedMsg.id)
+        if (result.error || !result.data) {
+            console.error("Failed to hydrate updated DM:", result.error)
+            return
+        }
+
+        setMessages(prev => prev.map(m =>
+            m.id === result.data?.id
+                ? { ...m, ...result.data, is_deleted: !!result.data.deleted_at }
+                : m
+        ))
+    }, [])
+
     // Real-time subscription
     useRealtimeSubscription({
         table: "dm_messages",
         filter: `conversation_id=eq.${conversationId}`,
         event: "*",
-        onInsert: (newMsg: any) => {
-            setMessages(prev => [{
-                id: newMsg.id,
-                conversation_id: newMsg.conversation_id,
-                sender_id: newMsg.sender_id,
-                content: newMsg.content,
-                image_url: newMsg.image_url,
-                created_at: newMsg.created_at,
-                updated_at: newMsg.updated_at,
-                deleted_at: newMsg.deleted_at,
-                is_deleted: false
-            }, ...prev])
-        },
-        onUpdate: (updatedMsg: any) => {
-            setMessages(prev => prev.map(m =>
-                m.id === updatedMsg.id
-                    ? { ...m, ...updatedMsg, is_deleted: !!updatedMsg.deleted_at }
-                    : m
-            ))
-        }
+        onInsert: handleRealtimeInsert,
+        onUpdate: handleRealtimeUpdate
     })
 
     const handleSendMessage = async () => {

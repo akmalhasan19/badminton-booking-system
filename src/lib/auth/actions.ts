@@ -3,7 +3,7 @@
 import { cache } from 'react'
 import { withLogging } from '@/lib/safe-action'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -138,6 +138,83 @@ export const getCurrentUser = cache(async () => {
         skill_review_count: Number(skillData?.review_count ?? 0),
     }
 })
+
+
+/**
+ * Get active user sessions
+ */
+/**
+ * Get active user sessions
+ */
+interface AuthSession {
+    id: string
+    user_id: string
+    created_at: string
+    updated_at: string
+    factor_id: string | null
+    aal: 'aal1' | 'aal2' | 'aal3'
+    not_after: string | null
+    refreshed_at: string | null
+    user_agent: string | null
+    ip: string | null
+    tag: string | null
+}
+
+export async function getUserSessions() {
+    try {
+        const supabase = await createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session) {
+            return { error: 'Unauthorized' }
+        }
+
+        // Use service role to list all sessions from auth.sessions table
+        const adminSupabase = createServiceClient()
+        // @ts-ignore - Schema auth is accessible with service role
+        const { data: sessions, error } = await adminSupabase.schema('auth').from('sessions').select('*').eq('user_id', session.user.id)
+
+        if (error) {
+            console.error('List Sessions Error:', error)
+            return { error: 'Gagal mengambil data sesi' }
+        }
+
+        // Extract current session ID from JWT
+        // JWT structure: header.payload.signature
+        const payload = session.access_token.split('.')[1]
+        let currentSessionId = null
+        try {
+            const decoded = JSON.parse(Buffer.from(payload, 'base64').toString())
+            currentSessionId = decoded.session_id || decoded.sid
+        } catch (e) {
+            console.error('Error decoding JWT:', e)
+        }
+
+        const typedSessions = sessions as AuthSession[]
+
+        // Sort: Current session first, then by created_at (most recent first)
+        const sortedSessions = typedSessions.sort((a, b) => {
+            if (a.id === currentSessionId) return -1
+            if (b.id === currentSessionId) return 1
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+
+        return {
+            success: true,
+            sessions: sortedSessions.map(s => ({
+                id: s.id,
+                ip: s.ip || 'Unknown',
+                user_agent: s.user_agent || 'Unknown',
+                last_sign_in_at: s.created_at, // auth.sessions uses created_at/refreshed_at
+                is_current: s.id === currentSessionId
+            }))
+        }
+    } catch (error) {
+        console.error('Get Sessions Error:', error)
+        return { error: 'Internal server error' }
+    }
+}
+
 
 interface ProfileData {
     full_name: string

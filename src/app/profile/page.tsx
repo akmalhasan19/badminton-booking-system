@@ -9,6 +9,8 @@ import { ImageCropper } from "@/components/ImageCropper"
 import { UserSidebar } from "@/components/UserSidebar"
 import { uploadAvatar, getCurrentUser, updateProfile } from "@/lib/auth/actions"
 import { sendPasswordResetCode, verifyPasswordResetCode, updatePasswordWithOTP } from "@/lib/auth/password-reset-actions"
+import { getUserSessions } from "@/lib/auth/actions"
+import { UAParser } from "ua-parser-js"
 import { useState, useRef, useEffect } from "react"
 import { Toast, ToastType } from "@/components/ui/Toast"
 
@@ -106,6 +108,20 @@ export default function ProfilePage() {
         phone: '',
         email: ''
     })
+
+    const [sessions, setSessions] = useState<any[]>([])
+
+    useEffect(() => {
+        if (activeTab === 'security') {
+            const fetchSessions = async () => {
+                const res = await getUserSessions()
+                if (res.success && res.sessions) {
+                    setSessions(res.sessions)
+                }
+            }
+            fetchSessions()
+        }
+    }, [activeTab])
 
     // Fetch user data on mount
     useEffect(() => {
@@ -680,27 +696,70 @@ export default function ProfilePage() {
                                 <div className="mt-12 pt-8 border-t-2 border-dashed border-gray-300">
                                     <h2 className="font-bold text-lg mb-6 flex items-center gap-2">
                                         Device Management
-                                        <span className="text-xs font-normal bg-black text-white px-2 py-0.5 rounded-full">1 Active</span>
+                                        <span className="text-xs font-normal bg-black text-white px-2 py-0.5 rounded-full">{sessions.length} Active</span>
                                     </h2>
-                                    <div className="bg-white border-2 border-black rounded-xl p-5 shadow-hard flex justify-between items-center group hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default relative overflow-hidden">
-                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500 border-r-2 border-black"></div>
 
-                                        <div className="flex items-center gap-5 pl-4">
-                                            <div className="w-12 h-12 bg-pastel-blue border-2 border-black rounded-lg flex items-center justify-center shrink-0 shadow-sm relative group-hover:scale-105 transition-transform">
-                                                <div className="absolute inset-0 bg-white/20 rounded-lg"></div>
-                                                <Shield className="w-6 h-6 text-black relative z-10" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-display font-bold text-lg leading-tight">Chrome on Windows 11</h4>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
-                                                    <p className="text-xs font-bold text-gray-600">Device ini • Jakarta, Indonesia</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span className="text-xs font-black uppercase text-black bg-green-400 px-4 py-1.5 rounded-lg border-2 border-black shadow-sm transform group-hover:rotate-2 transition-transform">
-                                            Aktif
-                                        </span>
+                                    <div className="space-y-4">
+                                        {sessions.length === 0 ? (
+                                            <p className="text-gray-500 text-sm">Tidak ada sesi aktif lainnya.</p>
+                                        ) : (
+                                            sessions.map((session) => {
+                                                const parser = new UAParser(session.user_agent)
+                                                // Manually extraction for some robust fallbacks
+                                                const browser = parser.getBrowser()
+                                                const os = parser.getOS()
+                                                const device = parser.getDevice()
+
+                                                const deviceName = device.model
+                                                    ? `${device.vendor || ''} ${device.model}`
+                                                    : `${os.name || 'Unknown OS'} Device`
+
+                                                const browserName = `${browser.name || 'Unknown Browser'} ${browser.version || ''}`
+
+                                                return (
+                                                    <div key={session.id} className="bg-white border-2 border-black rounded-xl p-5 shadow-hard flex justify-between items-center group hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default relative overflow-hidden">
+                                                        {session.is_current && (
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500 border-r-2 border-black"></div>
+                                                        )}
+
+                                                        <div className={`flex items-center gap-5 ${session.is_current ? 'pl-4' : ''}`}>
+                                                            <div className="w-12 h-12 bg-pastel-blue border-2 border-black rounded-lg flex items-center justify-center shrink-0 shadow-sm relative group-hover:scale-105 transition-transform">
+                                                                <div className="absolute inset-0 bg-white/20 rounded-lg"></div>
+                                                                {device.type === 'mobile' ? (
+                                                                    <Phone className="w-6 h-6 text-black relative z-10" />
+                                                                ) : (
+                                                                    <Shield className="w-6 h-6 text-black relative z-10" />
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-display font-bold text-lg leading-tight">
+                                                                    {browser.name ? `${browser.name} on ${os.name}` : deviceName}
+                                                                </h4>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    {session.is_current ? (
+                                                                        <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
+                                                                    ) : (
+                                                                        <span className="w-2 h-2 bg-gray-400 rounded-full border border-black"></span>
+                                                                    )}
+                                                                    <p className="text-xs font-bold text-gray-600">
+                                                                        {session.is_current ? 'Device ini' : `Last active: ${new Date(session.last_sign_in_at).toLocaleDateString()}`} • {session.ip || 'Unknown IP'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {session.is_current ? (
+                                                            <span className="text-xs font-black uppercase text-black bg-green-400 px-4 py-1.5 rounded-lg border-2 border-black shadow-sm transform group-hover:rotate-2 transition-transform">
+                                                                Aktif
+                                                            </span>
+                                                        ) : (
+                                                            <div className="flex gap-2">
+                                                                {/* Future: Revoke button */}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -1,10 +1,12 @@
 "use client"
 
-import { Clock, ArrowRight, Trophy, Bolt, Users, Plus, Calendar } from "lucide-react"
+import { ArrowRight, Trophy, Users, Plus, Calendar } from "lucide-react"
 import { CommunityActivity } from "@/app/communities/actions"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { CreateActivityModal } from "./CreateActivityModal"
+import { ViewAllActivitiesModal } from "./ViewAllActivitiesModal"
+
 
 interface CommunityActivitiesProps {
     activities?: CommunityActivity[]
@@ -16,115 +18,155 @@ interface CommunityActivitiesProps {
 export function CommunityActivities({ activities = [], role, communityId, timeZone }: CommunityActivitiesProps) {
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isViewAllModalOpen, setIsViewAllModalOpen] = useState(false)
+    const [filter, setFilter] = useState<'ALL' | 'CASUAL' | 'RANKED' | 'SPARRING'>('ALL')
     const activityTimeZone = timeZone || 'Asia/Jakarta'
+    const canCreateActivity = role === 'admin' && Boolean(communityId)
 
-    const dateFormatter = useMemo(() => (
+    const shortDateFormatter = useMemo(() => (
         new Intl.DateTimeFormat('id-ID', {
-            weekday: 'short',
-            hour: '2-digit',
-            minute: '2-digit',
+            day: 'numeric',
+            month: 'short',
             timeZone: activityTimeZone
         })
     ), [activityTimeZone])
 
-    const dayFormatter = useMemo(() => (
-        new Intl.DateTimeFormat('en-CA', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            timeZone: activityTimeZone
-        })
-    ), [activityTimeZone])
-
-    // Helper to format date
-    const formatDate = (dateString: string) => {
-        return dateFormatter.format(new Date(dateString))
+    const formatShortDate = (dateString: string, startTime?: string | null) => {
+        const dateLabel = shortDateFormatter.format(new Date(dateString))
+        const timeLabel = startTime ? startTime.slice(0, 5) : ''
+        return timeLabel ? `${dateLabel} • ${timeLabel}` : dateLabel
     }
 
-    // Helper to check if date is today
-    const isToday = (dateString: string) => {
-        return dayFormatter.format(new Date(dateString)) === dayFormatter.format(new Date())
+    const getModeLabel = (mode: CommunityActivity["mode"]) => {
+        if (mode === 'RANKED') return 'Tournament'
+        if (mode === 'DRILLING') return 'Drilling'
+        return 'Main Bareng'
     }
+
+    const getModeBadgeClass = (mode: CommunityActivity["mode"]) => {
+        if (mode === 'RANKED') return 'bg-black text-white'
+        if (mode === 'DRILLING') return 'bg-pastel-lilac text-black'
+        return 'bg-pastel-mint text-black'
+    }
+
+    const filteredActivities = useMemo(() => {
+        if (filter === 'ALL') return activities
+        // @ts-ignore - SPARRING might not be in type yet
+        return activities.filter(a => filter === 'SPARRING' ? (a.mode === 'SPARRING' || (a.mode as any) === 'DRILLING') : a.mode === filter)
+    }, [activities, filter])
+
     return (
         <div className="flex flex-col">
             <div className="mb-4 flex items-end justify-between border-b-4 border-black dark:border-white pb-2">
                 <h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white">Activities</h2>
-                {activities.length > 0 && (
-                    <button className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-3 py-1 uppercase rounded-sm hover:bg-gray-800 transition-colors">
-                        View All
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    {activities.length > 0 && (
+                        <button
+                            onClick={() => setIsViewAllModalOpen(true)}
+                            className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-3 py-1 uppercase rounded-sm hover:bg-gray-800 transition-colors"
+                        >
+                            View All
+                        </button>
+                    )}
+                    {activities.length > 0 && canCreateActivity && (
+                        <button
+                            type="button"
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="bg-primary text-black text-xs font-bold px-3 py-1 uppercase rounded-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-1"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Buat Aktivitas
+                        </button>
+                    )}
+                </div>
             </div>
 
             {activities.length > 0 ? (
                 <>
                     {/* Filters - Horizontal Scroll */}
                     <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6 pb-2">
-                        <button className="bg-black dark:bg-white text-white dark:text-black border-2 border-black dark:border-white px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] active:translate-y-0.5 active:shadow-none transition-all">
+                        <button
+                            onClick={() => setFilter('ALL')}
+                            className={`${filter === 'ALL' ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]' : 'bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.5)]'} border-2 px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap active:translate-y-0.5 active:shadow-none transition-all`}
+                        >
                             All Events
                         </button>
-                        <button className="bg-white dark:bg-surface-dark text-black dark:text-white border-2 border-black dark:border-white px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.5)] active:translate-y-0.5 active:shadow-none transition-all">
+                        <button
+                            onClick={() => setFilter('CASUAL')}
+                            className={`${filter === 'CASUAL' ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]' : 'bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.5)]'} border-2 px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap active:translate-y-0.5 active:shadow-none transition-all`}
+                        >
                             Open Play
                         </button>
-                        <button className="bg-white dark:bg-surface-dark text-black dark:text-white border-2 border-black dark:border-white px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.5)] active:translate-y-0.5 active:shadow-none transition-all">
+                        <button
+                            onClick={() => setFilter('SPARRING')}
+                            className={`${filter === 'SPARRING' ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]' : 'bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.5)]'} border-2 px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap active:translate-y-0.5 active:shadow-none transition-all`}
+                        >
+                            Sparring
+                        </button>
+                        <button
+                            onClick={() => setFilter('RANKED')}
+                            className={`${filter === 'RANKED' ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]' : 'bg-white dark:bg-surface-dark text-black dark:text-white border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.5)]'} border-2 px-4 py-1.5 text-xs font-bold uppercase whitespace-nowrap active:translate-y-0.5 active:shadow-none transition-all`}
+                        >
                             Tournaments
                         </button>
                     </div>
 
-                    {/* Activities - Horizontal Scroll */}
-                    <div className="flex overflow-x-auto gap-4 no-scrollbar pb-8 -mx-5 px-5 md:grid md:grid-cols-2 lg:grid-cols-3 md:mx-0 md:px-0 md:overflow-visible">
-                        {activities.map((activity) => (
-                            <div key={activity.id} className={`min-w-[280px] border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(82,82,91,1)] rounded-xl overflow-hidden flex flex-col md:w-full ${activity.mode === 'RANKED' ? 'bg-primary' : 'bg-white dark:bg-surface-dark'}`}>
-                                <div className={`h-32 relative border-b-2 border-black ${activity.mode === 'RANKED' ? 'bg-yellow-200' : 'bg-gray-300'}`}>
-                                    {activity.mode === 'RANKED' ? (
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                                            <Trophy className="w-24 h-24 text-black" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                            <span className="text-gray-400 font-bold uppercase">Event Image</span>
-                                        </div>
-                                    )}
-
-                                    {isToday(activity.match_date) && (
-                                        <span className="absolute top-2 right-2 bg-secondary text-white text-[10px] font-bold px-2 py-1 uppercase border border-black shadow-sm">
-                                            Today
+                    {/* Activities - Match-style cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredActivities.map((activity) => (
+                            <div
+                                key={activity.id}
+                                className="bg-white dark:bg-surface-dark rounded-xl border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all overflow-hidden group flex flex-col h-full"
+                            >
+                                <div className="px-4 py-2.5 border-b-2 border-black dark:border-white bg-gray-50 dark:bg-zinc-800 flex justify-between items-center h-10">
+                                    <div className="flex gap-2 items-center">
+                                        <span className={`text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-wide ${getModeBadgeClass(activity.mode)}`}>
+                                            {getModeLabel(activity.mode)}
                                         </span>
-                                    )}
+                                        <span className="text-xs font-black px-2 py-0.5 rounded-md border border-black dark:border-white uppercase tracking-wide bg-white dark:bg-surface-dark text-black dark:text-white">
+                                            {activity.participant_count}/{activity.max_participants} PAX
+                                        </span>
+                                    </div>
                                     {activity.mode === 'RANKED' && (
-                                        <span className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold px-2 py-1 uppercase border border-white shadow-sm">
-                                            Tournament
-                                        </span>
+                                        <Trophy className="w-4 h-4 text-orange-500" />
                                     )}
                                 </div>
-                                <div className="p-4 flex flex-col gap-2">
-                                    <h3 className={`text-lg font-bold leading-tight ${activity.mode === 'RANKED' ? 'text-black' : 'dark:text-white'}`}>{activity.title}</h3>
-                                    <div className={`flex items-center gap-2 text-sm font-semibold ${activity.mode === 'RANKED' ? 'text-black/80' : 'text-gray-600 dark:text-gray-400'}`}>
-                                        <Clock className="w-4 h-4" />
-                                        {formatDate(activity.match_date)}
-                                    </div>
-                                    <div className={`border-t-2 border-dashed my-1 ${activity.mode === 'RANKED' ? 'border-black/20' : 'border-gray-300 dark:border-gray-600'}`}></div>
-                                    <div className="flex justify-between items-center mt-1">
-                                        <div className="flex -space-x-2 items-center">
-                                            {activity.users.map((user, idx) => (
-                                                <div key={idx} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold overflow-hidden ${activity.mode === 'RANKED' ? 'border-primary bg-white text-black' : 'border-white dark:border-surface-dark bg-gray-200'}`}>
-                                                    {user.avatar_url ? (
-                                                        <img src={user.avatar_url} alt={user.full_name || 'User'} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        user.full_name?.substring(0, 2).toUpperCase() || 'U'
-                                                    )}
-                                                </div>
-                                            ))}
-                                            {activity.participant_count > 3 && (
-                                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold ${activity.mode === 'RANKED' ? 'border-primary bg-black text-white' : 'border-white dark:border-surface-dark bg-black text-white'}`}>
-                                                    +{activity.participant_count - 3}
-                                                </div>
-                                            )}
+
+                                <div className="p-4 flex-1 flex flex-col gap-2 min-h-[90px]">
+                                    <h3 className="text-base font-black text-black dark:text-white leading-tight uppercase line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                                        {activity.title}
+                                    </h3>
+
+                                    <div className="mt-auto space-y-2">
+                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                            <Calendar className="w-4 h-4 shrink-0" />
+                                            <p className="text-xs font-bold leading-none">
+                                                {formatShortDate(activity.match_date, activity.start_time)}
+                                            </p>
                                         </div>
-                                        <Link href={`/matches/${activity.id}`} className={`w-8 h-8 border-2 border-black flex items-center justify-center rounded-md shadow-[2px_2px_0px_0px_#000000] active:translate-y-0.5 active:shadow-none transition-all ${activity.mode === 'RANKED' ? 'bg-white' : 'bg-secondary'}`}>
-                                            <ArrowRight className={`${activity.mode === 'RANKED' ? 'text-black' : 'text-white'} w-5 h-5`} />
-                                        </Link>
+                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                            <Users className="w-4 h-4 shrink-0" />
+                                            <p className="text-xs font-bold leading-none">
+                                                {activity.participant_count} peserta terdaftar
+                                            </p>
+                                        </div>
                                     </div>
+                                </div>
+
+                                <div className="px-4 py-2.5 border-t-2 border-black dark:border-white bg-white dark:bg-surface-dark flex justify-between items-center h-10">
+                                    <span className="text-base font-black text-black dark:text-white">
+                                        {activity.price_per_person && activity.price_per_person > 0
+                                            ? `IDR ${activity.price_per_person / 1000}k`
+                                            : 'Free'
+                                        }
+                                    </span>
+
+                                    <Link
+                                        href={`/matches/${activity.id}`}
+                                        className="px-3 py-1 bg-pastel-mint text-black font-black rounded-md border border-black hover:bg-green-400 transition-colors text-xs uppercase flex items-center gap-1.5 shadow-sm hover:translate-y-px hover:shadow-none"
+                                    >
+                                        Join <ArrowRight className="w-3.5 h-3.5" />
+                                    </Link>
                                 </div>
                             </div>
                         ))}
@@ -181,6 +223,14 @@ export function CommunityActivities({ activities = [], role, communityId, timeZo
                 onClose={() => setIsCreateModalOpen(false)}
                 communityId={communityId || ''}
             />
+
+            <ViewAllActivitiesModal
+                isOpen={isViewAllModalOpen}
+                onClose={() => setIsViewAllModalOpen(false)}
+                activities={activities}
+                timeZone={timeZone}
+            />
         </div>
+
     )
 }

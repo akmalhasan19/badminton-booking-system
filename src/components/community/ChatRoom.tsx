@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import useRealtimeSubscription from "../../hooks/useRealtimeSubscription"
-import { getCommunityMessages, markCommunityAsRead, type CommunityMessage } from "@/app/communities/[id]/chat/actions"
+import { getCommunityMessageById, getCommunityMessages, markCommunityAsRead, type CommunityMessage } from "@/app/communities/[id]/chat/actions"
 import { MessageList } from "@/components/community/MessageList"
 import { MessageInput } from "@/components/community/MessageInput"
 import { Loader2 } from "lucide-react"
@@ -92,53 +92,44 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
 
     // Stable callback for handling new messages
     const handleNewMessage = useCallback(async (newMessage: any) => {
-        console.log('📩 New message received:', newMessage)
+        console.log('?? New message received:', newMessage)
 
-        // Fetch full message data with user info
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-
-        const { data: userData } = await supabase
-            .from("users")
-            .select("id, full_name, avatar_url")
-            .eq("id", newMessage.user_id)
-            .single()
-
-        const fullMessage: CommunityMessage = {
-            id: newMessage.id,
-            community_id: newMessage.community_id,
-            user_id: newMessage.user_id,
-            content: newMessage.content,
-            image_url: newMessage.image_url,
-            created_at: newMessage.created_at,
-            updated_at: newMessage.updated_at,
-            deleted_at: newMessage.deleted_at,
-            user: userData || undefined,
-            reactions: [],
-            is_deleted: false
+        const result = await getCommunityMessageById(newMessage.id)
+        if (result.error || !result.data) {
+            console.error("Failed to hydrate new message:", result.error)
+            return
         }
 
-        console.log('✅ Adding message to state:', fullMessage)
+        const fullMessage = result.data
+
+        console.log('? Adding message to state:', fullMessage)
 
         setMessages(prev => {
             // Check if message already exists (prevent duplicates)
             if (prev.some(m => m.id === fullMessage.id)) {
-                console.log('⚠️ Message already exists, skipping')
+                console.log('?? Message already exists, skipping')
                 return prev
             }
-            console.log('➕ Message added to state')
+            console.log('? Message added to state')
             // valid to mark as read here since user is viewing the chat
-            markCommunityAsRead(newMessage.community_id)
+            markCommunityAsRead(fullMessage.community_id)
             return [fullMessage, ...prev]
         })
     }, [])
 
     // Stable callback for handling message updates
-    const handleUpdateMessage = useCallback((updatedMessage: any) => {
-        console.log('📝 Message updated:', updatedMessage)
+    const handleUpdateMessage = useCallback(async (updatedMessage: any) => {
+        console.log('?? Message updated:', updatedMessage)
+
+        const result = await getCommunityMessageById(updatedMessage.id)
+        if (result.error || !result.data) {
+            console.error("Failed to hydrate updated message:", result.error)
+            return
+        }
+
         setMessages(prev => prev.map(m =>
-            m.id === updatedMessage.id
-                ? { ...m, ...updatedMessage, is_deleted: !!updatedMessage.deleted_at }
+            m.id === result.data?.id
+                ? { ...m, ...result.data, is_deleted: !!result.data.deleted_at }
                 : m
         ))
     }, [])

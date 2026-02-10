@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { decryptChatContentSafe, encryptChatContent } from "@/lib/chat/crypto"
 
 export type CommunityMessage = {
     id: string
@@ -175,7 +176,7 @@ export async function getCommunityMessages(
             id: m.id,
             community_id: m.community_id,
             user_id: m.user_id,
-            content: m.content,
+            content: decryptChatContentSafe(m.content),
             image_url: m.image_url,
             created_at: m.created_at,
             updated_at: m.updated_at,
@@ -189,6 +190,86 @@ export async function getCommunityMessages(
     } catch (error) {
         console.error("Error fetching community messages:", error)
         return { error: "Failed to fetch messages" }
+    }
+}
+
+export async function getCommunityMessageById(messageId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Not authenticated" }
+    }
+
+    try {
+        const { data: message, error } = await supabase
+            .from("community_messages")
+            .select(`
+                id,
+                community_id,
+                user_id,
+                content,
+                image_url,
+                created_at,
+                updated_at,
+                deleted_at
+            `)
+            .eq("id", messageId)
+            .single()
+
+        if (error || !message) {
+            return { error: "Message not found" }
+        }
+
+        const { data: userData } = await supabase
+            .from("users")
+            .select("id, full_name, avatar_url")
+            .eq("id", message.user_id)
+            .single()
+
+        const { data: reactions } = await supabase
+            .from("message_reactions")
+            .select(`
+                id,
+                message_id,
+                user_id,
+                emoji
+            `)
+            .eq("message_id", messageId)
+
+        const reactionUserIds = [...new Set(reactions?.map(r => r.user_id) || [])]
+        const { data: reactionUsers } = await supabase
+            .from("users")
+            .select("id, full_name")
+            .in("id", reactionUserIds)
+
+        const reactionUsersMap = new Map(reactionUsers?.map(u => [u.id, u]) || [])
+        const formattedReactions: MessageReaction[] = (reactions || []).map(r => ({
+            id: r.id,
+            message_id: r.message_id,
+            user_id: r.user_id,
+            emoji: r.emoji,
+            user: reactionUsersMap.get(r.user_id)
+        }))
+
+        const formatted: CommunityMessage = {
+            id: message.id,
+            community_id: message.community_id,
+            user_id: message.user_id,
+            content: decryptChatContentSafe(message.content),
+            image_url: message.image_url,
+            created_at: message.created_at,
+            updated_at: message.updated_at,
+            deleted_at: message.deleted_at,
+            user: userData || undefined,
+            reactions: formattedReactions,
+            is_deleted: !!message.deleted_at
+        }
+
+        return { data: formatted }
+    } catch (error) {
+        console.error("Error fetching community message:", error)
+        return { error: "Failed to fetch message" }
     }
 }
 
@@ -221,12 +302,15 @@ export async function sendCommunityMessage(
             return { error: "Message content or image is required" }
         }
 
+        const trimmedContent = content.trim()
+        const encryptedContent = trimmedContent ? encryptChatContent(trimmedContent) : ""
+
         const { data, error } = await supabase
             .from("community_messages")
             .insert({
                 community_id: communityId,
                 user_id: user.id,
-                content: content.trim(),
+                content: encryptedContent,
                 image_url: imageUrl || null
             })
             .select()
@@ -235,7 +319,11 @@ export async function sendCommunityMessage(
         if (error) throw error
 
         revalidatePath(`/communities/${communityId}/chat`)
-        return { data }
+        return {
+            data: data
+                ? { ...data, content: decryptChatContentSafe(data.content) }
+                : data
+        }
     } catch (error) {
         console.error("Error sending message:", error)
         return { error: "Failed to send message" }
@@ -281,9 +369,12 @@ export async function editCommunityMessage(
             return { error: "You don't have permission to edit this message" }
         }
 
+        const trimmedContent = newContent.trim()
+        const encryptedContent = trimmedContent ? encryptChatContent(trimmedContent) : ""
+
         const { data, error } = await supabase
             .from("community_messages")
-            .update({ content: newContent.trim() })
+            .update({ content: encryptedContent })
             .eq("id", messageId)
             .select()
             .single()
@@ -291,7 +382,11 @@ export async function editCommunityMessage(
         if (error) throw error
 
         revalidatePath(`/communities/${communityId}/chat`)
-        return { data }
+        return {
+            data: data
+                ? { ...data, content: decryptChatContentSafe(data.content) }
+                : data
+        }
     } catch (error) {
         console.error("Error editing message:", error)
         return { error: "Failed to edit message" }
@@ -468,7 +563,10 @@ export async function getDMConversations(communityId: string) {
         const messagesMap = new Map<string, string>()
         messages?.forEach(m => {
             if (!messagesMap.has(m.conversation_id)) {
-                messagesMap.set(m.conversation_id, m.deleted_at ? "[deleted message]" : m.content)
+                messagesMap.set(
+                    m.conversation_id,
+                    m.deleted_at ? "[deleted message]" : decryptChatContentSafe(m.content)
+                )
             }
         })
 
@@ -539,7 +637,7 @@ export async function getDMMessages(
             id: m.id,
             conversation_id: m.conversation_id,
             sender_id: m.sender_id,
-            content: m.content,
+            content: decryptChatContentSafe(m.content),
             image_url: m.image_url,
             created_at: m.created_at,
             updated_at: m.updated_at,
@@ -605,12 +703,15 @@ export async function sendDMMessage(
         }
 
         // Send message
+        const trimmedContent = content.trim()
+        const encryptedContent = trimmedContent ? encryptChatContent(trimmedContent) : ""
+
         const { data, error } = await supabase
             .from("dm_messages")
             .insert({
                 conversation_id: conversation.id,
                 sender_id: user.id,
-                content: content.trim(),
+                content: encryptedContent,
                 image_url: imageUrl || null
             })
             .select()
@@ -619,10 +720,65 @@ export async function sendDMMessage(
         if (error) throw error
 
         revalidatePath(`/communities/${communityId}/chat`)
-        return { data, conversationId: conversation.id }
+        return {
+            data: data ? { ...data, content: decryptChatContentSafe(data.content) } : data,
+            conversationId: conversation.id
+        }
     } catch (error) {
         console.error("Error sending DM:", error)
         return { error: "Failed to send message" }
+    }
+}
+
+export async function getDMMessageById(messageId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Not authenticated" }
+    }
+
+    try {
+        const { data: message, error } = await supabase
+            .from("dm_messages")
+            .select(`
+                id,
+                conversation_id,
+                sender_id,
+                content,
+                image_url,
+                created_at,
+                updated_at,
+                deleted_at,
+                users:sender_id (
+                    full_name,
+                    avatar_url
+                )
+            `)
+            .eq("id", messageId)
+            .single()
+
+        if (error || !message) {
+            return { error: "Message not found" }
+        }
+
+        const formatted: DMMessage = {
+            id: message.id,
+            conversation_id: message.conversation_id,
+            sender_id: message.sender_id,
+            content: decryptChatContentSafe(message.content),
+            image_url: message.image_url,
+            created_at: message.created_at,
+            updated_at: message.updated_at,
+            deleted_at: message.deleted_at,
+            sender: Array.isArray(message.users) ? message.users[0] : message.users,
+            is_deleted: !!message.deleted_at
+        }
+
+        return { data: formatted }
+    } catch (error) {
+        console.error("Error fetching DM message:", error)
+        return { error: "Failed to fetch message" }
     }
 }
 
@@ -650,16 +806,21 @@ export async function editDMMessage(
             return { error: "You can only edit your own messages" }
         }
 
+        const trimmedContent = newContent.trim()
+        const encryptedContent = trimmedContent ? encryptChatContent(trimmedContent) : ""
+
         const { data, error } = await supabase
             .from("dm_messages")
-            .update({ content: newContent.trim() })
+            .update({ content: encryptedContent })
             .eq("id", messageId)
             .select()
             .single()
 
         if (error) throw error
 
-        return { data }
+        return {
+            data: data ? { ...data, content: decryptChatContentSafe(data.content) } : data
+        }
     } catch (error) {
         console.error("Error editing DM:", error)
         return { error: "Failed to edit message" }
