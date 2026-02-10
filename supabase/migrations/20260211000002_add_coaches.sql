@@ -1,19 +1,7 @@
--- ============================================
--- Lane 5: Coach Discovery and Booking Backend
--- ============================================
--- Tables:
---   1. coaches - Coach profiles and metadata
---   2. coach_availability_slots - Available time slots for coaching sessions
---   3. coach_bookings - Booking records for coaching sessions
-
--- ============================================
--- Table: coaches
--- ============================================
 CREATE TABLE IF NOT EXISTS public.coaches (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
   
-  -- Profile Information
   name TEXT NOT NULL,
   bio TEXT,
   avatar_url TEXT,
