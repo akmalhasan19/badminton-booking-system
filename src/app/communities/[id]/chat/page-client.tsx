@@ -21,7 +21,7 @@ export default function ChatPageClient({
     const router = useRouter()
 
     return (
-        <main className="bg-white text-[#171717] flex justify-center min-h-screen min-h-[100dvh] h-[100dvh] overflow-hidden">
+        <main className="fixed inset-0 bg-white text-[#171717] flex justify-center overflow-hidden">
             <div className="w-full max-w-[393px] bg-white relative flex flex-col h-full min-h-0 overflow-hidden border-x border-[#171717] mx-auto">
                 {/* Header */}
                 <header className="bg-white border-b border-[#171717] p-4 flex items-center justify-between sticky top-0 z-20 shrink-0">
