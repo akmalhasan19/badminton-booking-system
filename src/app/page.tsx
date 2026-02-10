@@ -12,6 +12,7 @@ import { ShopSection } from "@/components/ShopSection"
 import { MatchSection } from "@/components/MatchSection"
 import { Footer } from "@/components/Footer"
 import { AICoach } from "@/components/AICoach"
+import { Preloader } from "@/components/Preloader"
 import { Tab } from "@/types"
 
 function HomeContent() {
@@ -49,6 +50,12 @@ function HomeContent() {
     window.scrollTo(0, 0);
   }, [activeTab]);
 
+  const [isLoading, setIsLoading] = useState(true)
+
+  const handlePreloaderComplete = () => {
+    setIsLoading(false)
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case Tab.BOOK:
@@ -71,24 +78,34 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-pastel-acid selection:text-black">
-      <Navbar activeTab={activeTab} setActiveTab={handleSetActiveTab} />
+      <AnimatePresence mode="wait">
+        {isLoading && (
+          <Preloader key="preloader" onComplete={handlePreloaderComplete} />
+        )}
+      </AnimatePresence>
 
-      <div className="min-h-screen">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            {renderContent()}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      {!isLoading && (
+        <>
+          <Navbar activeTab={activeTab} setActiveTab={handleSetActiveTab} />
 
-      <Footer />
-      <AICoach />
+          <div className="min-h-screen">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <Footer />
+          <AICoach />
+        </>
+      )}
     </main>
   )
 }
