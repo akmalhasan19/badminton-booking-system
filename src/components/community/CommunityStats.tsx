@@ -327,7 +327,7 @@ export function CommunityStats({
                         <Trophy className="w-6 h-6 stroke-[3px]" />
                     </div>
                     <div className="flex items-end gap-2 mt-1">
-                        <span className="text-5xl font-black tracking-tighter leading-none">{rating}</span>
+                        <span className="text-[2.75rem] font-black tracking-tighter leading-none">{rating}</span>
                         <div className="flex pb-2 gap-0.5">
                             {[...Array(4)].map((_, i) => (
                                 <Star key={i} className="w-4 h-4 fill-black text-black" />
