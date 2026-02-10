@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.coaches (
   avatar_url TEXT,
   
   -- Professional Details
-  specialization TEXT[] DEFAULT '{}', -- e.g., ['Singles', 'Doubles', 'Beginner Training']
+  specialization TEXT[] DEFAULT '{}',
   level TEXT NOT NULL CHECK (level IN ('beginner', 'intermediate', 'advanced', 'professional')),
   experience_years INTEGER DEFAULT 0,
   certifications TEXT[] DEFAULT '{}',
