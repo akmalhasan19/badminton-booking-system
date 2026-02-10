@@ -152,7 +152,7 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
     }
 
     return (
-        <div className="flex flex-col flex-1 bg-[#FDF8F6] bg-[linear-gradient(to_right,#78350f20_1px,transparent_1px),linear-gradient(to_bottom,#78350f20_1px,transparent_1px)] bg-[size:24px_24px] overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 bg-[#FDF8F6] bg-[linear-gradient(to_right,#78350f20_1px,transparent_1px),linear-gradient(to_bottom,#78350f20_1px,transparent_1px)] bg-[size:24px_24px] overflow-hidden">
             {/* Messages */}
             <MessageList
                 messages={messages}
@@ -171,6 +171,7 @@ export function ChatRoom({ communityId, currentUserId, isAdmin }: ChatRoomProps)
                 value={messageInput}
                 onChange={setMessageInput}
                 replyingTo={replyingTo}
+                currentUserId={currentUserId}
                 onCancelReply={() => setReplyingTo(null)}
                 onMessageSent={() => {
                     // Messages will be loaded via realtime

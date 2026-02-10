@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo, useLayoutEffect } from "react"
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 import { Loader2 } from "lucide-react"
@@ -31,9 +31,12 @@ export function MessageList({
     const scrollRef = useRef<HTMLDivElement>(null)
     const messageEndRef = useRef<HTMLDivElement>(null)
     const lastNewestMessageIdRef = useRef<string | null>(null)
+    const didInitialScrollRef = useRef(false)
+    const didRevealRef = useRef(false)
+    const [isRevealed, setIsRevealed] = useState(false)
 
-    const scrollToBottom = useCallback(() => {
-        messageEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+        messageEndRef.current?.scrollIntoView({ behavior })
     }, [])
 
     const handleScroll = useCallback(() => {
@@ -50,10 +53,19 @@ export function MessageList({
         }
     }, [hasMore, onLoadMore])
 
-    // Scroll to bottom on initial load
+    // Scroll to bottom on initial load without visible jump
+    useLayoutEffect(() => {
+        if (!isLoading && messages.length > 0 && !didInitialScrollRef.current) {
+            didInitialScrollRef.current = true
+            scrollToBottom("auto")
+        }
+    }, [isLoading, messages.length, scrollToBottom])
+
+    // Smoothly reveal messages after initial load completes
     useEffect(() => {
-        if (!isLoading && messages.length > 0) {
-            scrollToBottom()
+        if (!isLoading && !didRevealRef.current) {
+            didRevealRef.current = true
+            requestAnimationFrame(() => setIsRevealed(true))
         }
     }, [isLoading])
 
@@ -99,7 +111,7 @@ export function MessageList({
     return (
         <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col"
+            className={`flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col transition-opacity duration-300 ${isRevealed ? "opacity-100" : "opacity-0"}`}
             style={{ contentVisibility: "auto" }}
         >
             {/* Load more indicator */}

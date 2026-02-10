@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 import { Loader2, Edit2, Trash2, Info } from "lucide-react"
@@ -9,6 +9,7 @@ import { useLongPress } from "@/hooks/useLongPress"
 import { MobileMessageMenu } from "@/components/community/MobileMessageMenu"
 import { toast } from "sonner"
 import { MessageInfoModal } from "./MessageInfoModal"
+import { createClient } from "@/lib/supabase/client"
 
 interface MessageItemProps {
     message: CommunityMessage
@@ -32,9 +33,56 @@ export function MessageItem({
     const [isHovered, setIsHovered] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
+    const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null)
 
     const isOwnMessage = currentUserId === message.user_id
     const infoSenderName = isOwnMessage ? "You" : (message.user?.full_name || "Unknown")
+
+    const getAttachmentType = (value?: string | null) => {
+        if (!value) return "unknown"
+        const raw = value.split("?")[0]
+        const lower = raw.toLowerCase()
+        if (lower.endsWith(".pdf")) return "pdf"
+        if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lower)) return "image"
+        return "other"
+    }
+
+    useEffect(() => {
+        let isActive = true
+
+        const loadAttachmentUrl = async () => {
+            if (!message.image_url) {
+                if (isActive) setAttachmentUrl(null)
+                return
+            }
+
+            if (message.image_url.startsWith("http")) {
+                if (isActive) setAttachmentUrl(message.image_url)
+                return
+            }
+
+            const supabase = createClient()
+            const { data, error } = await supabase.storage
+                .from("community_chat_attachments")
+                .createSignedUrl(message.image_url, 60 * 60)
+
+            if (!isActive) return
+
+            if (error) {
+                console.error("Failed to sign attachment URL:", error)
+                setAttachmentUrl(null)
+                return
+            }
+
+            setAttachmentUrl(data?.signedUrl ?? null)
+        }
+
+        loadAttachmentUrl()
+
+        return () => {
+            isActive = false
+        }
+    }, [message.image_url])
 
     const handleEditMessage = async () => {
         if (!editContent.trim()) {
@@ -69,6 +117,47 @@ export function MessageItem({
 
     // Merge onMouseLeave
     const { onMouseLeave: onLongPressLeave, ...otherLongPressHandlers } = longPressHandlers
+
+    const renderAttachment = () => {
+        if (!attachmentUrl) return null
+        const type = getAttachmentType(message.image_url || attachmentUrl)
+
+        if (type === "pdf") {
+            return (
+                <a
+                    href={attachmentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#171717] bg-white px-3 py-2 text-xs font-bold text-[#171717] hover:bg-gray-50"
+                >
+                    <span className="material-icons-round text-base">picture_as_pdf</span>
+                    Buka PDF
+                </a>
+            )
+        }
+
+        if (type === "image") {
+            return (
+                <img
+                    src={attachmentUrl}
+                    alt="Message attachment"
+                    className="mt-3 max-w-full rounded border border-[#171717]"
+                />
+            )
+        }
+
+        return (
+            <a
+                href={attachmentUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#171717] bg-white px-3 py-2 text-xs font-bold text-[#171717] hover:bg-gray-50"
+            >
+                <span className="material-icons-round text-base">attach_file</span>
+                Buka File
+            </a>
+        )
+    }
 
     // Helper to render message content with quotes
     const renderMessageContent = (content: string, isOwn: boolean) => {
@@ -216,7 +305,10 @@ export function MessageItem({
                                         </div>
                                     </div>
                                 ) : (
-                                    renderMessageContent(message.content, true)
+                                    <>
+                                        {renderMessageContent(message.content, true)}
+                                        {renderAttachment()}
+                                    </>
                                 )}
                             </div>
                             <div className="flex items-center gap-1 justify-end">
@@ -261,13 +353,7 @@ export function MessageItem({
                                 <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#FDE047] border-r border-[#171717]"></div>
                                 <div className="pl-3">
                                     {renderMessageContent(message.content, false)}
-                                    {message.image_url && (
-                                        <img
-                                            src={message.image_url}
-                                            alt="Message attachment"
-                                            className="mt-3 max-w-full rounded border border-[#171717]"
-                                        />
-                                    )}
+                                    {renderAttachment()}
                                 </div>
                             </div>
                             <span className="text-[10px] font-bold text-[#171717] ml-1 mt-0.5 flex items-center gap-1">
