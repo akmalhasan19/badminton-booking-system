@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { createBookingEventNotification } from '@/lib/notifications/service'
 
 // Schema for booking payload (snake_case)
 const bookingSchema = z.object({
@@ -108,6 +109,17 @@ export async function POST(request: Request) {
             console.error('Booking insert error:', insertError)
             return NextResponse.json({ error: 'Failed to create booking. Slot might be unavailable.' }, { status: 409 })
         }
+
+        await createBookingEventNotification({
+            type: 'payment_reminder',
+            booking: {
+                id: booking.id,
+                user_id: booking.user_id,
+                booking_date: booking.booking_date,
+                start_time: booking.start_time
+            },
+            supabase
+        })
 
         return NextResponse.json({
             data: {

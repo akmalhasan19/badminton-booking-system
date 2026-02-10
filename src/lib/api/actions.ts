@@ -255,6 +255,19 @@ export async function createBooking(data: {
         if (dbError) {
             console.error('Failed to save booking to local DB:', dbError)
             // We don't block the user but we log it.
+        } else {
+            await createBookingEventNotification({
+                type: 'payment_reminder',
+                booking: {
+                    id: bookingId,
+                    user_id: user.id,
+                    booking_date: data.bookingDate,
+                    start_time: data.startTime,
+                    venue_name: data.venueName || venueDetails?.name || null,
+                    court_name: data.courtName || selectedCourt?.name || null
+                },
+                supabase
+            })
         }
 
         if (apiResult.success) {

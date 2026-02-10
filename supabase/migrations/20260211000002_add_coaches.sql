@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS public.coaches (
   bio TEXT,
   avatar_url TEXT,
   
-  -- Professional Details
   specialization TEXT[] DEFAULT '{}',
   level TEXT NOT NULL CHECK (level IN ('beginner', 'intermediate', 'advanced', 'professional')),
   experience_years INTEGER DEFAULT 0,
@@ -26,39 +25,28 @@ CREATE TABLE IF NOT EXISTS public.coaches (
   total_sessions INTEGER DEFAULT 0,
   total_reviews INTEGER DEFAULT 0,
   
-  -- Metadata
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- ============================================
--- Table: coach_availability_slots
--- ============================================
 CREATE TABLE IF NOT EXISTS public.coach_availability_slots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   coach_id UUID NOT NULL REFERENCES public.coaches(id) ON DELETE CASCADE,
   
-  -- Time Slot
   day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sunday, 6=Saturday
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   
-  -- Slot Details
   is_available BOOLEAN DEFAULT true NOT NULL,
-  max_bookings_per_slot INTEGER DEFAULT 1, -- For group sessions
+  max_bookings_per_slot INTEGER DEFAULT 1,
   
-  -- Metadata
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   
-  -- Constraints
   CONSTRAINT valid_time_range CHECK (end_time > start_time),
   CONSTRAINT unique_coach_slot UNIQUE (coach_id, day_of_week, start_time)
 );
 
--- ============================================
--- Table: coach_bookings
--- ============================================
 CREATE TABLE IF NOT EXISTS public.coach_bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   
