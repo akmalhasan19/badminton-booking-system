@@ -52,8 +52,17 @@ function HomeContent() {
 
   const [isLoading, setIsLoading] = useState(true)
 
+  useEffect(() => {
+    // Check if user has already seen the preloader in this session
+    const hasSeenPreloader = sessionStorage.getItem("has_seen_preloader")
+    if (hasSeenPreloader) {
+      setIsLoading(false)
+    }
+  }, [])
+
   const handlePreloaderComplete = () => {
     setIsLoading(false)
+    sessionStorage.setItem("has_seen_preloader", "true")
   }
 
   const renderContent = () => {
