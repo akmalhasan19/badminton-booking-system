@@ -89,15 +89,15 @@ export function CoachSection() {
                             />
                         </div>
 
-                        <div className="flex w-full items-center gap-4 md:w-auto">
+                        <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_3rem] items-center gap-3 md:w-auto md:grid-cols-[12rem_3rem] md:gap-4">
                             {/* Date Picker (Mock) */}
-                            <div className="flex-1 md:flex-none md:w-48 relative">
+                            <div className="relative min-w-0">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-black rounded-lg flex items-center justify-center pointer-events-none">
                                     <Calendar className="w-4 h-4 text-black" />
                                 </div>
                                 <input
                                     type="date"
-                                    className="w-full h-12 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl focus:translate-x-1 focus:translate-y-1 focus:shadow-none shadow-hard transition-all outline-none"
+                                    className="w-full min-w-0 h-12 pl-16 pr-4 font-bold text-sm bg-white border-2 border-black rounded-xl focus:translate-x-1 focus:translate-y-1 focus:shadow-none shadow-hard transition-all outline-none"
                                 />
                             </div>
 
