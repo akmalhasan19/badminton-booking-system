@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache'
  */
 export async function getChallengeModeStatus(): Promise<{ enabled: boolean }> {
     const enabled = await getSetting('challenge_mode_enabled', false)
-    return { enabled: enabled === true || enabled === 'true' }
+    return { enabled }
 }
 
 /**
@@ -46,7 +46,7 @@ export async function toggleChallengeMode(): Promise<{
 
     // Toggle it
     const newValue = !enabled
-    const result = await updateSetting('challenge_mode_enabled', newValue)
+    const result = await updateSetting('challenge_mode_enabled', String(newValue))
 
     if (!result.success) {
         return { success: false, error: 'Failed to update challenge mode setting' }
@@ -85,7 +85,7 @@ export async function setChallengeModeStatus(enabled: boolean): Promise<{
         return { success: false, error: 'Unauthorized: Admin access required' }
     }
 
-    const result = await updateSetting('challenge_mode_enabled', enabled)
+    const result = await updateSetting('challenge_mode_enabled', String(enabled))
 
     if (!result.success) {
         return { success: false, error: 'Failed to update challenge mode setting' }

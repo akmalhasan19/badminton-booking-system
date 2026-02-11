@@ -9,7 +9,6 @@ Tambahkan ke environment runtime backend:
 ```env
 XENDIT_SECRET_KEY=...
 XENDIT_WEBHOOK_TOKEN=...
-XENDIT_CALLBACK_TOKEN=... # legacy fallback (opsional)
 XENDIT_BASE_URL=https://api.xendit.co
 XENDIT_API_VERSION=2024-11-11
 XENDIT_DEFAULT_CHANNEL_CODE=QRIS

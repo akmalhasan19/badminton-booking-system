@@ -123,7 +123,7 @@ export async function createBooking(data: {
 
     const serviceFeeUser = await getSetting('service_fee_user', 3000)
 
-    const serviceFeeUser = await getSetting('service_fee_user', 3000)
+
     const applicationFeePartner = await getSetting('application_fee_partner', 2000)
 
     const netVenuePrice = originalPrice - applicationFeePartner
