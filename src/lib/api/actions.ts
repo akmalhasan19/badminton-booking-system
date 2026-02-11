@@ -4,10 +4,11 @@ import { getCourts } from './courts'
 import { revalidatePath } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 import { getCurrentUser } from '@/lib/auth/actions'
-import { createInvoice } from '@/lib/xendit/client'
 import { getSetting } from '@/lib/api/settings'
 import { createClient } from '@/lib/supabase/server'
 import { createBookingEventNotification } from '@/lib/notifications/service'
+import { createPaymentRequestForOrder, getOrderPaymentStatus } from '@/lib/payments/service'
+import { validateBookingTime } from '@/lib/date-utils'
 
 
 
@@ -78,16 +79,11 @@ export async function createBooking(data: {
     venueName?: string
     courtName?: string
 }) {
-    // Get current user for booking details
     const user = await getCurrentUser()
 
-    // Enforce authentication
     if (!user) {
         return { success: false, error: 'Unauthorized: Harap login terlebih dahulu untuk melakukan booking.' }
     }
-
-    const customerName = user.name
-    const customerPhone = user.phone || ""
 
     const smashBooking = {
         venue_id: data.courtId,
@@ -95,11 +91,10 @@ export async function createBooking(data: {
         booking_date: data.bookingDate,
         start_time: data.startTime,
         duration: data.durationHours,
-        customer_name: customerName,
-        phone: customerPhone
+        customer_name: user.name,
+        phone: user.phone || ''
     }
 
-    // Call Smash API
     const apiResult = await smashApi.createBooking(smashBooking)
 
     if (apiResult.error || !apiResult.data?.id) {
@@ -107,69 +102,40 @@ export async function createBooking(data: {
     }
 
     const bookingId = apiResult.data.id
-
-    // 2. Calculate Price for Payment
-    // We need to fetch venue details again to get the accurate price
-    // Optimization: We could pass price from frontend but that is insecure.
     const venueDetails = await smashApi.getVenueDetails(data.courtId)
-    const selectedCourt = venueDetails?.courts.find(c => c.id === data.courtUuid)
+    const selectedCourt = venueDetails?.courts.find((court) => court.id === data.courtUuid)
     const hourlyRate = selectedCourt?.hourly_rate || 50000
     const originalPrice = hourlyRate * data.durationHours
 
-    // FEE CALCULATION
-    // Strategy: Hybrid (Service Fee for User + Application Fee for Partner)
+    // VALIDATION: Prevent Past Bookings (Timezone Aware)
+    // We need venue timezone. Ideally it should be in venueDetails.
+    // Since it's not yet in the interface, we default to Asia/Jakarta or fetch it if available.
+    // Assuming venueDetails might have it in future or we use a default for specific regions.
+    // For now, let's assume default 'Asia/Jakarta' if not found.
+    // TODO: Add timezone to SmashVenue interface if needed.
+    const venueTimezone = (venueDetails as any)?.timezone || 'Asia/Jakarta';
+
+    const timeValidation = validateBookingTime(data.bookingDate, data.startTime, venueTimezone);
+
+    if (!timeValidation.isValid) {
+        return { success: false, error: timeValidation.error || 'Invalid booking time' };
+    }
+
+    const serviceFeeUser = await getSetting('service_fee_user', 3000)
+
     const serviceFeeUser = await getSetting('service_fee_user', 3000)
     const applicationFeePartner = await getSetting('application_fee_partner', 2000)
 
-    // Venue receives: Original - Application Fee
-    // This is what we disburse to the partner (Sync to Partner App)
     const netVenuePrice = originalPrice - applicationFeePartner
-
-    // Buyer pays: Original + Service Fee
-    // This is the total amount on the invoice
     const totalUserBill = originalPrice + serviceFeeUser
 
-    // Legacy logic cleanup: We no longer add 'xenditFee' separately to user bill, 
-    // it's now covered by the serviceFeeUser spread.
+    const useXenditV3 = process.env.FEATURE_XENDIT_V3_PAYMENTS !== 'false'
+    const defaultChannelCode = process.env.XENDIT_DEFAULT_CHANNEL_CODE || 'QRIS'
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://smash-web.vercel.app'
-
-    // 3. Create Xendit Invoice (Platform Account Only)
-    // We charge the User the totalUserBill
     try {
-        console.log('[CreateBooking] Preparing to create Xendit Invoice...')
-        console.log('[CreateBooking] Price Logic (Hybrid Strategy):', {
-            originalPrice,
-            serviceFeeUser,
-            applicationFeePartner,
-            netVenuePrice,
-            totalUserBill,
-            spread: serviceFeeUser + applicationFeePartner
-        })
-
-        const invoice = await createInvoice({
-            externalId: bookingId,
-            amount: totalUserBill,
-            payerEmail: user.email,
-            description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
-            successRedirectUrl: `${appUrl}/bookings?payment=success&booking_id=${bookingId}`,
-            failureRedirectUrl: `${appUrl}/?status=failed`,
-        })
-
-        console.log('[CreateBooking] Invoice created in Platform Account:', invoice.id)
-        console.log('[CreateBooking] Full Invoice Response:', JSON.stringify(invoice, null, 2))
-
-        if (!invoice.invoice_url) {
-            console.error('[CreateBooking] ⚠️ WARNING: Invoice URL is MISSING in Xendit response!', invoice)
-        } else {
-            console.log('[CreateBooking] Invoice URL:', invoice.invoice_url)
-        }
-
-        // 4. Save to Local Database (Dual Write)
         const { createServiceClient } = await import('@/lib/supabase/server')
         const supabase = createServiceClient()
 
-        // 4a. Sync Court to Local DB if not exists (for FK constraint)
         const { data: existingCourt } = await supabase
             .from('courts')
             .select('id')
@@ -177,20 +143,19 @@ export async function createBooking(data: {
             .single()
 
         if (!existingCourt) {
-            // Court not in local DB, sync from PWA API data
-            const courtDetails = venueDetails?.courts.find(c => c.id === data.courtUuid)
+            const courtDetails = venueDetails?.courts.find((court) => court.id === data.courtUuid)
             const { error: courtInsertError } = await supabase.from('courts').insert({
                 id: data.courtUuid,
                 name: courtDetails?.name || 'Court',
                 description: `${venueDetails?.name || 'Venue'} - Synced from PWA`,
                 is_active: true
             })
+
             if (courtInsertError) {
                 console.error('Failed to sync court to local DB:', courtInsertError)
             }
         }
 
-        // 4b. Insert or Update Booking (Handle Duplicates)
         const { data: existingBooking } = await supabase
             .from('bookings')
             .select('id, user_id, status')
@@ -199,75 +164,96 @@ export async function createBooking(data: {
             .eq('start_time', data.startTime)
             .single()
 
-        if (existingBooking) {
-            // Case 1: Slot taken by same user (Pending/Failed) -> UPDATE it
-            if (existingBooking.user_id === user.id && existingBooking.status === 'pending') {
-                console.log(`[CreateBooking] Updating existing pending booking ${existingBooking.id} with new invoice`)
-                await supabase
-                    .from('bookings')
-                    .update({
-                        id: bookingId, // Update ID to match new invoice ID (if we want to sync them) OR keep old ID and just update invoice ref
-                        // Actually, for Xendit callback to work, the External ID must match the Booking ID in DB.
-                        // Since we already created Invoice with `bookingId` (from Smash API), we should probably delete the old local pending booking 
-                        // and insert the new one to keep IDs consistent with Smash API.
-                        // OR better: Just update the existing record's ID to the new Smash API ID? (ID might be PK, so risky).
-
-                        // SAFER APPROACH: Delete the old local pending booking, then Insert the new one.
-                    })
-                    .eq('id', existingBooking.id)
-
-                // Let's go with DELETE then INSERT to ensure clean state and correct ID (from Smash API)
-                await supabase.from('bookings').delete().eq('id', existingBooking.id)
-            } else {
-                // Case 2: Slot taken by other user or already confirmed -> ERROR
-                // But wait, Smash API allowed it? That means local DB is out of sync.
-                console.warn(`[CreateBooking] Slot collision! Local DB has booking ${existingBooking.id} but Smash API allowed new one.`)
-                // If local status is pending and old (e.g. > 15 mins), we could force overwrite.
-                // For now, let's just delete the stale local pending booking if it exists to allow the new one.
-                if (existingBooking.status === 'pending') {
-                    await supabase.from('bookings').delete().eq('id', existingBooking.id)
-                }
-            }
+        if (existingBooking && existingBooking.status === 'pending') {
+            await supabase.from('bookings').delete().eq('id', existingBooking.id)
         }
 
-        // Now safe to Insert
-        const { error: dbError } = await supabase.from('bookings').insert({
+        const { error: bookingInsertError } = await supabase.from('bookings').insert({
             id: bookingId,
             user_id: user.id,
             court_id: data.courtUuid,
             booking_date: data.bookingDate,
             start_time: data.startTime,
             end_time: data.endTime,
-            total_price: totalUserBill, // This is what user pays
+            total_price: totalUserBill,
             status: 'pending',
             duration_hours: data.durationHours,
-            venue_id: data.courtId, // Save Venue ID for Partner Sync
-            venue_name: data.venueName || venueDetails?.name || 'Unknown Venue', // Snapshot Venue Name
-            court_name: data.courtName || selectedCourt?.name || 'Unknown Court', // Snapshot Court Name
-            payment_url: invoice.invoice_url, // Save Xendit payment URL for direct redirect
-            // Fee Breakdown columns
+            venue_id: data.courtId,
+            venue_name: data.venueName || venueDetails?.name || 'Unknown Venue',
+            court_name: data.courtName || selectedCourt?.name || 'Unknown Court',
+            payment_url: null,
+            payment_method: defaultChannelCode,
+            payment_state: 'PENDING_USER_ACTION',
             application_fee: applicationFeePartner,
-            xendit_fee: 0, // No longer tracked separately, subsumed in service fee spread
-            service_fee: serviceFeeUser, // New column might be needed if we want to track it explicitly, or just store in total_price
+            xendit_fee: 0,
+            service_fee: serviceFeeUser,
             net_venue_price: netVenuePrice
         })
 
-        if (dbError) {
-            console.error('Failed to save booking to local DB:', dbError)
-            // We don't block the user but we log it.
+        if (bookingInsertError) {
+            console.error('Failed to save booking to local DB:', bookingInsertError)
+            return {
+                success: true,
+                data: apiResult.data,
+                warning: `Booking dibuat di partner API, tapi gagal sinkron ke local DB: ${bookingInsertError.message}`
+            }
+        }
+
+        await createBookingEventNotification({
+            type: 'payment_reminder',
+            booking: {
+                id: bookingId,
+                user_id: user.id,
+                booking_date: data.bookingDate,
+                start_time: data.startTime,
+                venue_name: data.venueName || venueDetails?.name || null,
+                court_name: data.courtName || selectedCourt?.name || null
+            },
+            supabase
+        })
+
+        let paymentWarning: string | undefined
+        let paymentUrl: string | undefined
+        let payment:
+            | {
+                paymentRequestId: string
+                referenceId: string
+                status: string
+                actions: Array<{ type: string; descriptor: string | null; value: string }>
+                expiresAt: string | null
+            }
+            | undefined
+
+        if (useXenditV3) {
+            try {
+                const initiatedPayment = await createPaymentRequestForOrder({
+                    orderId: bookingId,
+                    amount: totalUserBill,
+                    channelCode: defaultChannelCode,
+                    description: `Booking ${venueDetails?.name || 'Court'} - ${selectedCourt?.name || 'Badminton'}`,
+                    metadata: {
+                        customer_email: user.email
+                    }
+                })
+
+                payment = {
+                    paymentRequestId: initiatedPayment.paymentRequestId,
+                    referenceId: initiatedPayment.referenceId,
+                    status: initiatedPayment.status,
+                    actions: initiatedPayment.actions,
+                    expiresAt: initiatedPayment.expiresAt
+                }
+
+                const redirectAction = initiatedPayment.actions.find((action) => action.type === 'REDIRECT_CUSTOMER')
+                if (redirectAction?.value) {
+                    paymentUrl = redirectAction.value
+                }
+            } catch (paymentError) {
+                const errorMessage = paymentError instanceof Error ? paymentError.message : 'Unknown error'
+                paymentWarning = `Payment request gagal dibuat: ${errorMessage}. Booking tetap tersimpan sebagai pending.`
+            }
         } else {
-            await createBookingEventNotification({
-                type: 'payment_reminder',
-                booking: {
-                    id: bookingId,
-                    user_id: user.id,
-                    booking_date: data.bookingDate,
-                    start_time: data.startTime,
-                    venue_name: data.venueName || venueDetails?.name || null,
-                    court_name: data.courtName || selectedCourt?.name || null
-                },
-                supabase
-            })
+            paymentWarning = 'Feature flag Xendit v3 nonaktif. Payment request belum dibuat.'
         }
 
         if (apiResult.success) {
@@ -277,14 +263,13 @@ export async function createBooking(data: {
         return {
             success: true,
             data: apiResult.data,
-            paymentUrl: invoice.invoice_url
+            paymentUrl,
+            payment,
+            warning: paymentWarning
         }
-
     } catch (error: unknown) {
-        console.error('Failed to create payment invoice:', error)
-        // Return success but with warning/no payment URL
-        // User will see booking in "Pending" state in their history
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Failed to create payment request:', error)
         return {
             success: true,
             data: apiResult.data,
@@ -297,100 +282,31 @@ export async function confirmBookingPayment(bookingId: string) {
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
-    // 1. Get current booking to retrieve Venue ID -> Partner ID
     try {
-        const { createServiceClient } = await import('@/lib/supabase/server')
-        const supabase = createServiceClient()
+        const paymentStatus = await getOrderPaymentStatus(bookingId, { syncFromProvider: true })
 
-        const { data: booking, error: bookingError } = await supabase
-            .from('bookings')
-            .select('venue_id, status, user_id, venue_name, court_name, booking_date, start_time')
-            .eq('id', bookingId)
-            .single()
+        revalidatePath('/bookings/history')
 
-        if (bookingError || !booking) {
-            console.error('[ManualCheck] Booking not found locally:', bookingError)
-            return { success: false, error: 'Booking not found' }
+        if (paymentStatus.orderStatus === 'confirmed') {
+            return { success: true, status: 'confirmed', payment: paymentStatus }
         }
 
-        // If already confirmed, return early
-        if (booking.status === 'confirmed') {
-            return { success: true, status: 'confirmed' }
-        }
-
-        // 2. Fetch invoice from Xendit (Platform Account)
-        // Note: Removed partner account lookup as all invoices are in platform account
-        const { getInvoicesByExternalId } = await import('@/lib/xendit/client')
-        const invoices = await getInvoicesByExternalId(bookingId)
-
-        // Take the latest invoice
-        const invoice = invoices && invoices.length > 0 ? invoices[0] : null
-
-        // 3. Check Invoice Status
-        if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
-            console.log('[ManualCheck] Invoice PAID!')
-
-            // Revenue = Full court price (no fee deduction)
-            const paidAmount = invoice.amount
-            console.log(`[ManualCheck] Syncing to Partner - Amount: ${paidAmount}`)
-
-            await updateBookingStatus(bookingId, 'confirmed', paidAmount)
-
-            // Force update local DB
-            await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
-            await createBookingEventNotification({
-                type: 'booking_confirmed',
-                booking: {
-                    id: bookingId,
-                    user_id: booking.user_id,
-                    booking_date: booking.booking_date,
-                    start_time: booking.start_time,
-                    venue_name: booking.venue_name,
-                    court_name: booking.court_name
-                },
-                supabase
-            })
-
-            revalidatePath('/bookings/history')
-            return { success: true, status: 'confirmed' }
-
-        } else if (invoice && invoice.status === 'EXPIRED') {
-            console.log('[ManualCheck] Invoice EXPIRED')
-            await updateBookingStatus(bookingId, 'cancelled')
-            await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
-            await createBookingEventNotification({
-                type: 'booking_cancelled',
-                booking: {
-                    id: bookingId,
-                    user_id: booking.user_id,
-                    booking_date: booking.booking_date,
-                    start_time: booking.start_time,
-                    venue_name: booking.venue_name,
-                    court_name: booking.court_name
-                },
-                supabase
-            })
-
-            revalidatePath('/bookings/history')
-            return { success: true, status: 'cancelled' }
+        if (paymentStatus.orderStatus === 'cancelled') {
+            return { success: true, status: 'cancelled', payment: paymentStatus }
         }
 
         return {
             success: false,
-            status: invoice?.status || 'pending'
+            status: paymentStatus.providerStatus || paymentStatus.paymentStatus || 'pending',
+            payment: paymentStatus
         }
-
     } catch (e: unknown) {
-        console.error("Manual payment check failed", e)
-        // If 404, it might mean we looked in the wrong account or ID is wrong
+        console.error('Manual payment check failed', e)
         const message = e instanceof Error ? e.message : 'Check failed'
         return { success: false, error: message }
     }
 }
 
-/**
- * Server action to update booking status (payment confirmation)
- */
 export async function updateBookingStatus(bookingId: string, status: string, paidAmount?: number) {
     return await smashApi.updateBookingStatus(bookingId, status, paidAmount)
 }
@@ -615,3 +531,4 @@ export async function updateNotificationPreferences(
     revalidatePath('/settings/notifications')
     return { success: true, preferences: nextPreferences }
 }
+

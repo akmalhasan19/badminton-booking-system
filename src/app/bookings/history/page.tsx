@@ -205,14 +205,25 @@ export default function BookingHistoryPage() {
                             </div>
                         ) : filteredBookings.length > 0 ? (
                             <div className="grid gap-3">
-                                {filteredBookings.map((booking, index) => (
-                                    <motion.div
-                                        key={booking.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="bg-white border-2 border-black rounded-xl p-3 md:p-5 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg relative overflow-hidden"
-                                    >
+                                {filteredBookings.map((booking, index) => {
+                                    const paymentActions = Array.isArray(booking?.payment?.actions) ? booking.payment.actions : []
+                                    const redirectAction = paymentActions.find(
+                                        (action: any) => action?.type === 'REDIRECT_CUSTOMER' && typeof action?.value === 'string'
+                                    )
+                                    const presentActions = paymentActions.filter(
+                                        (action: any) => action?.type === 'PRESENT_TO_CUSTOMER' && typeof action?.value === 'string'
+                                    )
+                                    const paymentLink =
+                                        redirectAction?.value || booking.payment_url || `/bookings/history?payment=success&booking_id=${booking.id}`
+
+                                    return (
+                                        <motion.div
+                                            key={booking.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="bg-white border-2 border-black rounded-xl p-3 md:p-5 shadow-hard transition-transform hover:-translate-y-1 hover:shadow-hard-lg relative overflow-hidden"
+                                        >
                                         {/* Status Badge */}
                                         <div className={`absolute top-0 right-0 text-[9px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 border-l-2 border-b-2 border-black rounded-bl-xl ${booking.status === 'completed' || booking.status === 'confirmed'
                                             ? 'bg-green-300'
@@ -255,12 +266,21 @@ export default function BookingHistoryPage() {
                                                     </button>
                                                 ) : booking.status === 'pending' ? (
                                                     <div className="flex gap-2">
-                                                        <a
-                                                            href={booking.payment_url || `/bookings/history?payment=success&booking_id=${booking.id}`}
-                                                            className="px-3 py-1.5 bg-black text-white border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:bg-gray-800 transition-all"
-                                                        >
-                                                            Bayar Sekarang
-                                                        </a>
+                                                        {paymentLink ? (
+                                                            <a
+                                                                href={paymentLink}
+                                                                className="px-3 py-1.5 bg-black text-white border-2 border-black rounded-lg text-[10px] md:text-xs font-bold shadow-hard-sm hover:bg-gray-800 transition-all"
+                                                            >
+                                                                Bayar Sekarang
+                                                            </a>
+                                                        ) : (
+                                                            <button
+                                                                disabled
+                                                                className="px-3 py-1.5 bg-gray-200 text-gray-500 border-2 border-gray-300 rounded-lg text-[10px] md:text-xs font-bold"
+                                                            >
+                                                                Menunggu Aksi
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={async () => {
                                                                 try {
@@ -305,9 +325,21 @@ export default function BookingHistoryPage() {
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {booking.status === 'pending' && presentActions.length > 0 && (
+                                                <div className="mt-2 rounded-lg bg-gray-50 border border-gray-200 p-2 space-y-1">
+                                                    {presentActions.slice(0, 2).map((action: any, actionIndex: number) => (
+                                                        <div key={`${booking.id}-${actionIndex}`} className="text-[10px] md:text-xs text-gray-700">
+                                                            <span className="font-semibold">{action.descriptor || 'Instruksi'}:</span>{' '}
+                                                            <span className="font-mono">{action.value}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-16 md:py-20 bg-white border-2 border-dashed border-gray-300 rounded-xl">

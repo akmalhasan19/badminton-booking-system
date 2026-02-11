@@ -2,9 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth/actions'
-import { revalidatePath } from 'next/cache' // Added import
-import { smashApi } from '@/lib/smash-api' // Added import for updateBookingStatus
-import { createBookingEventNotification } from '@/lib/notifications/service'
+import { revalidatePath } from 'next/cache'
+import { getOrderPaymentStatus } from '@/lib/payments/service'
 
 export interface Booking {
     id: string
@@ -25,6 +24,25 @@ type BookingWithCourtRelation = {
     total_price: number
     status: Booking['status']
     payment_url?: string | null
+    payment_state?: string | null
+    payments?:
+    | {
+        status?: string | null
+        provider_status?: string | null
+        actions_json?: unknown
+        expires_at?: string | null
+        payment_request_id?: string | null
+        reference_id?: string | null
+    }[]
+    | {
+        status?: string | null
+        provider_status?: string | null
+        actions_json?: unknown
+        expires_at?: string | null
+        payment_request_id?: string | null
+        reference_id?: string | null
+    }
+    | null
     courts?: { name?: string | null }[] | { name?: string | null } | null
 }
 
@@ -33,6 +51,12 @@ const resolveCourtName = (courts: BookingWithCourtRelation['courts']) => {
         return courts[0]?.name || 'Unknown Court'
     }
     return courts?.name || 'Unknown Court'
+}
+
+const resolvePayment = (payment: BookingWithCourtRelation['payments']) => {
+    if (!payment) return null
+    if (Array.isArray(payment)) return payment[0] || null
+    return payment
 }
 
 export async function getUserActiveBookings() {
@@ -110,6 +134,15 @@ export async function getUserBookingHistory() {
             total_price,
             status,
             payment_url,
+            payment_state,
+            payments (
+                status,
+                provider_status,
+                actions_json,
+                expires_at,
+                payment_request_id,
+                reference_id
+            ),
             courts (
                 name
             )
@@ -129,143 +162,63 @@ export async function getUserBookingHistory() {
     }
 
     // Transform data
-    const bookings = (data as BookingWithCourtRelation[]).map((booking) => ({
-        id: booking.id,
-        court_name: resolveCourtName(booking.courts),
-        date: booking.booking_date,
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        price: booking.total_price,
-        status: booking.status,
-        payment_url: booking.payment_url,
-    }))
+    const bookings = (data as BookingWithCourtRelation[]).map((booking) => {
+        const payment = resolvePayment(booking.payments)
+
+        return {
+            id: booking.id,
+            court_name: resolveCourtName(booking.courts),
+            date: booking.booking_date,
+            start_time: booking.start_time,
+            end_time: booking.end_time,
+            price: booking.total_price,
+            status: booking.status,
+            payment_url: booking.payment_url,
+            payment_state: booking.payment_state,
+            payment: payment
+                ? {
+                    status: payment.status || booking.payment_state || null,
+                    provider_status: payment.provider_status || null,
+                    actions: Array.isArray(payment.actions_json) ? payment.actions_json : [],
+                    expires_at: payment.expires_at || null,
+                    payment_request_id: payment.payment_request_id || null,
+                    reference_id: payment.reference_id || null,
+                }
+                : null,
+        }
+    })
 
     return { data: bookings }
 }
 
-// Re-implement updateBookingStatus as it is used in confirmBookingPayment
-export async function updateBookingStatus(bookingId: string, status: string, paidAmount?: number) {
-    return await smashApi.updateBookingStatus(bookingId, status, paidAmount)
-}
-
 export async function confirmBookingPayment(bookingId: string) {
-    console.log(`[ManualCheck] Starting check for booking: ${bookingId}`)
     const user = await getCurrentUser()
 
     if (!user) {
-        console.error('[ManualCheck] Unauthorized')
         return { success: false, error: 'Unauthorized' }
     }
 
-    // 1. Get current booking to get bookingId
-    // In a real app we might store external_id = booking_id
-
-    // 2. Fetch invoice from Xendit using the booking ID (which we set as external_id)
     try {
-        console.log(`[ManualCheck] Fetching Xendit invoice for external_id: ${bookingId}`)
+        const paymentStatus = await getOrderPaymentStatus(bookingId, { syncFromProvider: true })
 
-        // Use Xendit List Invoices API to find it by external_id
-        const authString = Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64');
-        const response = await fetch(`https://api.xendit.co/v2/invoices?external_id=${bookingId}`, {
-            headers: {
-                'Authorization': `Basic ${authString}`
-            },
-            cache: 'no-store'
-        });
+        revalidatePath('/bookings/history')
 
-        console.log(`[ManualCheck] Xendit Response Status: ${response.status}`)
-
-        if (!response.ok) {
-            console.error('[ManualCheck] Xendit fetch failed')
-            return { success: false, error: 'Failed to fetch invoice' }
+        if (paymentStatus.orderStatus === 'confirmed') {
+            return { success: true, status: 'confirmed', payment: paymentStatus }
         }
 
-        const data = await response.json()
-        console.log(`[ManualCheck] Invoices found: ${data.length}`)
-
-        const invoice = data[0] // Get the latest one
-
-        if (invoice) {
-            console.log(`[ManualCheck] Invoice status: ${invoice.status}`)
-        } else {
-            console.log('[ManualCheck] No invoice found for this ID')
+        if (paymentStatus.orderStatus === 'cancelled') {
+            return { success: true, status: 'cancelled', payment: paymentStatus }
         }
 
-        if (invoice && (invoice.status === 'PAID' || invoice.status === 'SETTLED')) {
-            console.log('[ManualCheck] Invoice is PAID. Updating booking...')
-
-            // OPTIMIZATION (async-defer-await): Parallelize independent updates
-            // Both updateBookingStatus (SmashAPI) and local DB update can happen simultaneously
-            const { createServiceClient } = await import('@/lib/supabase/server')
-            const supabase = createServiceClient()
-
-            const [, localUpdateResult] = await Promise.all([
-                updateBookingStatus(bookingId, 'confirmed', invoice.amount),
-                supabase
-                    .from('bookings')
-                    .update({ status: 'confirmed' })
-                    .eq('id', bookingId)
-                    .select('id, user_id, booking_date, start_time, venue_name, court_name')
-                    .single()
-            ]);
-
-            if (!localUpdateResult.error && localUpdateResult.data) {
-                await createBookingEventNotification({
-                    type: 'booking_confirmed',
-                    booking: {
-                        id: localUpdateResult.data.id,
-                        user_id: localUpdateResult.data.user_id,
-                        booking_date: localUpdateResult.data.booking_date,
-                        start_time: localUpdateResult.data.start_time,
-                        venue_name: localUpdateResult.data.venue_name,
-                        court_name: localUpdateResult.data.court_name
-                    },
-                    supabase
-                })
-            }
-
-            revalidatePath('/bookings/history')
-            return { success: true, status: 'confirmed' }
-        } else if (invoice && invoice.status === 'EXPIRED') {
-            console.log('[ManualCheck] Invoice is EXPIRED. Cancelling...')
-
-            // OPTIMIZATION (async-defer-await): Parallelize independent updates
-            const { createServiceClient } = await import('@/lib/supabase/server')
-            const supabase = createServiceClient()
-
-            const [, localUpdateResult] = await Promise.all([
-                updateBookingStatus(bookingId, 'cancelled'),
-                supabase
-                    .from('bookings')
-                    .update({ status: 'cancelled' })
-                    .eq('id', bookingId)
-                    .select('id, user_id, booking_date, start_time, venue_name, court_name')
-                    .single()
-            ]);
-
-            if (!localUpdateResult.error && localUpdateResult.data) {
-                await createBookingEventNotification({
-                    type: 'booking_cancelled',
-                    booking: {
-                        id: localUpdateResult.data.id,
-                        user_id: localUpdateResult.data.user_id,
-                        booking_date: localUpdateResult.data.booking_date,
-                        start_time: localUpdateResult.data.start_time,
-                        venue_name: localUpdateResult.data.venue_name,
-                        court_name: localUpdateResult.data.court_name
-                    },
-                    supabase
-                })
-            }
-
-            revalidatePath('/bookings/history')
-            return { success: true, status: 'cancelled' }
+        return {
+            success: false,
+            status: paymentStatus.providerStatus || paymentStatus.paymentStatus || 'pending',
+            payment: paymentStatus,
         }
-
-        return { success: false, status: invoice?.status || 'pending' }
 
     } catch (e) {
-        console.error("Manual payment check failed", e)
+        console.error('Manual payment check failed', e)
         return { success: false, error: 'Check failed' }
     }
 }

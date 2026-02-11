@@ -532,10 +532,8 @@ export function BookingSection() {
             return
         }
 
-        // Calculate duration and price
+        // Calculate duration
         const durationHours = selectedTimes.length;
-        const pricePerHour = selectedHall.pricePerHour || 50;
-        const totalPrice = durationHours * pricePerHour;
 
         // Calculate end time
         const startHour = parseInt(selectedTimes[0].split(':')[0]);
@@ -575,9 +573,29 @@ export function BookingSection() {
             return;
         }
 
-        if (result.paymentUrl) {
+        const paymentActions = Array.isArray(result.payment?.actions) ? result.payment.actions : [];
+        const redirectAction = paymentActions.find(
+            (action: any) => action?.type === 'REDIRECT_CUSTOMER' && typeof action?.value === 'string'
+        );
+
+        const paymentRedirectUrl = redirectAction?.value || result.paymentUrl;
+        if (paymentRedirectUrl) {
             setBookingStatus('redirecting' as any); // Type cast if needed or update state type
-            window.location.href = result.paymentUrl;
+            window.location.href = paymentRedirectUrl;
+            return;
+        }
+
+        const presentActions = paymentActions.filter(
+            (action: any) => action?.type === 'PRESENT_TO_CUSTOMER' && typeof action?.value === 'string'
+        );
+        if (presentActions.length > 0) {
+            const instructions = presentActions
+                .slice(0, 2)
+                .map((action: any) => `${action.descriptor || 'Instruksi'}: ${action.value}`)
+                .join('\n');
+            alert(`Booking berhasil dibuat.\nGunakan instruksi pembayaran berikut:\n${instructions}`);
+            setBookingStatus('idle');
+            router.push('/bookings/history');
             return;
         }
 
