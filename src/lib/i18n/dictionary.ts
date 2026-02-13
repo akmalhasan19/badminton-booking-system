@@ -16,7 +16,7 @@ export type Dictionary = {
     settings: string;
     help_center: string;
     smash_member: string;
-
+    communities: string;
     // Partner Register Page
     become_partners: string;
     grow_business: string;
@@ -147,7 +147,7 @@ export const dictionaries: Record<Language, Dictionary> = {
         settings: "Settings",
         help_center: "Help Center",
         smash_member: "Smash Member",
-
+        communities: "Communities",
         become_partners: "BECOME A PARTNER",
         grow_business: "Grow Your Sports Venue\nBusiness with Smash.",
         join_network: "Join our network of premium badminton courts. Manage bookings efficiently and reach more players.",
@@ -267,6 +267,7 @@ export const dictionaries: Record<Language, Dictionary> = {
         shop: "BELANJA",
         join_us: "Gabung Mitra",
         login: "Masuk",
+        communities: "Komunitas",
         logout: "Keluar",
         my_bookings: "Booking Saya",
         edit_profile: "Ubah Profil",
@@ -396,6 +397,7 @@ export const dictionaries: Record<Language, Dictionary> = {
         join_us: "Ndherek Gabung",
         login: "Mlebet",
         logout: "Medal",
+        communities: "Kelompok",
         my_bookings: "Pesesan Kulo",
         edit_profile: "Gantos Profil",
         payment_methods: "Metode Pembayaran",
@@ -403,7 +405,6 @@ export const dictionaries: Record<Language, Dictionary> = {
         settings: "Pengaturan",
         help_center: "Pusat Bantuan",
         smash_member: "Warga Smash",
-
         become_partners: "DADOS MITRA KAMI",
         grow_business: "Ngembangaken Usaha Lapangan\nOlahraga Panjenengan kaliyan Smash.",
         join_network: "Ndherek gabung kaliyan jaringan lapangan badminton premium kami. Atur pesenan kanthi gampil lan nggayuh langkung kathah pemain.",

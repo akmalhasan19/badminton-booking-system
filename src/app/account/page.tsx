@@ -32,7 +32,6 @@ export default function AccountPage() {
                     skill_review_count: currentUser.skill_review_count
                 })
             } else {
-                // Redirect to home if not logged in
                 router.push('/')
             }
             setIsLoading(false)
@@ -55,8 +54,8 @@ export default function AccountPage() {
             hoverColor: "hover:bg-pastel-mint/50"
         },
         {
-            icon: Users, // Using Users icon
-            label: "Komunitas", // Hardcoded per user request for now or t.communities if available
+            icon: Users,
+            label: t.communities || "Communities",
             path: "/communities",
             bgColor: "bg-pastel-blue/30",
             hoverColor: "hover:bg-pastel-blue/50"

@@ -92,10 +92,6 @@ export async function signOut() {
     return { success: true }
 }
 
-/**
- * Get current authenticated user with profile data  
- * OPTIMIZATION (server-cache-react): Wrapped with React.cache() for per-request deduplication
- */
 export const getCurrentUser = cache(async () => {
     const supabase = await createClient()
 
@@ -107,7 +103,6 @@ export const getCurrentUser = cache(async () => {
         return null
     }
 
-    // Get user profile and skill score in parallel
     const [profileResult, skillResult] = await Promise.all([
         supabase
             .from('users')

@@ -1,10 +1,11 @@
-
 const XENDIT_SECRET_KEY = process.env.XENDIT_SECRET_KEY;
 const XENDIT_API_URL = 'https://api.xendit.co';
 
+// ini diubah agar menggunakan sistem logging yang benar
 if (!XENDIT_SECRET_KEY) {
     console.warn('XENDIT_SECRET_KEY is not set');
 }
+
 
 type CreateInvoiceParams = {
     externalId: string;
@@ -94,10 +95,6 @@ export async function getInvoice(id: string): Promise<InvoiceResponse> {
     return response.json();
 }
 
-/**
- * Fetch invoices by External ID (Our Booking ID)
- * Needed because we don't store Xendit's Invoice ID in our DB
- */
 export async function getInvoicesByExternalId(externalId: string): Promise<InvoiceResponse[]> {
     const authString = Buffer.from(XENDIT_SECRET_KEY + ':').toString('base64');
 
@@ -106,7 +103,6 @@ export async function getInvoicesByExternalId(externalId: string): Promise<Invoi
         'Authorization': `Basic ${authString}`,
     };
 
-    // Pass external_id as query param
     const response = await fetch(`${XENDIT_API_URL}/v2/invoices?external_id=${externalId}`, {
         method: 'GET',
         headers: headers,

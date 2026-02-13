@@ -1,10 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-/**
- * Create a Supabase client for Server Components (read-only)
- * Use this in Server Components, Server Actions, and Route Handlers
- */
 export async function createClient() {
     const cookieStore = await cookies()
 
@@ -22,9 +18,6 @@ export async function createClient() {
                             cookieStore.set(name, value, options)
                         })
                     } catch {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
                     }
                 },
             },
@@ -32,11 +25,6 @@ export async function createClient() {
     )
 }
 
-/**
- * Create a Supabase admin client with service role key
- * WARNING: Only use this in server-side code, never expose to client
- * This bypasses Row Level Security policies
- */
 export function createServiceClient() {
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
