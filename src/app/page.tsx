@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
+import dynamic from "next/dynamic"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Navbar } from "@/components/Navbar"
@@ -8,12 +9,18 @@ import { Hero } from "@/components/Hero"
 import { Marquee } from "@/components/Marquee"
 import { BentoGrid } from "@/components/BentoGrid"
 import { BookingSection } from "@/components/BookingSection"
-import { ShopSection } from "@/components/ShopSection"
-import { MatchSection } from "@/components/MatchSection"
 import { Footer } from "@/components/Footer"
 import { AICoach } from "@/components/AICoach"
 import { Preloader } from "@/components/Preloader"
 import { Tab } from "@/types"
+import { ENABLE_MATCH_SHOP } from "@/lib/feature-flags"
+
+const MatchSection = dynamic(
+  () => import("@/components/MatchSection").then((mod) => mod.MatchSection)
+)
+const ShopSection = dynamic(
+  () => import("@/components/ShopSection").then((mod) => mod.ShopSection)
+)
 
 function HomeContent() {
   const router = useRouter()
@@ -24,25 +31,34 @@ function HomeContent() {
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam === 'book' && activeTab !== Tab.BOOK) setActiveTabState(Tab.BOOK)
-    else if (tabParam === 'match' && activeTab !== Tab.MATCH) setActiveTabState(Tab.MATCH)
-    else if (tabParam === 'shop' && activeTab !== Tab.SHOP) setActiveTabState(Tab.SHOP)
+    else if (ENABLE_MATCH_SHOP && tabParam === 'match' && activeTab !== Tab.MATCH) setActiveTabState(Tab.MATCH)
+    else if (ENABLE_MATCH_SHOP && tabParam === 'shop' && activeTab !== Tab.SHOP) setActiveTabState(Tab.SHOP)
+    else if (!ENABLE_MATCH_SHOP && (tabParam === 'match' || tabParam === 'shop')) {
+      if (activeTab !== Tab.HOME) setActiveTabState(Tab.HOME)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('tab')
+      const nextPath = params.toString() ? `/?${params.toString()}` : "/"
+      router.replace(nextPath, { scroll: false })
+    }
     else if (!tabParam && activeTab !== Tab.HOME) setActiveTabState(Tab.HOME)
-  }, [searchParams, activeTab])
+  }, [searchParams, activeTab, router])
 
   const handleSetActiveTab = (tab: Tab) => {
-    setActiveTabState(tab)
+    const nextTab = !ENABLE_MATCH_SHOP && (tab === Tab.MATCH || tab === Tab.SHOP) ? Tab.HOME : tab
+    setActiveTabState(nextTab)
 
     // Update URL without full reload
     const params = new URLSearchParams(searchParams.toString())
-    if (tab === Tab.HOME) params.delete('tab')
-    else if (tab === Tab.BOOK) params.set('tab', 'book')
-    else if (tab === Tab.MATCH) params.set('tab', 'match')
-    else if (tab === Tab.SHOP) params.set('tab', 'shop')
+    if (nextTab === Tab.HOME) params.delete('tab')
+    else if (nextTab === Tab.BOOK) params.set('tab', 'book')
+    else if (ENABLE_MATCH_SHOP && nextTab === Tab.MATCH) params.set('tab', 'match')
+    else if (ENABLE_MATCH_SHOP && nextTab === Tab.SHOP) params.set('tab', 'shop')
 
     // Clean up other params if switching main tabs, except when going deeper
-    if (tab !== Tab.BOOK) params.delete('venueId')
+    if (nextTab !== Tab.BOOK) params.delete('venueId')
 
-    router.push(`/?${params.toString()}`, { scroll: false })
+    const nextPath = params.toString() ? `/?${params.toString()}` : "/"
+    router.push(nextPath, { scroll: false })
   }
 
   // Scroll to top when tab changes
@@ -67,23 +83,25 @@ function HomeContent() {
     sessionStorage.setItem("has_seen_preloader", "true")
   }
 
+  const renderHomeContent = () => (
+    <div className="flex flex-col w-full">
+      <Hero setActiveTab={handleSetActiveTab} />
+      <Marquee />
+      <BentoGrid setActiveTab={handleSetActiveTab} />
+    </div>
+  )
+
   const renderContent = () => {
     switch (activeTab) {
       case Tab.BOOK:
         return <BookingSection />
       case Tab.MATCH:
-        return <MatchSection />
+        return ENABLE_MATCH_SHOP ? <MatchSection /> : renderHomeContent()
       case Tab.SHOP:
-        return <ShopSection />
+        return ENABLE_MATCH_SHOP ? <ShopSection /> : renderHomeContent()
       case Tab.HOME:
       default:
-        return (
-          <div className="flex flex-col w-full">
-            <Hero setActiveTab={handleSetActiveTab} />
-            <Marquee />
-            <BentoGrid setActiveTab={handleSetActiveTab} />
-          </div>
-        )
+        return renderHomeContent()
     }
   }
 

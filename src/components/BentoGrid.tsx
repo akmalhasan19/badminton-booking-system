@@ -2,6 +2,7 @@
 
 import { Calendar, ShoppingBag, Sparkles } from "lucide-react"
 import { Tab } from "@/types"
+import { ENABLE_MATCH_SHOP } from "@/lib/feature-flags"
 
 interface BentoGridProps {
     setActiveTab: (tab: Tab) => void;
@@ -86,7 +87,16 @@ export function BentoGrid({ setActiveTab }: BentoGridProps) {
                                 <div key={i} className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-200 border-2 border-white"></div>
                             ))}
                         </div>
-                        <span className="font-bold text-xs md:text-sm underline cursor-pointer" onClick={() => setActiveTab(Tab.SHOP)}>Browse</span>
+                        {ENABLE_MATCH_SHOP ? (
+                            <button
+                                onClick={() => setActiveTab(Tab.SHOP)}
+                                className="font-bold text-xs md:text-sm underline cursor-pointer"
+                            >
+                                Browse
+                            </button>
+                        ) : (
+                            <span className="font-bold text-xs md:text-sm text-gray-600">Soon</span>
+                        )}
                     </div>
                 </div>
 

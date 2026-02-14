@@ -35,6 +35,7 @@ const itemVariants = {
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { AuthModal } from "@/components/AuthModal"
+import { ENABLE_MATCH_SHOP } from "@/lib/feature-flags"
 
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const { t } = useLanguage()
@@ -63,17 +64,22 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     const menuItems = [
         { tab: Tab.HOME, label: t.home, path: "/", color: "pastel-acid" },
         { tab: Tab.BOOK, label: t.book, path: "/?tab=book", color: "pastel-mint" },
-        { tab: Tab.MATCH, label: t.match, path: "/?tab=match", color: "pastel-lilac" },
-        { tab: Tab.SHOP, label: t.shop, path: "/?tab=shop", color: "pastel-pink" },
+        ...(ENABLE_MATCH_SHOP
+            ? [
+                { tab: Tab.MATCH, label: t.match, path: "/?tab=match", color: "pastel-lilac" },
+                { tab: Tab.SHOP, label: t.shop, path: "/?tab=shop", color: "pastel-pink" },
+            ]
+            : []),
     ]
 
     // Determine current active tab
     const currentTab = activeTab || (() => {
         if (pathname === "/" && searchParams.get('tab') === 'book') return Tab.BOOK
-        if (pathname === "/" && searchParams.get('tab') === 'match') return Tab.MATCH
+        if (ENABLE_MATCH_SHOP && pathname === "/" && searchParams.get('tab') === 'match') return Tab.MATCH
+        if (ENABLE_MATCH_SHOP && pathname === "/" && searchParams.get('tab') === 'shop') return Tab.SHOP
         if (pathname === "/") return Tab.HOME
         if (pathname.startsWith("/booking")) return Tab.BOOK
-        if (pathname.startsWith("/shop")) return Tab.SHOP
+        if (ENABLE_MATCH_SHOP && pathname.startsWith("/shop")) return Tab.SHOP
         return Tab.HOME
     })()
 
