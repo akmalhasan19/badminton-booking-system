@@ -7,3 +7,8 @@ export const ENABLE_MATCH_SHOP = parseBooleanEnv(
     process.env.NEXT_PUBLIC_ENABLE_MATCH_SHOP,
     false
 )
+
+export const ENABLE_SMASHY_AI = parseBooleanEnv(
+    process.env.NEXT_PUBLIC_ENABLE_SMASHY_AI,
+    false
+)

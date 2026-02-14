@@ -2,7 +2,7 @@
 
 import { Calendar, ShoppingBag, Sparkles } from "lucide-react"
 import { Tab } from "@/types"
-import { ENABLE_MATCH_SHOP } from "@/lib/feature-flags"
+import { ENABLE_MATCH_SHOP, ENABLE_SMASHY_AI } from "@/lib/feature-flags"
 
 interface BentoGridProps {
     setActiveTab: (tab: Tab) => void;
@@ -59,18 +59,26 @@ export function BentoGrid({ setActiveTab }: BentoGridProps) {
                     <img src="https://images.unsplash.com/photo-1521537634581-0dced2fee2ef?q=80&w=2070&auto=format&fit=crop" className="absolute right-0 bottom-0 w-[55%] h-[40%] sm:w-2/3 sm:h-2/3 object-cover rounded-tl-[3rem] border-t-2 border-l-2 border-black grayscale group-hover:grayscale-0 transition-all duration-500" alt="Court" />
                 </div>
 
-                {/* Card 2: AI Coach */}
+                {/* Card 2: Feature Spotlight */}
                 <div className="bg-pastel-lilac rounded-3xl border-2 border-black shadow-hard p-6 flex flex-col justify-between hover:-translate-y-1 transition-transform">
                     <div>
                         <div className="flex justify-between items-start mb-4">
                             <div className="bg-white w-8 h-8 md:w-10 md:h-10 rounded-lg border-2 border-black flex items-center justify-center shadow-hard-sm">
                                 <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-black" />
                             </div>
-                            <span className="bg-black text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded">BETA</span>
+                            <span className="bg-black text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded">
+                                {ENABLE_SMASHY_AI ? "BETA" : "SOON"}
+                            </span>
                         </div>
-                        <h3 className="text-xl md:text-2xl font-display font-bold">Meet Smashy</h3>
+                        <h3 className="text-xl md:text-2xl font-display font-bold">
+                            {ENABLE_SMASHY_AI ? "Meet Smashy" : "Training Insights"}
+                        </h3>
                     </div>
-                    <p className="font-medium text-xs md:text-sm">Your cheeky AI concierge for gear tips & trash talk.</p>
+                    <p className="font-medium text-xs md:text-sm">
+                        {ENABLE_SMASHY_AI
+                            ? "Your cheeky AI concierge for gear tips & trash talk."
+                            : "Smart play recommendations will be available in a future release."}
+                    </p>
                 </div>
 
                 {/* Card 3: Community/Shop */}

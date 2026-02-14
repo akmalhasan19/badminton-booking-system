@@ -10,16 +10,19 @@ import { Marquee } from "@/components/Marquee"
 import { BentoGrid } from "@/components/BentoGrid"
 import { BookingSection } from "@/components/BookingSection"
 import { Footer } from "@/components/Footer"
-import { AICoach } from "@/components/AICoach"
 import { Preloader } from "@/components/Preloader"
 import { Tab } from "@/types"
-import { ENABLE_MATCH_SHOP } from "@/lib/feature-flags"
+import { ENABLE_MATCH_SHOP, ENABLE_SMASHY_AI } from "@/lib/feature-flags"
 
 const MatchSection = dynamic(
   () => import("@/components/MatchSection").then((mod) => mod.MatchSection)
 )
 const ShopSection = dynamic(
   () => import("@/components/ShopSection").then((mod) => mod.ShopSection)
+)
+const AICoach = dynamic(
+  () => import("@/components/AICoach").then((mod) => mod.AICoach),
+  { ssr: false }
 )
 
 function HomeContent() {
@@ -132,7 +135,7 @@ function HomeContent() {
           </div>
 
           <Footer />
-          <AICoach />
+          {ENABLE_SMASHY_AI ? <AICoach /> : null}
         </>
       )}
     </main>
