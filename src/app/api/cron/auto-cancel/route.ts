@@ -2,18 +2,52 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { createBookingEventNotification } from '@/lib/notifications/service';
+import { timingSafeEqual } from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+function getBearerToken(request: Request) {
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    if (!authHeader) {
+        return null;
+    }
+
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme?.toLowerCase() !== 'bearer' || !token) {
+        return null;
+    }
+
+    return token.trim();
+}
+
+function safeTokenMatch(candidate: string, expected: string) {
+    const candidateBuffer = Buffer.from(candidate);
+    const expectedBuffer = Buffer.from(expected);
+
+    if (candidateBuffer.length !== expectedBuffer.length) {
+        return false;
+    }
+
+    return timingSafeEqual(candidateBuffer, expectedBuffer);
+}
+
+export async function GET(request: Request) {
     try {
+        const cronSecret = process.env.CRON_SECRET?.trim();
+        if (!cronSecret) {
+            logger.error('CRON_SECRET is not configured. Auto-cancel cron execution denied.');
+            return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+        }
+
+        const bearerToken = getBearerToken(request);
+        if (!bearerToken || !safeTokenMatch(bearerToken, cronSecret)) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = createServiceClient();
 
         // 15 minutes ago
         const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-
-        // In Vercel Cron, the request comes from an authorized source.
-        // Add CRON_SECRET check if strict header validation is required.
 
         // Update pending bookings older than 15 minutes (single round-trip)
         const { data: bookings, error } = await supabase
@@ -25,7 +59,7 @@ export async function GET() {
 
         if (error) {
             logger.error({ error }, 'Error updating expired bookings');
-            return NextResponse.json({ error: error.message }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to process expired bookings' }, { status: 500 });
         }
 
         if (!bookings || bookings.length === 0) {
@@ -49,12 +83,9 @@ export async function GET() {
             )
         );
 
-        const bookingIds = bookings.map(b => b.id);
-
         return NextResponse.json({
             message: 'Successfully cancelled expired bookings',
-            count: bookingIds.length,
-            ids: bookingIds
+            count: bookings.length
         });
 
     } catch (error) {

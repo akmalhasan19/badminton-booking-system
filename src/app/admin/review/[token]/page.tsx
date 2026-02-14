@@ -73,11 +73,11 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
     }
 
     const handleApproveConfirm = async () => {
-        if (!application) return
+        if (!application || !token) return
 
         setIsProcessing(true)
         try {
-            const result = await approveApplication(application.id)
+            const result = await approveApplication({ applicationId: application.id, reviewToken: token })
 
             if (result.success) {
                 if (result.emailSent === false) {
@@ -108,11 +108,11 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
     }
 
     const handleRejectConfirm = async () => {
-        if (!application) return
+        if (!application || !token) return
 
         setIsProcessing(true)
         try {
-            const result = await rejectApplication(application.id)
+            const result = await rejectApplication({ applicationId: application.id, reviewToken: token })
 
             if (result.success) {
                 if (result.emailSent === false) {

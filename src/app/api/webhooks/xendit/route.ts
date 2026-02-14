@@ -23,6 +23,24 @@ const getIpAllowList = () =>
     .map((ip) => ip.trim())
     .filter(Boolean)
 
+const getRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null
+
+const sanitizePayloadForLog = (payload: unknown) => {
+  const record = getRecord(payload)
+  if (!record) return null
+
+  return {
+    id: record.id,
+    event: record.event,
+    external_id: record.external_id,
+    status: record.status,
+    paid_amount: record.paid_amount,
+    amount: record.amount,
+    payment_request_id: record.payment_request_id,
+  }
+}
+
 async function appendWebhookLog(params: {
   status: string
   responseCode: number
@@ -32,7 +50,7 @@ async function appendWebhookLog(params: {
   const supabase = createServiceClient()
   await supabase.from('webhook_logs').insert({
     source: 'xendit',
-    payload: params.payload,
+    payload: sanitizePayloadForLog(params.payload),
     status: params.status,
     response_code: params.responseCode,
     error_message: params.errorMessage,
@@ -90,7 +108,7 @@ export async function POST(request: Request) {
 
     const callbackToken = getCallbackToken(request)
     if (!callbackToken || callbackToken !== webhookToken) {
-      logger.warn({ callbackToken }, '[XenditWebhook] Unauthorized callback token')
+      logger.warn('[XenditWebhook] Unauthorized callback token')
       await appendWebhookLog({
         status: 'unauthorized',
         responseCode: 401,

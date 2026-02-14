@@ -330,7 +330,16 @@ type ApprovalResult = {
     emailSent?: boolean
 }
 
-export async function approveApplication(applicationId: string): Promise<ApprovalResult> {
+type ReviewActionInput = {
+    applicationId: string
+    reviewToken: string
+}
+
+export async function approveApplication({ applicationId, reviewToken }: ReviewActionInput): Promise<ApprovalResult> {
+    if (!applicationId || !reviewToken) {
+        return { success: false, error: 'Invalid review request' }
+    }
+
     try {
         // Use service role key for admin actions to bypass RLS
         const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -340,6 +349,7 @@ export async function approveApplication(applicationId: string): Promise<Approva
             .from('partner_applications')
             .select('*')
             .eq('id', applicationId)
+            .eq('review_token', reviewToken)
             .single()
 
         if (fetchError || !application) {
@@ -388,6 +398,7 @@ export async function approveApplication(applicationId: string): Promise<Approva
             .from('partner_applications')
             .update({ status: 'approved' })
             .eq('id', applicationId)
+            .eq('review_token', reviewToken)
 
         if (updateError) {
             console.error('Database update error:', updateError)
@@ -498,7 +509,11 @@ export async function approveApplication(applicationId: string): Promise<Approva
     }
 }
 
-export async function rejectApplication(applicationId: string): Promise<{ success: boolean; error?: string; emailSent?: boolean, emailErrorDetail?: string }> {
+export async function rejectApplication({ applicationId, reviewToken }: ReviewActionInput): Promise<{ success: boolean; error?: string; emailSent?: boolean, emailErrorDetail?: string }> {
+    if (!applicationId || !reviewToken) {
+        return { success: false, error: 'Invalid review request' }
+    }
+
     try {
         // Use service role key for admin actions to bypass RLS
         const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -508,6 +523,7 @@ export async function rejectApplication(applicationId: string): Promise<{ succes
             .from('partner_applications')
             .select('*')
             .eq('id', applicationId)
+            .eq('review_token', reviewToken)
             .single()
 
         if (fetchError || !application) {
@@ -523,6 +539,7 @@ export async function rejectApplication(applicationId: string): Promise<{ succes
             .from('partner_applications')
             .update({ status: 'rejected' })
             .eq('id', applicationId)
+            .eq('review_token', reviewToken)
 
         if (updateError) {
             console.error('Database update error:', updateError)

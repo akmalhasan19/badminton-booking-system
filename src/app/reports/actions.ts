@@ -31,6 +31,34 @@ export type ReportAction = {
     created_at: string
 }
 
+async function getAdminContext() {
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { supabase, user: null, error: 'Not authenticated' as const }
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL?.trim()
+    if (adminEmail && user.email === adminEmail) {
+        return { supabase, user, error: null }
+    }
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    if (profile?.role !== 'admin') {
+        return { supabase, user: null, error: 'Forbidden' as const }
+    }
+
+    return { supabase, user, error: null }
+}
+
 /**
  * Submit a report for moderation
  */
@@ -80,16 +108,10 @@ export async function submitReport(data: {
  * Get all reports (admin only)
  */
 export async function getReports(filter?: { status?: ReportStatus; targetType?: ReportTargetType }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: "Not authenticated", data: [] }
+    const { supabase, error: adminError } = await getAdminContext()
+    if (adminError) {
+        return { error: adminError, data: [] }
     }
-
-    // TODO: Add proper admin check
-    // For now, we'll fetch using service role or rely on RLS
-    // In production, verify user is admin before allowing this query
 
     try {
         let query = supabase
@@ -150,15 +172,10 @@ export async function getReports(filter?: { status?: ReportStatus; targetType?: 
  * Resolve a report (admin only)
  */
 export async function resolveReport(reportId: string, action: string, notes?: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: "Not authenticated" }
+    const { supabase, user, error: adminError } = await getAdminContext()
+    if (adminError || !user) {
+        return { error: adminError || 'Not authenticated' }
     }
-
-    // TODO: Add proper admin check
-    // For now, assume the user is authorized
 
     try {
         // Update report status
@@ -198,11 +215,9 @@ export async function resolveReport(reportId: string, action: string, notes?: st
  * Get report actions/history for a specific report
  */
 export async function getReportActions(reportId: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: "Not authenticated", data: [] }
+    const { supabase, error: adminError } = await getAdminContext()
+    if (adminError) {
+        return { error: adminError, data: [] }
     }
 
     try {

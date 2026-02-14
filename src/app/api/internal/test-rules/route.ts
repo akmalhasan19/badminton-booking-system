@@ -1,8 +1,44 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { calculateBookingPrice, validateOperationalHours } from '@/lib/api/bookings'
 import { NextResponse } from 'next/server'
+import { timingSafeEqual } from 'node:crypto'
 
-export async function GET() {
+function getBearerToken(request: Request) {
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+    if (!authHeader) return null
+
+    const [scheme, token] = authHeader.split(' ')
+    if (scheme?.toLowerCase() !== 'bearer' || !token) return null
+
+    return token.trim()
+}
+
+function safeTokenMatch(candidate: string, expected: string) {
+    const candidateBuffer = Buffer.from(candidate)
+    const expectedBuffer = Buffer.from(expected)
+
+    if (candidateBuffer.length !== expectedBuffer.length) {
+        return false
+    }
+
+    return timingSafeEqual(candidateBuffer, expectedBuffer)
+}
+
+export async function GET(request: Request) {
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    const internalToken = process.env.INTERNAL_API_TOKEN?.trim()
+    if (!internalToken) {
+        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+    }
+
+    const bearerToken = getBearerToken(request)
+    if (!bearerToken || !safeTokenMatch(bearerToken, internalToken)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const supabase = createServiceClient()
     const results = []
 
