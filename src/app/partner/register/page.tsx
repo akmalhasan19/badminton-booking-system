@@ -8,6 +8,7 @@ import { ArrowRight, Building2, User, Mail, Phone, Hash, CheckCircle, Globe, Lay
 import Image from "next/image"
 import { PartnerOnboarding } from "@/components/PartnerOnboarding"
 import { submitPartnerApplication } from "../actions"
+import { TurnstileCaptcha } from "@/components/security/TurnstileCaptcha"
 
 const AnimatedBackground = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-gray-50">
@@ -135,6 +136,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export default function PartnerRegisterPage() {
     const { t } = useLanguage()
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
     const [showOnboarding, setShowOnboarding] = useState(true)
     const [formData, setFormData] = useState({
         ownerName: "",
@@ -157,6 +159,7 @@ export default function PartnerRegisterPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
     const handleOnboardingComplete = (selectedGoals: string[], plan?: SubscriptionPlan) => {
         setFormData(prev => ({
@@ -242,7 +245,15 @@ export default function PartnerRegisterPage() {
         setIsSubmitting(true)
 
         try {
-            const result = await submitPartnerApplication(formData)
+            if (turnstileSiteKey && !captchaToken) {
+                toast.error("Please complete the captcha verification first.")
+                return
+            }
+
+            const result = await submitPartnerApplication({
+                ...formData,
+                captchaToken: captchaToken || undefined
+            })
 
             if (result.success) {
                 toast.success("Application submitted successfully!")
@@ -508,19 +519,27 @@ export default function PartnerRegisterPage() {
 
                     {/* Submit Button */}
                     <div className="mt-10 pt-6 border-t-2 border-black flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-pastel-acid text-black px-8 py-4 rounded-xl font-bold text-lg border-2 border-black shadow-hard-md hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? (
-                                t.submitting
-                            ) : (
-                                <>
-                                    {t.submit_application} <ArrowRight className="w-6 h-6" />
-                                </>
+                        <div className="w-full flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+                            {turnstileSiteKey && (
+                                <div className="flex flex-col gap-2">
+                                    <TurnstileCaptcha siteKey={turnstileSiteKey} onTokenChange={setCaptchaToken} />
+                                    <p className="text-xs text-gray-500">Protected by Cloudflare Turnstile.</p>
+                                </div>
                             )}
-                        </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-pastel-acid text-black px-8 py-4 rounded-xl font-bold text-lg border-2 border-black shadow-hard-md hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? (
+                                    t.submitting
+                                ) : (
+                                    <>
+                                        {t.submit_application} <ArrowRight className="w-6 h-6" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </motion.form>
             </div>

@@ -3,6 +3,9 @@ import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { createBookingEventNotification } from '@/lib/notifications/service'
+import { parseJsonBodyWithLimit } from '@/lib/security/request-body'
+
+const MAX_EXTERNAL_PAYMENT_UPDATE_BODY_BYTES = Number(process.env.MAX_EXTERNAL_PAYMENT_UPDATE_BODY_BYTES || 8 * 1024)
 
 export async function PATCH(
     request: Request,
@@ -16,7 +19,14 @@ export async function PATCH(
     const { id } = resolvedParams;
 
     try {
-        const body = await request.json()
+        const parsedBody = await parseJsonBodyWithLimit<Record<string, unknown>>(request, {
+            maxBytes: MAX_EXTERNAL_PAYMENT_UPDATE_BODY_BYTES
+        })
+        if (!parsedBody.ok) {
+            return parsedBody.response
+        }
+
+        const body = parsedBody.data
         const { status } = body
 
         if (!status) {

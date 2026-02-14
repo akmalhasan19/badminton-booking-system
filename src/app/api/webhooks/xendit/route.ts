@@ -3,15 +3,8 @@ import { canRateLimit, ratelimit } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 import { handleXenditWebhook } from '@/lib/payments/service'
 import { createServiceClient } from '@/lib/supabase/server'
-
-const getClientIp = (request: Request) => {
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown'
-  }
-
-  return request.headers.get('x-real-ip') || 'unknown'
-}
+import { getRequestClientIp, shouldLogInvalidWebhookAttempt } from '@/lib/security/abuse-protection'
+import { parseJsonBodyWithLimit } from '@/lib/security/request-body'
 
 const getCallbackToken = (request: Request) =>
   request.headers.get('x-callback-token') || request.headers.get('X-CALLBACK-TOKEN')
@@ -25,6 +18,8 @@ const getIpAllowList = () =>
 
 const getRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null
+
+const MAX_WEBHOOK_BODY_BYTES = Number(process.env.MAX_WEBHOOK_JSON_BODY_BYTES || 64 * 1024)
 
 const sanitizePayloadForLog = (payload: unknown) => {
   const record = getRecord(payload)
@@ -57,13 +52,33 @@ async function appendWebhookLog(params: {
   })
 }
 
+async function appendInvalidWebhookLog(params: {
+  ip: string
+  status: string
+  responseCode: number
+  errorMessage: string
+}) {
+  const shouldLog = await shouldLogInvalidWebhookAttempt(params.ip, params.status)
+  if (!shouldLog) {
+    return
+  }
+
+  await appendWebhookLog({
+    status: params.status,
+    responseCode: params.responseCode,
+    errorMessage: params.errorMessage,
+  })
+}
+
 export async function POST(request: Request) {
   let payload: unknown = null
 
   try {
+    const ip = getRequestClientIp(request)
     const contentType = request.headers.get('content-type') || ''
     if (!contentType.toLowerCase().includes('application/json')) {
-      await appendWebhookLog({
+      await appendInvalidWebhookLog({
+        ip,
         status: 'rejected',
         responseCode: 415,
         errorMessage: 'Unsupported content-type. JSON required',
@@ -74,7 +89,8 @@ export async function POST(request: Request) {
     const webhookToken = getWebhookToken()
     if (!webhookToken) {
       logger.error('[XenditWebhook] Missing webhook token configuration')
-      await appendWebhookLog({
+      await appendInvalidWebhookLog({
+        ip,
         status: 'failed',
         responseCode: 500,
         errorMessage: 'XENDIT_WEBHOOK_TOKEN is not configured',
@@ -83,10 +99,10 @@ export async function POST(request: Request) {
     }
 
     if (canRateLimit) {
-      const ip = getClientIp(request)
       const rateLimitResult = await ratelimit.limit(`xendit-webhook:${ip}`)
       if (!rateLimitResult.success) {
-        await appendWebhookLog({
+        await appendInvalidWebhookLog({
+          ip,
           status: 'rate_limited',
           responseCode: 429,
           errorMessage: `Rate limited for IP ${ip}`,
@@ -95,10 +111,10 @@ export async function POST(request: Request) {
       }
     }
 
-    const ip = getClientIp(request)
     const allowList = getIpAllowList()
     if (allowList.length > 0 && !allowList.includes(ip)) {
-      await appendWebhookLog({
+      await appendInvalidWebhookLog({
+        ip,
         status: 'forbidden',
         responseCode: 403,
         errorMessage: `IP ${ip} is not allowlisted`,
@@ -109,7 +125,8 @@ export async function POST(request: Request) {
     const callbackToken = getCallbackToken(request)
     if (!callbackToken || callbackToken !== webhookToken) {
       logger.warn('[XenditWebhook] Unauthorized callback token')
-      await appendWebhookLog({
+      await appendInvalidWebhookLog({
+        ip,
         status: 'unauthorized',
         responseCode: 401,
         errorMessage: 'Invalid callback token',
@@ -117,16 +134,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    try {
-      payload = await request.json()
-    } catch {
-      await appendWebhookLog({
+    const parsedBody = await parseJsonBodyWithLimit<unknown>(request, {
+      maxBytes: MAX_WEBHOOK_BODY_BYTES,
+      requireJsonContentType: false,
+    })
+    if (!parsedBody.ok) {
+      await appendInvalidWebhookLog({
+        ip,
         status: 'rejected',
-        responseCode: 400,
-        errorMessage: 'Invalid JSON payload',
+        responseCode: parsedBody.response.status,
+        errorMessage: parsedBody.response.status === 413 ? 'Payload too large' : 'Invalid JSON payload',
       })
-      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 })
+      return parsedBody.response
     }
+    payload = parsedBody.data
 
     const result = await handleXenditWebhook(payload, request.headers)
 

@@ -3,11 +3,22 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { createInvoice, getInvoicesByExternalId } from '@/lib/xendit/client'
 import { checkDebugAccess } from '@/lib/security/debug-access'
+import { enforceDebugActionCooldown } from '@/lib/security/abuse-protection'
 
 async function assertDebugAccess() {
     const access = await checkDebugAccess()
     if (!access.allowed) {
         return { error: access.error }
+    }
+
+    return null
+}
+
+async function assertDebugCooldown(actionKey: string) {
+    const cooldown = await enforceDebugActionCooldown(actionKey)
+    if (!cooldown.allowed) {
+        const suffix = cooldown.retryAfterSeconds ? ` Retry after ${cooldown.retryAfterSeconds}s.` : ''
+        return { error: `${cooldown.error}${suffix}` }
     }
 
     return null
@@ -56,6 +67,11 @@ export async function simulateWebhookTrigger(bookingId: string): Promise<{ succe
         return { success: false, error: accessError.error }
     }
 
+    const cooldownError = await assertDebugCooldown('simulate-webhook')
+    if (cooldownError) {
+        return { success: false, error: cooldownError.error }
+    }
+
     const token = process.env.XENDIT_CALLBACK_TOKEN
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -92,6 +108,11 @@ export async function testCreateInvoice(): Promise<{ success: boolean; data?: un
     const accessError = await assertDebugAccess()
     if (accessError) {
         return { success: false, error: accessError.error }
+    }
+
+    const cooldownError = await assertDebugCooldown('test-invoice')
+    if (cooldownError) {
+        return { success: false, error: cooldownError.error }
     }
 
     try {
@@ -149,6 +170,11 @@ export async function verifyPaymentExternal(bookingId: string) {
     const accessError = await assertDebugAccess()
     if (accessError) {
         return { success: false, error: accessError.error }
+    }
+
+    const cooldownError = await assertDebugCooldown('verify-payment')
+    if (cooldownError) {
+        return { success: false, error: cooldownError.error }
     }
 
     const supabase = createServiceClient()

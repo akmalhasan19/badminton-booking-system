@@ -3,6 +3,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { PLAN_FEATURES, SubscriptionPlan } from "@/lib/constants/plans"
+import { verifySubmissionCaptcha } from "@/lib/security/captcha"
+import { enforceCoachSubmissionRateLimit, enforcePartnerSubmissionRateLimit } from "@/lib/security/abuse-protection"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -24,6 +26,7 @@ export type PartnerApplicationData = {
     routineClubs: string
     goals: string[]
     subscriptionPlan: SubscriptionPlan | null
+    captchaToken?: string
 }
 
 // Generate a unique review token
@@ -33,12 +36,25 @@ function generateReviewToken(): string {
 
 export async function submitPartnerApplication(data: PartnerApplicationData) {
     try {
+        const normalizedEmail = data.email.trim().toLowerCase()
+
+        const rateLimit = await enforcePartnerSubmissionRateLimit(normalizedEmail)
+        if (!rateLimit.allowed) {
+            const suffix = rateLimit.retryAfterSeconds ? ` Retry after ${rateLimit.retryAfterSeconds}s.` : ''
+            return { success: false, error: `${rateLimit.error}${suffix}` }
+        }
+
+        const captchaResult = await verifySubmissionCaptcha({ token: data.captchaToken })
+        if (!captchaResult.success) {
+            return { success: false, error: captchaResult.error }
+        }
+
         const reviewToken = generateReviewToken()
 
         // 1. Save to Supabase
         const dbInsertPromise = supabase.from('partner_applications').insert({
             owner_name: data.ownerName,
-            email: data.email,
+            email: normalizedEmail,
             phone: data.phone,
             venue_name: data.venueName,
             venue_address: data.venueAddress,
@@ -190,7 +206,7 @@ export async function submitPartnerApplication(data: PartnerApplicationData) {
         // 4. Send Confirmation Email to Partner
         const partnerEmailPromise = resend.emails.send({
             from: 'Smash Partner <onboarding@smashcourts.online>',
-            to: [data.email],
+            to: [normalizedEmail],
             subject: '✅ Aplikasi Partner Diterima - Smash & Serve',
             html: `
 <!DOCTYPE html>
@@ -655,14 +671,28 @@ export type CoachApplicationData = {
     bio: string
     priceConfig: string
     availability: string
+    captchaToken?: string
 }
 
 export async function submitCoachApplication(data: CoachApplicationData) {
     try {
+        const normalizedEmail = data.email.trim().toLowerCase()
+
+        const rateLimit = await enforceCoachSubmissionRateLimit(normalizedEmail)
+        if (!rateLimit.allowed) {
+            const suffix = rateLimit.retryAfterSeconds ? ` Retry after ${rateLimit.retryAfterSeconds}s.` : ''
+            return { success: false, error: `${rateLimit.error}${suffix}` }
+        }
+
+        const captchaResult = await verifySubmissionCaptcha({ token: data.captchaToken })
+        if (!captchaResult.success) {
+            return { success: false, error: captchaResult.error }
+        }
+
         // 1. Save to Supabase
         const { error: dbError } = await supabase.from('coach_applications').insert({
             full_name: data.fullName,
-            email: data.email,
+            email: normalizedEmail,
             phone: data.phone,
             specialization: data.specialization,
             experience: data.experience,

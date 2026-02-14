@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { parseJsonBodyWithLimit } from '@/lib/security/request-body'
 
 type PlayTogetherRequest = {
     communityId: string
@@ -29,6 +30,7 @@ const ALLOWED_MODES = new Set(['CASUAL', 'RANKED', 'DRILLING'])
 const ALLOWED_GAME_FORMATS = new Set(['SINGLE', 'DOUBLE', 'MIXED'])
 const ALLOWED_LEVEL_REQUIREMENTS = new Set(['ALL', 'BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'PRO'])
 const ALLOWED_GENDER_PREFERENCES = new Set(['ANY', 'MALE', 'FEMALE'])
+const MAX_PLAY_TOGETHER_BODY_BYTES = Number(process.env.MAX_PLAY_TOGETHER_BODY_BYTES || 24 * 1024)
 
 function isUuid(value: string) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
@@ -65,12 +67,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    let payload: PlayTogetherRequest
-    try {
-        payload = await request.json()
-    } catch {
-        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    const parsedBody = await parseJsonBodyWithLimit<PlayTogetherRequest>(request, {
+        maxBytes: MAX_PLAY_TOGETHER_BODY_BYTES,
+    })
+    if (!parsedBody.ok) {
+        return parsedBody.response
     }
+
+    const payload = parsedBody.data
 
     const communityId = payload.communityId?.trim()
     if (!communityId || !isUuid(communityId)) {

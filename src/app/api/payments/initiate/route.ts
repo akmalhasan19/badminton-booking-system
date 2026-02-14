@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createPaymentRequestForOrder } from '@/lib/payments/service'
+import { parseJsonBodyWithLimit } from '@/lib/security/request-body'
 
 const isPositiveNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value > 0
 
 const normalizeChannelCode = (value: unknown) => (typeof value === 'string' ? value.trim().toUpperCase() : '')
+const MAX_PAYMENT_INITIATE_BODY_BYTES = Number(process.env.MAX_PAYMENT_INITIATE_BODY_BYTES || 16 * 1024)
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -22,20 +24,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Xendit v3 payment feature is disabled' }, { status: 503 })
   }
 
-  let body: {
+  const parsedBody = await parseJsonBodyWithLimit<{
     orderId?: unknown
     amount?: unknown
     channelCode?: unknown
     country?: unknown
     currency?: unknown
     channelProperties?: unknown
+  }>(request, {
+    maxBytes: MAX_PAYMENT_INITIATE_BODY_BYTES,
+  })
+  if (!parsedBody.ok) {
+    return parsedBody.response
   }
 
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
+  const body = parsedBody.data
 
   const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : ''
   const channelCode = normalizeChannelCode(body.channelCode)

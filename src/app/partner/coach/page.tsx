@@ -8,6 +8,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { SmashLogo } from "@/components/SmashLogo"
 import { submitCoachApplication } from "../actions"
+import { TurnstileCaptcha } from "@/components/security/TurnstileCaptcha"
 
 const AnimatedBackground = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-gray-50">
@@ -29,6 +30,7 @@ const AnimatedBackground = () => (
 )
 
 export default function CoachRegisterPage() {
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -44,6 +46,7 @@ export default function CoachRegisterPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -54,12 +57,20 @@ export default function CoachRegisterPage() {
         e.preventDefault()
         setIsSubmitting(true)
         try {
-            const result = await submitCoachApplication(formData)
+            if (turnstileSiteKey && !captchaToken) {
+                toast.error("Please complete the captcha verification first.")
+                return
+            }
+
+            const result = await submitCoachApplication({
+                ...formData,
+                captchaToken: captchaToken || undefined
+            })
             if (result.success) {
                 setIsSubmitted(true)
                 toast.success("Application submitted!")
             } else {
-                toast.error("Failed to submit")
+                toast.error(result.error || "Failed to submit")
             }
         } catch (error) {
             console.error(error)
@@ -201,13 +212,21 @@ export default function CoachRegisterPage() {
 
                     {/* Submit */}
                     <div className="pt-4 border-t-2 border-black flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-black text-white px-8 py-4 rounded-xl font-bold text-lg border-2 border-transparent hover:bg-gray-800 hover:scale-[1.02] transition-all shadow-hard-md flex items-center gap-2"
-                        >
-                            {isSubmitting ? "Submitting..." : <>Submit Application <ArrowRight className="w-5 h-5" /></>}
-                        </button>
+                        <div className="w-full flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+                            {turnstileSiteKey && (
+                                <div className="flex flex-col gap-2">
+                                    <TurnstileCaptcha siteKey={turnstileSiteKey} onTokenChange={setCaptchaToken} />
+                                    <p className="text-xs text-gray-500">Protected by Cloudflare Turnstile.</p>
+                                </div>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-black text-white px-8 py-4 rounded-xl font-bold text-lg border-2 border-transparent hover:bg-gray-800 hover:scale-[1.02] transition-all shadow-hard-md flex items-center gap-2"
+                            >
+                                {isSubmitting ? "Submitting..." : <>Submit Application <ArrowRight className="w-5 h-5" /></>}
+                            </button>
+                        </div>
                     </div>
                 </motion.form>
             </div>

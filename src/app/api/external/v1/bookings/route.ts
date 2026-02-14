@@ -3,6 +3,7 @@ import { validateApiKey } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createBookingEventNotification } from '@/lib/notifications/service'
+import { parseJsonBodyWithLimit } from '@/lib/security/request-body'
 
 // Schema for booking payload (snake_case)
 const bookingSchema = z.object({
@@ -14,13 +15,23 @@ const bookingSchema = z.object({
     integration_user_email: z.string().email().optional(), // Alternative to user_id for external systems
 })
 
+const MAX_EXTERNAL_BOOKING_BODY_BYTES = Number(process.env.MAX_EXTERNAL_BOOKING_BODY_BYTES || 16 * 1024)
+
 export async function POST(request: Request) {
     if (!validateApiKey(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {
-        const json = await request.json()
+        const parsedBody = await parseJsonBodyWithLimit<Record<string, unknown>>(request, {
+            maxBytes: MAX_EXTERNAL_BOOKING_BODY_BYTES
+        })
+
+        if (!parsedBody.ok) {
+            return parsedBody.response
+        }
+
+        const json = parsedBody.data
 
         // Handle camelCase fallback if necessary, but prioritizes snake_case
         const payload = {
