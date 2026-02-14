@@ -1,7 +1,7 @@
 'use server'
 
 import { getCourts } from './courts'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_cache } from 'next/cache'
 import { smashApi, SmashVenueDetails, SmashAvailabilityResponse } from '@/lib/smash-api'
 import { getCurrentUser } from '@/lib/auth/actions'
 import { getSetting } from '@/lib/api/settings'
@@ -9,6 +9,18 @@ import { createClient } from '@/lib/supabase/server'
 import { createBookingEventNotification } from '@/lib/notifications/service'
 import { createPaymentRequestForOrder, getOrderPaymentStatus } from '@/lib/payments/service'
 import { validateBookingTime } from '@/lib/date-utils'
+
+const getCachedVenues = unstable_cache(
+    async () => smashApi.getVenues(),
+    ['smash-api-venues-v1'],
+    { revalidate: 300, tags: ['smash-api-venues'] }
+)
+
+const getCachedPublicCourts = unstable_cache(
+    async () => smashApi.getPublicCourts(),
+    ['smash-api-public-courts-v1'],
+    { revalidate: 300, tags: ['smash-api-public-courts'] }
+)
 
 
 
@@ -26,7 +38,7 @@ export async function fetchCourts() {
  * Server action to fetch venues from Smash API
  */
 export async function fetchVenues() {
-    const venues = await smashApi.getVenues()
+    const venues = await getCachedVenues()
     return venues
 }
 
@@ -35,7 +47,7 @@ export async function fetchVenues() {
  * Use for dynamic filtering
  */
 export async function fetchPublicCourts() {
-    const courts = await smashApi.getPublicCourts()
+    const courts = await getCachedPublicCourts()
     return courts
 }
 
@@ -531,4 +543,3 @@ export async function updateNotificationPreferences(
     revalidatePath('/settings/notifications')
     return { success: true, preferences: nextPreferences }
 }
-

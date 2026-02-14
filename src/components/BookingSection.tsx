@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Hall, Court } from "@/types"
 import { AuthModal } from "@/components/AuthModal"
 import { PhoneVerificationModal } from "@/components/PhoneVerificationModal"
-import { fetchVenues, fetchVenueDetails, fetchVenueCourts, fetchAvailableSlots, createBooking, fetchPublicCourts } from "@/lib/api/actions"
+import { fetchVenues, fetchVenueCourts, fetchAvailableSlots, createBooking, fetchPublicCourts } from "@/lib/api/actions"
 import { SmashCourt, SmashAvailabilityResponse, SmashCourtAvailability } from "@/lib/smash-api"
 import { getCurrentUser } from "@/lib/auth/actions"
 import { useLoading } from "@/lib/loading-context"
@@ -249,98 +249,64 @@ export function BookingSection() {
             setApiError(null);
             // startLoading("Memuat venue...");
             try {
-                // Fetch public courts which contains venue info + specific court details (type, etc)
-                // Extract unique venues from courts data
-                // We map by venue_id to deduplicate
-                const uniqueVenuesMap = new Map();
-                const types = new Set<string>(['All']);
-
-                // If public courts endpoint is just courts, we construct venues from it. 
-                // However, fetchVenues() returned a clean list of venues.
-                // It might be safer to call BOTH: 
-                // 1. fetchVenues() for the main list (reliable venue data)
-                // 2. fetchPublicCourts() just to derive the filters and mapping.
-
                 const [venuesData, publicCourtsData] = await Promise.all([
                     fetchVenues(),
                     fetchPublicCourts()
                 ]);
 
-                setVenues(venuesData || []);
-                setAllCourts(publicCourtsData || []);
+                const safeVenues = Array.isArray(venuesData) ? venuesData : [];
+                const safePublicCourts = Array.isArray(publicCourtsData) ? publicCourtsData : [];
+                setAllCourts(safePublicCourts);
 
                 // Extract types from publicCourtsData
                 const dynamicTypes = new Set<string>(['All']);
-                publicCourtsData.forEach((court: any) => {
+                const minPriceByVenue = new Map<string, number>();
+                const courtCountByVenue = new Map<string, number>();
+
+                safePublicCourts.forEach((court: any) => {
                     // Normalize type: Capitalize first letter?
                     if (court.type) {
                         dynamicTypes.add(court.type);
                     }
+
+                    const venueId = court.venue_id;
+                    if (venueId) {
+                        const currentCount = courtCountByVenue.get(venueId) || 0;
+                        courtCountByVenue.set(venueId, currentCount + 1);
+
+                        const parsedRate = Number(court.hourly_rate);
+                        if (Number.isFinite(parsedRate) && parsedRate > 0) {
+                            const currentMinPrice = minPriceByVenue.get(venueId);
+                            if (!currentMinPrice || parsedRate < currentMinPrice) {
+                                minPriceByVenue.set(venueId, parsedRate);
+                            }
+                        }
+                    }
                 });
                 setCourtTypes(Array.from(dynamicTypes));
 
-                if (venuesData && venuesData.length > 0) {
-                    // Fetch details for each venue to get court prices
-                    const venuesWithPrices = await Promise.all(
-                        venuesData.map(async (venue: any) => {
-                            try {
-                                const details = await fetchVenueDetails(venue.id);
-                                // Get minimum hourly rate from courts
-                                let minPrice = 0;
-                                if (details?.courts && details.courts.length > 0) {
-                                    minPrice = Math.min(...details.courts.map((c: any) => c.hourly_rate || 0));
-                                }
-                                return {
-                                    id: venue.id,
-                                    name: venue.name,
-                                    type: 'Professional',
-                                    pricePerHour: minPrice || 50000, // Use min price or fallback
-                                    photo_url: venue.photo_url,
-                                    totalCourts: venue.courts_count || details?.courts?.length || 0,
-                                    description: venue.description || 'Professional Badminton Hall',
-                                    // Use actual coordinates and city from API
-                                    latitude: venue.latitude,
-                                    longitude: venue.longitude,
-                                    location: {
-                                        city: venue.city || 'Unknown',
-                                        district: '',
-                                        subDistrict: '',
-                                        address: venue.address
-                                    },
-                                    operating_hours_start: venue.operating_hours_start,
-                                    operating_hours_end: venue.operating_hours_end,
-                                    facilities: venue.facilities || [],
-                                };
-                            } catch (err) {
-                                // Fallback if details fetch fails
-                                return {
-                                    id: venue.id,
-                                    name: venue.name,
-                                    type: 'Professional',
-                                    pricePerHour: 50000,
-                                    photo_url: venue.photo_url,
-                                    totalCourts: venue.courts_count || 0,
-                                    description: venue.description || 'Professional Badminton Hall',
-                                    // Use actual coordinates and city from API
-                                    latitude: venue.latitude,
-                                    longitude: venue.longitude,
-                                    location: {
-                                        city: venue.city || 'Unknown',
-                                        district: '',
-                                        subDistrict: '',
-                                        address: venue.address
-                                    },
-                                    operating_hours_start: venue.operating_hours_start,
-                                    operating_hours_end: venue.operating_hours_end,
-                                    facilities: venue.facilities || [],
-                                };
-                            }
-                        })
-                    );
-                    setVenues(venuesWithPrices);
-                } else {
-                    setVenues([]);
-                }
+                const venuesWithDerivedMeta = safeVenues.map((venue: any) => ({
+                    id: venue.id,
+                    name: venue.name,
+                    type: 'Professional',
+                    pricePerHour: minPriceByVenue.get(venue.id) || 50000,
+                    photo_url: venue.photo_url,
+                    totalCourts: venue.courts_count || courtCountByVenue.get(venue.id) || 0,
+                    description: venue.description || 'Professional Badminton Hall',
+                    latitude: venue.latitude,
+                    longitude: venue.longitude,
+                    location: {
+                        city: venue.city || 'Unknown',
+                        district: '',
+                        subDistrict: '',
+                        address: venue.address
+                    },
+                    operating_hours_start: venue.operating_hours_start,
+                    operating_hours_end: venue.operating_hours_end,
+                    facilities: venue.facilities || [],
+                }));
+
+                setVenues(venuesWithDerivedMeta);
             } catch (error) {
                 console.error("Failed to load venues:", error);
                 setApiError('Failed to connect to PWA Smash');
@@ -350,7 +316,7 @@ export function BookingSection() {
             }
         }
         loadVenues();
-    }, [startLoading, stopLoading]);
+    }, []);
 
     // Fetch venue details (with courts) when venue is selected
     useEffect(() => {
