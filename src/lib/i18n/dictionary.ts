@@ -129,6 +129,19 @@ export type Dictionary = {
     court_type_vinyl: string;
     court_type_wood: string;
     court_type_cement: string;
+
+    // Hero Booking Widget
+    booking_court: string;
+    find_coach: string;
+    venue_location_label: string;
+    coach_location_label: string;
+    venue_placeholder: string;
+    coach_placeholder: string;
+    loading_venues: string;
+    location_unknown: string;
+    no_venues_found: string;
+    date_label: string;
+    search_button: string;
 }
 
 export const dictionaries: Record<Language, Dictionary> = {
@@ -258,7 +271,20 @@ export const dictionaries: Record<Language, Dictionary> = {
         court_type_standard: "Standard Court",
         court_type_vinyl: "Vinyl Court",
         court_type_wood: "Wood Court",
-        court_type_cement: "Cement Court"
+        court_type_cement: "Cement Court",
+
+        // Hero Booking Widget
+        booking_court: "Booking Court",
+        find_coach: "Find Coach",
+        venue_location_label: "Venue / Location",
+        coach_location_label: "Coach Name / Location",
+        venue_placeholder: "Find name or location...",
+        coach_placeholder: "Find coach by name...",
+        loading_venues: "Loading venues...",
+        location_unknown: "Location unknown",
+        no_venues_found: "No venues found",
+        date_label: "Date",
+        search_button: "Search"
     },
     id: {
         home: "BERANDA",
@@ -387,7 +413,20 @@ export const dictionaries: Record<Language, Dictionary> = {
         court_type_standard: "Lapangan Standar",
         court_type_vinyl: "Lapangan Karpet",
         court_type_wood: "Lapangan Kayu",
-        court_type_cement: "Lapangan Semen"
+        court_type_cement: "Lapangan Semen",
+
+        // Hero Booking Widget
+        booking_court: "Booking Lapangan",
+        find_coach: "Cari Pelatih",
+        venue_location_label: "Venue / Lokasi",
+        coach_location_label: "Nama Pelatih / Lokasi",
+        venue_placeholder: "Cari nama atau lokasi...",
+        coach_placeholder: "Cari pelatih berdasarkan nama...",
+        loading_venues: "Memuat venue...",
+        location_unknown: "Lokasi tidak diketahui",
+        no_venues_found: "Venue tidak ditemukan",
+        date_label: "Tanggal",
+        search_button: "Cari"
     },
     jv: {
         home: "GRIYA",
@@ -515,7 +554,20 @@ export const dictionaries: Record<Language, Dictionary> = {
         court_type_standard: "Lapangan Standar",
         court_type_vinyl: "Lapangan Karpet",
         court_type_wood: "Lapangan Kajeng",
-        court_type_cement: "Lapangan Semen"
+        court_type_cement: "Lapangan Semen",
+
+        // Hero Booking Widget
+        booking_court: "Pesen Lapangan",
+        find_coach: "Pados Pelatih",
+        venue_location_label: "Panggenan / Lokasi",
+        coach_location_label: "Asma Pelatih / Lokasi",
+        venue_placeholder: "Pados asma utawi lokasi...",
+        coach_placeholder: "Pados pelatih miturut asma...",
+        loading_venues: "Mbukak venue...",
+        location_unknown: "Lokasi mboten katingal",
+        no_venues_found: "Venue mboten kapanggih",
+        date_label: "Tanggal",
+        search_button: "Pados"
     }
 }
 

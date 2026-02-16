@@ -5,6 +5,7 @@ import { Search, Calendar, MapPin, Loader2, User } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { fetchVenues } from "@/lib/api/actions"
 import { SmashVenue } from "@/lib/smash-api"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const HERO_VENUES_CACHE_KEY = "hero_booking_venues_v1"
 const HERO_VENUES_CACHE_TTL_MS = 10 * 60 * 1000
@@ -18,6 +19,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
     const router = useRouter()
     const pathname = usePathname()
     const currentSearchParams = useSearchParams()
+    const { t } = useLanguage()
     const [activeTab, setActiveTab] = useState<'court' | 'coach'>('court')
     const [searchQuery, setSearchQuery] = useState("")
     const [date, setDate] = useState("")
@@ -156,7 +158,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                         }`}
                 >
                     {activeTab === 'court' && <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>}
-                    Booking Court
+                    {t.booking_court}
                 </button>
                 <button
                     onClick={() => setActiveTab('coach')}
@@ -166,7 +168,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                         }`}
                 >
                     {activeTab === 'coach' && <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>}
-                    Find Coach
+                    {t.find_coach}
                 </button>
             </div>
 
@@ -174,7 +176,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 {/* Search Input */}
                 <div className="flex-1 w-full min-w-0">
                     <label className="block text-xs font-bold uppercase text-gray-400 mb-2 ml-1">
-                        {activeTab === 'court' ? 'Venue / Location' : 'Coach Name / Location'}
+                        {activeTab === 'court' ? t.venue_location_label : t.coach_location_label}
                     </label>
                     <div className="relative group min-w-0" ref={wrapperRef}>
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -201,7 +203,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                                 }
                             }}
                             className="block w-full min-w-0 max-w-full pl-12 pr-4 py-4 bg-white border-2 border-black/10 rounded-xl text-black font-bold placeholder-gray-300 focus:outline-none focus:border-black focus:shadow-hard-sm transition-all"
-                            placeholder={activeTab === 'court' ? "Find name or location..." : "Find coach by name..."}
+                            placeholder={activeTab === 'court' ? t.venue_placeholder : t.coach_placeholder}
                         />
 
                         {/* Suggestions Dropdown */}
@@ -209,7 +211,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                             <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-black rounded-xl shadow-hard z-50 overflow-hidden max-h-60 overflow-y-auto">
                                 {isLoading ? (
                                     <div className="p-4 text-center text-gray-400 text-sm flex items-center justify-center gap-2">
-                                        <Loader2 className="w-4 h-4 animate-spin" /> Loading venues...
+                                        <Loader2 className="w-4 h-4 animate-spin" /> {t.loading_venues}
                                     </div>
                                 ) : suggestions.length > 0 ? (
                                     <ul>
@@ -221,14 +223,14 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                                             >
                                                 <span className="font-bold text-sm text-dark">{venue.name}</span>
                                                 <span className="text-xs text-gray-500 flex items-center gap-1">
-                                                    <MapPin className="w-3 h-3" /> {venue.city || "Location unknown"}
+                                                    <MapPin className="w-3 h-3" /> {venue.city || t.location_unknown}
                                                 </span>
                                             </li>
                                         ))}
                                     </ul>
                                 ) : (
                                     <div className="p-4 text-center text-gray-400 text-xs italic">
-                                        No venues found
+                                        {t.no_venues_found}
                                     </div>
                                 )}
                             </div>
@@ -239,7 +241,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                 {/* Date Input */}
                 <div className="flex-1 w-full min-w-0 md:max-w-xs">
                     <label className="block text-xs font-bold uppercase text-gray-400 mb-2 ml-1">
-                        Date
+                        {t.date_label}
                     </label>
                     <div className="relative group min-w-0">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -261,7 +263,7 @@ export function HeroBookingWidget({ className = "" }: HeroBookingWidgetProps) {
                     className="w-full md:w-auto px-8 py-4 bg-black text-white rounded-xl font-black text-lg border-2 border-transparent hover:bg-pastel-acid hover:text-black hover:border-black shadow-hard hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-2"
                 >
                     <Search className="w-5 h-5" />
-                    Search
+                    {t.search_button}
                 </button>
             </div>
         </div>
