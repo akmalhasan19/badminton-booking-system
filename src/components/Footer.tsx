@@ -60,7 +60,7 @@ export function Footer() {
                 </div>
 
                 <div className="mt-20 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-                    <p>{t.footer_copyright}</p>
+                    <p>© {new Date().getFullYear()} Smash & Serve.</p>
                     <div className="mt-4 md:mt-0 font-display font-bold tracking-widest uppercase">
                         {t.footer_designed_in}
                     </div>
